@@ -1,0 +1,27 @@
+# 공통 설정
+spring:
+  application:
+    name: caro
+  profiles:
+    active: local  # 기본 profile을 local
+  threads:
+    virtual:
+      enabled: true
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+  jpa:
+    open-in-view: false  # OSIV off
+  jackson:
+    time-zone: UTC
+
+server:
+  shutdown: graceful
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, metrics, prometheus
+  endpoint:
+    health:
+      show-details: always
