@@ -1,0 +1,27 @@
+name: 📚Docs
+description: 문서 작업
+title: "[Docs] "
+type: "📚Docs"
+labels: ["type: docs"]
+projects: ["whatever-x/26"]
+body:
+  - type: textarea
+    id: target
+    attributes:
+      label: 문서 내용
+      placeholder: |
+        예: 결제 API 문서 작성
+        예: README 업데이트
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: 우선순위
+      options:
+        - P0
+        - P1
+        - P2
+        - P3
+      default: 2

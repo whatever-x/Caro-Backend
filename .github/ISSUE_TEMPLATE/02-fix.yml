@@ -1,0 +1,48 @@
+name: 🛠Fix
+description: 버그 수정
+title: "[Fix] "
+type: "🛠Fix"
+labels: ["type: bug"]
+projects: ["whatever-x/26"]
+body:
+  - type: textarea
+    id: symptom
+    attributes:
+      label: 증상
+      placeholder: |
+        예: 로그인 후 JWT 토큰이 localStorage에 저장되지 않음
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: 재현 방법
+      placeholder: |
+        1. 로그인
+        2. 개발자 도구 확인
+        3. 토큰 없음
+    validations:
+      required: false
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: 심각도
+      options:
+        - P0 - Critical
+        - P1 - High
+        - P2 - Medium
+        - P3 - Low
+      default: 2
+
+  - type: dropdown
+    id: environment
+    attributes:
+      label: 환경
+      multiple: true
+      options:
+        - Production
+        - Staging
+        - Dev
+        - Local

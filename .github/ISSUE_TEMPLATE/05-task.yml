@@ -1,0 +1,26 @@
+name: 📋Task
+description: 기타 모든 작업 (설정, 빌드, 기타)
+title: "[Task] "
+type: "📋Task"
+labels: []
+projects: ["whatever-x/26"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: 작업 내용
+      placeholder: |
+        예: Gradle 의존성 업데이트
+        예: CI/CD 파이프라인 수정
+    validations:
+      required: true
+
+  - type: textarea
+    id: checklist
+    attributes:
+      label: 체크리스트
+      placeholder: |
+        - [ ] 항목 1
+        - [ ] 항목 2
+    validations:
+      required: false
