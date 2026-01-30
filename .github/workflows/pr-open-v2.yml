@@ -1,0 +1,47 @@
+name: PR Open Setting
+
+on:
+  pull_request:
+    types: [opened, reopened]
+
+jobs:
+  update-project:
+    runs-on: ubuntu-latest
+    steps:
+      # 1. GitHub App Token 생성
+      - name: Generate GitHub App Token
+        id: generate-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.CARO_BACKEND_APP_ID }}
+          private-key: ${{ secrets.CARO_BACKEND_APP_PRIVATE_KEY }}
+
+      # 2. PR을 프로젝트에 추가 (Built-in Automation로 진행)
+#      - name: Add PR to Project
+#        id: add-to-project
+#        uses: actions/add-to-project@v1.0.2
+#        with:
+#          project-url: ${{ secrets.PROJECT_URL }}
+#          github-token: ${{ steps.generate-token.outputs.token }}
+
+      # 3. 프로젝트 상태를 "🔄In progress"로 설정
+      - name: Set Status to In progress
+        uses: github/update-project-action@v3
+        with:
+          github_token: ${{ steps.generate-token.outputs.token }}
+          organization: ${{ github.repository_owner }}
+          project_number: ${{ secrets.PROJECT_NUMBER }}
+          content_id: ${{ github.event.pull_request.node_id }}
+          field: Status
+          value: 🔄In progress
+
+      # 4. 프로젝트 시작 날짜 설정
+      - name: Set Start Date
+        uses: github/update-project-action@v3
+        with:
+          github_token: ${{ steps.generate-token.outputs.token }}
+          organization: ${{ github.repository_owner }}
+          project_number: ${{ secrets.PROJECT_NUMBER }}
+          content_id: ${{ github.event.pull_request.node_id }}
+          field: Start date
+          value: ${{ github.event.pull_request.created_at }}
