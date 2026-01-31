@@ -10,11 +10,20 @@ on:
     types:
       - submitted           # 리뷰 제출
 
+# 동일 PR의 이전 실행 취소 (중복 알림 방지)
+concurrency:
+  group: slack-notify-${{ github.event.pull_request.number || github.event.review.pull_request.number }}
+  cancel-in-progress: true
+
 jobs:
   check-and-notify:
     runs-on: ubuntu-latest
-    # Draft PR은 제외
-    if: github.event.pull_request.draft == false
+    timeout-minutes: 5
+
+    # Draft PR은 제외 (pull_request_review 이벤트는 항상 non-draft)
+    if: |
+      github.event_name == 'pull_request_review' ||
+      (github.event_name == 'pull_request' && github.event.pull_request.draft == false)
 
     steps:
       # 1. GitHub App Token 생성
@@ -28,14 +37,25 @@ jobs:
       # 2. Projects API로 현재 Status 조회
       - name: Get PR Project Status
         id: project
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         env:
           PROJECT_NUMBER: ${{ secrets.PROJECT_NUMBER }}
         with:
           github-token: ${{ steps.generate-token.outputs.token }}
           script: |
             const projectNumber = parseInt(process.env.PROJECT_NUMBER);
-            const prNumber = context.issue.number;
+
+            // PR 번호 가져오기 (이벤트 타입에 따라 다름)
+            const prNumber = context.payload.pull_request?.number ||
+                           context.payload.review?.pull_request?.number ||
+                           context.issue.number;
+
+            if (!prNumber) {
+              core.setFailed('Could not determine PR number');
+              return;
+            }
+
+            console.log('🔍 PR Number:', prNumber);
 
             // PR의 Project Item 조회
             const query = `
@@ -140,20 +160,59 @@ jobs:
 
           echo "notify=$NOTIFY" >> $GITHUB_OUTPUT
 
-      # 4. PR 상세 정보 수집
+      # 4. Priority 기반 멘션 결정
+      - name: Determine mention based on priority
+        if: steps.check_notify.outputs.notify == 'true'
+        id: mention
+        run: |
+          PRIORITY="${{ steps.project.outputs.priority }}"
+
+          case "$PRIORITY" in
+            "P0")
+              MENTION="<!channel> 🚨 긴급 리뷰 요청!"
+              ;;
+            "P1")
+              MENTION="<!here> 리뷰 부탁드립니다! 🙏"
+              ;;
+            *)
+              MENTION="리뷰 부탁드립니다! 🙏"
+              ;;
+          esac
+
+          echo "mention=$MENTION" >> $GITHUB_OUTPUT
+          echo "📢 Mention: $MENTION"
+
+      # 5. PR 상세 정보 수집
       - name: Get PR details
         if: steps.check_notify.outputs.notify == 'true'
         id: pr_details
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
-            const pr = context.payload.pull_request;
+            // PR 정보 가져오기 (이벤트 타입에 따라 다름)
+            let pr = context.payload.pull_request;
+
+            // pull_request_review 이벤트의 경우
+            if (!pr && context.payload.review?.pull_request) {
+              pr = context.payload.review.pull_request;
+            }
+
+            // 또는 API로 직접 조회
+            if (!pr) {
+              const prNumber = context.payload.review?.pull_request?.number || context.issue.number;
+              const prData = await github.rest.pulls.get({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: prNumber
+              });
+              pr = prData.data;
+            }
 
             // Changed files 조회
             const files = await github.rest.pulls.listFiles({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              pull_request_number: pr.number
+              pull_number: pr.number
             });
 
             // 리뷰어 정보
@@ -169,7 +228,22 @@ jobs:
             const deletions = pr.deletions || 0;
             const changedFiles = files.data.length;
 
-            // 파일 타입별 분류
+            // 파일 타입별 분류 (이모지 포함)
+            const fileTypeEmojis = {
+              'kt': '🟣',
+              'java': '☕',
+              'yml': '📝',
+              'yaml': '📝',
+              'md': '📄',
+              'json': '📋',
+              'xml': '📰',
+              'gradle': '🐘',
+              'kts': '🟣',
+              'sql': '🗄️',
+              'sh': '🐚',
+              'properties': '⚙️'
+            };
+
             const fileTypes = {};
             files.data.forEach(file => {
               const ext = file.filename.split('.').pop();
@@ -179,8 +253,19 @@ jobs:
             const fileTypesSummary = Object.entries(fileTypes)
               .sort((a, b) => b[1] - a[1])
               .slice(0, 3)
-              .map(([ext, count]) => `${ext}(${count})`)
+              .map(([ext, count]) => {
+                const emoji = fileTypeEmojis[ext] || '📎';
+                return `${emoji} ${ext}(${count})`;
+              })
               .join(', ');
+
+            // PR 기본 정보도 output으로 설정 (Slack 메시지용)
+            core.setOutput('pr_number', pr.number);
+            core.setOutput('pr_title', pr.title);
+            core.setOutput('pr_url', pr.html_url);
+            core.setOutput('pr_user', pr.user.login);
+            core.setOutput('pr_head_ref', pr.head.ref);
+            core.setOutput('pr_base_ref', pr.base.ref);
 
             core.setOutput('reviewers', allReviewers.join(', '));
             core.setOutput('labels', labels.join(', '));
@@ -189,15 +274,15 @@ jobs:
             core.setOutput('changed_files', changedFiles);
             core.setOutput('file_types', fileTypesSummary || 'N/A');
 
-      # 5. Slack 알림 전송
+      # 6. Slack 알림 전송
       - name: Send Slack notification
         if: steps.check_notify.outputs.notify == 'true'
-        uses: slackapi/slack-github-action@v1.25.0
+        uses: slackapi/slack-github-action@v2.1.1
         with:
           channel-id: ${{ secrets.SLACK_GIT_NOTIFY_CHANNEL_ID }}
           payload: |
             {
-              "text": "👀 새로운 PR 리뷰 요청: ${{ github.event.pull_request.title }}",
+              "text": "👀 새로운 PR 리뷰 요청: ${{ steps.pr_details.outputs.pr_title }}",
               "blocks": [
                 {
                   "type": "header",
@@ -212,11 +297,11 @@ jobs:
                   "fields": [
                     {
                       "type": "mrkdwn",
-                      "text": "*제목*\n<${{ github.event.pull_request.html_url }}|${{ github.event.pull_request.title }}>"
+                      "text": "*제목*\n<${{ steps.pr_details.outputs.pr_url }}|${{ steps.pr_details.outputs.pr_title }}>"
                     },
                     {
                       "type": "mrkdwn",
-                      "text": "*작성자*\n<https://github.com/${{ github.event.pull_request.user.login }}|@${{ github.event.pull_request.user.login }}>"
+                      "text": "*작성자*\n<https://github.com/${{ steps.pr_details.outputs.pr_user }}|@${{ steps.pr_details.outputs.pr_user }}>"
                     }
                   ]
                 },
@@ -225,7 +310,7 @@ jobs:
                   "fields": [
                     {
                       "type": "mrkdwn",
-                      "text": "*브랜치*\n`${{ github.event.pull_request.head.ref }}` → `${{ github.event.pull_request.base.ref }}`"
+                      "text": "*브랜치*\n`${{ steps.pr_details.outputs.pr_head_ref }}` → `${{ steps.pr_details.outputs.pr_base_ref }}`"
                     },
                     {
                       "type": "mrkdwn",
@@ -285,7 +370,7 @@ jobs:
                         "text": "PR 보기",
                         "emoji": true
                       },
-                      "url": "${{ github.event.pull_request.html_url }}",
+                      "url": "${{ steps.pr_details.outputs.pr_url }}",
                       "style": "primary"
                     },
                     {
@@ -295,7 +380,7 @@ jobs:
                         "text": "Files Changed",
                         "emoji": true
                       },
-                      "url": "${{ github.event.pull_request.html_url }}/files"
+                      "url": "${{ steps.pr_details.outputs.pr_url }}/files"
                     },
                     {
                       "type": "button",
@@ -313,7 +398,7 @@ jobs:
                   "elements": [
                     {
                       "type": "mrkdwn",
-                      "text": "<!here> 리뷰 부탁드립니다! 🙏"
+                      "text": "${{ steps.mention.outputs.mention }}"
                     }
                   ]
                 }
