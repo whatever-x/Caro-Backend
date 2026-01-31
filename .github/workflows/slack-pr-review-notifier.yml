@@ -194,7 +194,7 @@ jobs:
         if: steps.check_notify.outputs.notify == 'true'
         uses: slackapi/slack-github-action@v1.25.0
         with:
-          channel-id: ${{ secrets.SLACK_REVIEW_CHANNEL_ID }}
+          channel-id: ${{ secrets.SLACK_GIT_NOTIFY_CHANNEL_ID }}
           payload: |
             {
               "text": "👀 새로운 PR 리뷰 요청: ${{ github.event.pull_request.title }}",
