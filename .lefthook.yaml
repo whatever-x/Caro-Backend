@@ -1,0 +1,12 @@
+---
+pre-commit:
+  parallel: true
+  commands:
+    spotless:
+      glob: "*.{kt,kts,yml,yaml}"
+      run: "./gradlew spotlessApply"
+      stage_fixed: true
+pre-push:
+  commands:
+    test:
+      run: "./gradlew test"
