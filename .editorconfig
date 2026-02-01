@@ -1,0 +1,36 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.{kt,kts}]
+indent_size = 4
+indent_style = space
+max_line_length = 120
+
+# ktlint 설정 (IntelliJ "not supported" 경고는 정상입니다.)
+ktlint_code_style = intellij_idea
+ktlint_standard_no-wildcard-import = enabled
+ktlint_standard_trailing-comma-on-call-site = enabled
+ktlint_standard_trailing-comma-on-declaration-site = enabled
+ktlint_standard_annotation = disabled
+ij_kotlin_imports_layout = *, java.**, javax.**, kotlin.**, ^
+
+# Controller - 긴 어노테이션 체인 허용
+[**/controller/**/*.kt]
+max_line_length = 140
+
+# 테스트 코드 가독성을 위한 함수명 백틱 사용과 길이 제한 해제
+[**/test/**/*.{kt,kts}]
+ktlint_standard_function-naming = disabled
+ktlint_standard_max-line-length = disabled
+max_line_length = off
+
+[*.gradle.kts]
+indent_size = 4
+
+[*.{yml,yaml}]
+indent_size = 2
