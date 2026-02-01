@@ -1,0 +1,133 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [ develop, main ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  format-check:
+    name: Code Format
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup JDK
+        uses: actions/setup-java@v5
+        with:
+          java-version: 24
+          distribution: temurin
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v5
+
+      - name: Check code format
+        run: ./gradlew spotlessCheck
+
+      - name: Show formatting guide on failure
+        if: failure()
+        run: |
+          echo ""
+          echo "========================================"
+          echo "코드 포맷팅이 필요합니다!"
+          echo "========================================"
+          echo ""
+          echo "로컬에서 아래 명령어를 실행하세요:"
+          echo ""
+          echo "  ./gradlew spotlessApply"
+          echo ""
+          echo "========================================"
+
+  test:
+    name: Tests  # TODO Kover 추가
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup JDK
+        uses: actions/setup-java@v5
+        with:
+          java-version: 24
+          distribution: temurin
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v5
+
+      - name: Run tests
+        run: ./gradlew test
+
+      - name: Upload test reports
+        if: failure()
+        uses: actions/upload-artifact@v6
+        with:
+          name: test-reports
+          path: build/reports/tests/
+          retention-days: 7
+
+  notify-main-failure:
+    name: Notify Main Failure
+    needs: [ format-check, test ]
+    if: failure() && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Get failed jobs
+        id: failed-jobs
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const jobs = await github.rest.actions.listJobsForWorkflowRun({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: context.runId
+            });
+            const failures = jobs.data.jobs
+              .filter(j => j.conclusion === 'failure')
+              .map(j => j.name === 'Code Format' ? '- 포맷팅 필요' : `- ${j.name} 실패`)
+              .join('\n');
+            core.setOutput('failures', failures || '- Unknown failure');
+
+      - name: Send Slack notification
+        uses: slackapi/slack-github-action@v2.1.1
+        with:
+          method: chat.postMessage
+          token: ${{ secrets.SLACK_BOT_TOKEN }}
+          payload: |
+            channel: ${{ secrets.SLACK_GIT_NOTIFY_CHANNEL_ID }}
+            text: "main 브랜치 CI 실패"
+            blocks:
+              - type: header
+                text:
+                  type: plain_text
+                  text: "Production 배포 차단"
+              - type: section
+                text:
+                  type: mrkdwn
+                  text: "<!channel> *main* 브랜치 CI 실패"
+              - type: section
+                fields:
+                  - type: mrkdwn
+                    text: "*Author*\n@${{ github.actor }}"
+                  - type: mrkdwn
+                    text: "*실패 원인*\n${{ steps.failed-jobs.outputs.failures }}"
+              - type: actions
+                elements:
+                  - type: button
+                    text:
+                      type: plain_text
+                      text: "Workflow 확인"
+                    url: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
