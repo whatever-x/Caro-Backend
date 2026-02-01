@@ -12,6 +12,9 @@ on:
           - test-failure
           - both-failure
           - success
+  pull_request:
+    paths:
+      - '.github/workflows/test-slack-notification.yml'
 
 jobs:
   test-notify:
@@ -22,15 +25,23 @@ jobs:
       - name: Simulate failed jobs
         id: failed-jobs
         run: |
-          if [ "${{ inputs.test_scenario }}" == "format-failure" ]; then
+          SCENARIO="${{ inputs.test_scenario }}"
+          # PR 이벤트인 경우 기본값 설정
+          if [ -z "$SCENARIO" ]; then
+            SCENARIO="both-failure"
+          fi
+
+          if [ "$SCENARIO" == "format-failure" ]; then
             echo "failures=- 포맷팅 필요" >> $GITHUB_OUTPUT
-          elif [ "${{ inputs.test_scenario }}" == "test-failure" ]; then
+          elif [ "$SCENARIO" == "test-failure" ]; then
             echo "failures=- Tests 실패" >> $GITHUB_OUTPUT
-          elif [ "${{ inputs.test_scenario }}" == "both-failure" ]; then
+          elif [ "$SCENARIO" == "both-failure" ]; then
             echo "failures=- 포맷팅 필요\n- Tests 실패" >> $GITHUB_OUTPUT
           else
             echo "failures=- 모든 체크 통과" >> $GITHUB_OUTPUT
           fi
+
+          echo "scenario=$SCENARIO" >> $GITHUB_OUTPUT
 
       - name: Send Slack notification
         uses: slackapi/slack-github-action@v2.1.1
@@ -56,7 +67,7 @@ jobs:
                   - type: mrkdwn
                     text: "*실패 원인*\n${{ steps.failed-jobs.outputs.failures }}"
                   - type: mrkdwn
-                    text: "*시나리오*\n${{ inputs.test_scenario }}"
+                    text: "*시나리오*\n${{ steps.failed-jobs.outputs.scenario }}"
                   - type: mrkdwn
                     text: "*실행 시각*\n${{ github.event.repository.updated_at }}"
               - type: actions
