@@ -86,15 +86,7 @@ jobs:
           min-coverage-changed-files: 85
           coverage-counter-type: LINE
 
-      - name: Upload test reports
-        if: failure()
-        uses: actions/upload-artifact@v6
-        with:
-          name: test-reports
-          path: build/reports/tests/
-          retention-days: 7
-
-      - name: Upload test reports
+      - name: Upload coverage reports
         if: always()
         uses: actions/upload-artifact@v6
         with:
@@ -102,6 +94,14 @@ jobs:
           path: |
             build/reports/kover/html/
             build/reports/kover/report.xml
+          retention-days: 30
+
+      - name: Upload test failure reports
+        if: failure()
+        uses: actions/upload-artifact@v6
+        with:
+          name: test-reports
+          path: build/reports/tests/
           retention-days: 7
 
   notify-main-failure:
