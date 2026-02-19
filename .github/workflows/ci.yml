@@ -12,6 +12,7 @@ concurrency:
 permissions:
   contents: read
   actions: read
+  pull-requests: write
 
 jobs:
   format-check:
@@ -50,7 +51,7 @@ jobs:
           echo "========================================"
 
   test:
-    name: Tests  # TODO Kover 추가
+    name: Tests with Coverage
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -67,10 +68,35 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v5
 
-      - name: Run tests
-        run: ./gradlew test
+      - name: Run tests with coverage
+        run: ./gradlew test koverXmlReport koverVerify
 
-      - name: Upload test reports
+      - name: Print coverage summary
+        if: success()
+        run: ./gradlew koverLog
+
+      - name: Add coverage report to PR
+        if: github.event_name == 'pull_request'
+        uses: mi-kas/kover-report@v1
+        with:
+          path: build/reports/kover/report.xml
+          title: Code Coverage Report
+          update-comment: true
+          min-coverage-overall: 70
+          min-coverage-changed-files: 85
+          coverage-counter-type: LINE
+
+      - name: Upload coverage reports
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: coverage-reports
+          path: |
+            build/reports/kover/html/
+            build/reports/kover/report.xml
+          retention-days: 30
+
+      - name: Upload test failure reports
         if: failure()
         uses: actions/upload-artifact@v6
         with:

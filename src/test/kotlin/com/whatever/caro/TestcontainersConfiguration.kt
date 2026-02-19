@@ -12,9 +12,14 @@ class TestcontainersConfiguration {
 
     @Bean
     @ServiceConnection
-    fun mysqlContainer(): MySQLContainer = MySQLContainer(DockerImageName.parse("mysql:latest"))
+    fun mysqlContainer(): MySQLContainer = MySQLContainer(DockerImageName.parse(MYSQL_VERSION))
 
     @Bean
     @ServiceConnection(name = "redis")
-    fun redisContainer(): GenericContainer<*> = GenericContainer(DockerImageName.parse("redis:latest")).withExposedPorts(6379)
+    fun redisContainer(): GenericContainer<*> = GenericContainer(DockerImageName.parse(REDIS_VERSION)).withExposedPorts(6379)
+
+    companion object {
+        private const val MYSQL_VERSION = "mysql:8.4"
+        private const val REDIS_VERSION = "redis:8.4"
+    }
 }

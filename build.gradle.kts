@@ -1,3 +1,7 @@
+import kotlinx.kover.gradle.plugin.dsl.AggregationType
+import kotlinx.kover.gradle.plugin.dsl.CoverageUnit
+import kotlinx.kover.gradle.plugin.dsl.GroupingEntityType
+
 plugins {
     kotlin("jvm") version "2.2.21"
     kotlin("plugin.spring") version "2.2.21"
@@ -6,6 +10,7 @@ plugins {
     kotlin("plugin.jpa") version "2.2.21"
 
     id("com.diffplug.spotless") version "8.2.1"
+    id("org.jetbrains.kotlinx.kover") version "0.9.5"
 }
 
 group = "com.whatever"
@@ -74,10 +79,6 @@ kotlin {
     }
 }
 
-tasks.withType<Test> {
-    useJUnitPlatform()
-}
-
 spotless {
     kotlin {
         target("**/*.kt")
@@ -110,7 +111,73 @@ spotless {
     // TODO yaml은 별도로 린팅
 }
 
+kover {
+    reports {
+        filters {
+            excludes {
+                classes(
+                    "com.whatever.caro.CaroApplication",
+                    "*ApplicationKt",
+                )
+
+                annotatedBy(
+                    "org.springframework.context.annotation.Configuration",
+                    "org.springframework.boot.context.properties.ConfigurationProperties",
+                )
+
+                classes(
+                    "*ModuleMetadata",
+                )
+
+                classes(
+                    "*TestcontainersConfiguration*",
+                    "*TestCaroApplication*",
+                )
+
+                annotatedBy("jakarta.persistence.Entity")
+                classes(
+                    "*Dto",
+                    "*Request",
+                    "*Response",
+                    "*Event",
+                    "*Repository",
+                )
+            }
+        }
+
+        total {
+            html {
+                onCheck = true
+            }
+            log {
+                onCheck = true
+                header = "=== Coverage Summary ==="
+                format = "COVERAGE: <entity> line coverage: <value>%"
+                groupBy = GroupingEntityType.APPLICATION
+                coverageUnits = CoverageUnit.LINE
+                aggregationForGroup = AggregationType.COVERED_PERCENTAGE
+            }
+        }
+
+        verify {
+            rule("Overall Coverage") {
+                minBound(70)
+            }
+            rule("Branch Coverage") {
+                bound {
+                    coverageUnits = CoverageUnit.BRANCH
+                    minValue = 70
+                }
+            }
+        }
+    }
+}
+
 // check 태스크에 연결
 tasks.named("check") {
     dependsOn("spotlessCheck")
+}
+
+tasks.withType<Test> {
+    useJUnitPlatform()
 }
