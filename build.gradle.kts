@@ -41,6 +41,8 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.modulith:spring-modulith-starter-jpa")
     implementation("io.github.oshai:kotlin-logging-jvm:7.0.14")
+    implementation("org.springframework.boot:spring-boot-starter-flyway")
+    implementation("org.flywaydb:flyway-mysql")
 
     runtimeOnly("com.mysql:mysql-connector-j")
     runtimeOnly("org.springframework.modulith:spring-modulith-actuator")

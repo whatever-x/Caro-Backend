@@ -11,8 +11,20 @@ spring:
     timeout-per-shutdown-phase: 30s
   jpa:
     open-in-view: false  # OSIV off
+    hibernate:
+      ddl-auto: none
+    database-platform: org.hibernate.dialect.MySQLDialect
   jackson:
     time-zone: UTC
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    validate-on-migrate: true
+    out-of-order: false
+    clean-disabled: true
+  modulith:
+    runtime:
+      flyway-enabled: true
 
 server:
   shutdown: graceful
