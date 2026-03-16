@@ -3,14 +3,14 @@ import kotlinx.kover.gradle.plugin.dsl.CoverageUnit
 import kotlinx.kover.gradle.plugin.dsl.GroupingEntityType
 
 plugins {
-    kotlin("jvm") version "2.2.21"
+    kotlin("jvm") version "2.3.10"
     kotlin("plugin.spring") version "2.2.21"
-    id("org.springframework.boot") version "4.0.1"
+    id("org.springframework.boot") version "4.0.3"
     id("io.spring.dependency-management") version "1.1.7"
     kotlin("plugin.jpa") version "2.2.21"
 
-    id("com.diffplug.spotless") version "8.2.1"
-    id("org.jetbrains.kotlinx.kover") version "0.9.5"
+    id("com.diffplug.spotless") version "8.3.0"
+    id("org.jetbrains.kotlinx.kover") version "0.9.7"
 }
 
 group = "com.whatever"
@@ -27,7 +27,7 @@ repositories {
     mavenCentral()
 }
 
-extra["springModulithVersion"] = "2.0.1"
+extra["springModulithVersion"] = "2.0.3"
 
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-actuator")
@@ -60,11 +60,11 @@ dependencies {
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 
     // Kotest
-    testImplementation(platform("io.kotest:kotest-bom:6.1.1"))
+    testImplementation(platform("io.kotest:kotest-bom:6.1.5"))
     testImplementation("io.kotest:kotest-runner-junit5")
     testImplementation("io.kotest:kotest-assertions-core")
     testImplementation("io.kotest:kotest-extensions-spring")
-    testImplementation("io.mockk:mockk:1.13.10")
+    testImplementation("io.mockk:mockk:1.14.9")
 }
 
 dependencyManagement {
