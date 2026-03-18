@@ -1,5 +1,8 @@
 package com.whatever.caro.card.internal
 
+import com.whatever.caro.card.internal.deck.Deck
+import com.whatever.caro.card.internal.note.Note
+import com.whatever.caro.card.internal.notetype.CardTemplate
 import com.whatever.caro.common.entity.SoftDeletableEntity
 import jakarta.persistence.Column
 import jakarta.persistence.Entity

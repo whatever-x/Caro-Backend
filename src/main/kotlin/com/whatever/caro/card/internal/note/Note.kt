@@ -1,4 +1,4 @@
-package com.whatever.caro.card.internal
+package com.whatever.caro.card.internal.note
 
 import com.whatever.caro.common.entity.SoftDeletableEntity
 import jakarta.persistence.Column

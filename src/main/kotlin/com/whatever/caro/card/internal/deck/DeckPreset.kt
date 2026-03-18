@@ -1,4 +1,4 @@
-package com.whatever.caro.card.internal
+package com.whatever.caro.card.internal.deck
 
 import com.whatever.caro.common.entity.BaseTimeEntity
 import jakarta.persistence.Column

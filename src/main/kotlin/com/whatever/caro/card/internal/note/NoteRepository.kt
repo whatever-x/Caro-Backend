@@ -1,4 +1,4 @@
-package com.whatever.caro.card.internal
+package com.whatever.caro.card.internal.note
 
 import org.springframework.data.jpa.repository.JpaRepository
 
