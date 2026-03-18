@@ -35,7 +35,7 @@ class StudySession(
     val studyType: StudyType,
 
     @Column(name = "started_at", nullable = false, updatable = false)
-    val startedAt: Instant = Instant.now(),
+    val startedAt: Instant,
 
     @Column(name = "ended_at")
     var endedAt: Instant? = null,
