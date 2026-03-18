@@ -1,4 +1,4 @@
-package com.whatever.caro.study.internal
+package com.whatever.caro.study.internal.cardlearningstate
 
 import com.whatever.caro.common.entity.BaseTimeEntity
 import com.whatever.caro.study.CardLearningStatus

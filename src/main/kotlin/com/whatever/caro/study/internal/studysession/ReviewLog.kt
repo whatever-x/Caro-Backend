@@ -1,4 +1,4 @@
-package com.whatever.caro.study.internal
+package com.whatever.caro.study.internal.studysession
 
 import com.whatever.caro.study.CardLearningStatus
 import com.whatever.caro.study.Rating
