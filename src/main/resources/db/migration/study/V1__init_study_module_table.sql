@@ -106,7 +106,7 @@ CREATE TABLE IF NOT EXISTS `review_log` (
 
     CONSTRAINT fk_log_session FOREIGN KEY (study_session_id) REFERENCES `study_session`(id),
 
-    CONSTRAINT chk_log_time CHECK (time_ms >= 0 AND time_ms <= 600000)
+    CONSTRAINT chk_log_time CHECK (time_ms >= 0 AND time_ms <= 600000),
     CONSTRAINT chk_log_previous_interval CHECK (previous_interval_days >= 0),
     CONSTRAINT chk_log_previous_ease CHECK (previous_ease_factor BETWEEN 1.30 AND 5.00),
     CONSTRAINT chk_log_interval CHECK (interval_days >= 0),
