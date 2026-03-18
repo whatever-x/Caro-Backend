@@ -5,7 +5,7 @@ CREATE TABLE `user`(
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
 
     nickname        VARCHAR(50)  NOT NULL,
-    primary_email   VARCHAR(255) NOT NULL,
+    primary_email   VARCHAR(255) NULL,
     status          VARCHAR(20)  NOT NULL DEFAULT 'SUSPENDED',
     is_terms_agreed BOOLEAN      NOT NULL DEFAULT FALSE COMMENT '서비스 약관 동의 여부',
 

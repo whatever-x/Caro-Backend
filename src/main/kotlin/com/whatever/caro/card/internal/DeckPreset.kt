@@ -34,7 +34,7 @@ class DeckPreset(
     @Column(name = "new_initial_ease_factor", nullable = false, precision = 3, scale = 2)
     var newInitialEaseFactor: BigDecimal = BigDecimal("2.50"),
 
-    @Column("review_per_day", nullable = false)
+    @Column(name = "review_per_day", nullable = false)
     var reviewPerDay: Int = 40,
 
     @Column(name = "review_max_interval", nullable = false)
