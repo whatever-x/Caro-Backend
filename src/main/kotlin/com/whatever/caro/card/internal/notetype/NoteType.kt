@@ -11,13 +11,13 @@ import jakarta.persistence.Table
 @Entity
 @Table(name = "note_type")
 class NoteType(
-    @Id
-    @GeneratedValue(GenerationType.IDENTITY)
-    val id: Long = 0L,
-
     @Column(nullable = false)
     var name: String,
 
     @Column
     var description: String? = null,
-) : BaseTimeEntity()
+) : BaseTimeEntity() {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    val id: Long = 0L
+}

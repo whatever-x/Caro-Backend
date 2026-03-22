@@ -13,14 +13,14 @@ import org.hibernate.type.SqlTypes
 @Entity
 @Table(name = "note")
 class Note(
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Long = 0L,
-
     @Column(name = "user_id", nullable = false)
     val userId: Long,
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(nullable = false, columnDefinition = "JSON")
     var fields: Map<String, String>,
-) : SoftDeletableEntity()
+) : SoftDeletableEntity() {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    val id: Long = 0L
+}

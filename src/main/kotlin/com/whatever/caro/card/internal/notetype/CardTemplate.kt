@@ -16,10 +16,6 @@ import org.hibernate.type.SqlTypes
 @Entity
 @Table(name = "card_template")
 class CardTemplate(
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Long = 0L,
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "note_type_id", nullable = false)
     val noteType: NoteType,
@@ -34,4 +30,8 @@ class CardTemplate(
 
     @Column(nullable = false)
     var position: Int,
-) : BaseTimeEntity()
+) : BaseTimeEntity() {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    val id: Long = 0L
+}

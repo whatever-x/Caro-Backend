@@ -17,10 +17,6 @@ import jakarta.persistence.Table
 @Entity
 @Table(name = "card")
 class Card(
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Long = 0L,
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "card_template_id", nullable = false)
     val cardTemplate: CardTemplate,
@@ -38,4 +34,8 @@ class Card(
 
     @Column(nullable = false)
     var position: Int = 0, // TODO position 방식에 대해서는 추후 논의
-) : SoftDeletableEntity()
+) : SoftDeletableEntity() {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    val id: Long = 0L
+}

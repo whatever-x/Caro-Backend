@@ -14,10 +14,6 @@ import jakarta.persistence.Table
 @Entity
 @Table(name = "user")
 class User(
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Long = 0L,
-
     @Column(nullable = false)
     var nickname: String,
 
@@ -30,4 +26,8 @@ class User(
 
     @Column(name = "is_terms_agreed", nullable = false)
     var isTermsAgreed: Boolean = false,
-) : SoftDeletableEntity()
+) : SoftDeletableEntity() {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    val id: Long = 0L
+}

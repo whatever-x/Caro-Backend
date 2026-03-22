@@ -24,10 +24,6 @@ import java.time.Instant
 @Table(name = "review_log")
 @EntityListeners(AuditingEntityListener::class)
 class ReviewLog(
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Long = 0L,
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "study_session_id", nullable = false)
     val studySession: StudySession,
@@ -65,6 +61,10 @@ class ReviewLog(
     @Column(name = "ease_factor", nullable = false, precision = 3, scale = 2)
     val easeFactor: BigDecimal,
 ) {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    val id: Long = 0L
+
     // Append only용도이므로 별도로 @CreatedDate만 사용
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)

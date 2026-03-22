@@ -14,10 +14,6 @@ import jakarta.persistence.Table
 @Entity
 @Table(name = "deck")
 class Deck(
-    @Id
-    @GeneratedValue(GenerationType.IDENTITY)
-    val id: Long = 0L,
-
     @Column(name = "user_id", nullable = false)
     val userId: Long,
 
@@ -33,4 +29,8 @@ class Deck(
 
     @Column(name = "card_count", nullable = false)
     var cardCount: Int = 0,
-) : SoftDeletableEntity()
+) : SoftDeletableEntity() {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    val id: Long = 0L
+}

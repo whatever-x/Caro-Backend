@@ -16,10 +16,6 @@ import java.time.Instant
 @Entity
 @Table(name = "study_session")
 class StudySession(
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Long = 0L,
-
     @Column(name = "user_id", nullable = false)
     val userId: Long,
 
@@ -45,4 +41,8 @@ class StudySession(
 
     @Column(name = "review_cards_studied", nullable = false)
     var reviewCardsStudied: Int = 0,
-) : BaseTimeEntity()
+) : BaseTimeEntity() {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    val id: Long = 0L
+}

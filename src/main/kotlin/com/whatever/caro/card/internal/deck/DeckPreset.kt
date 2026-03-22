@@ -12,10 +12,6 @@ import java.math.BigDecimal
 @Entity
 @Table(name = "deck_preset")
 class DeckPreset(
-    @Id
-    @GeneratedValue(GenerationType.IDENTITY)
-    val id: Long,
-
     @Column(name = "user_id", nullable = true)
     val userId: Long? = null,
 
@@ -48,4 +44,8 @@ class DeckPreset(
 
     @Column(name = "leech_threshold", nullable = false)
     var leechThreshold: Int = 8,
-) : BaseTimeEntity()
+) : BaseTimeEntity() {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    val id: Long = 0L
+}

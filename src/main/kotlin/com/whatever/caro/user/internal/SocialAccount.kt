@@ -17,10 +17,6 @@ import jakarta.persistence.Table
 @Entity
 @Table(name = "social_account")
 class SocialAccount(
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Long = 0L,
-
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false, unique = true)
     val user: User,
@@ -34,4 +30,8 @@ class SocialAccount(
 
     @Column
     var email: String? = null,
-) : BaseTimeEntity()
+) : BaseTimeEntity() {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    val id: Long = 0L
+}
