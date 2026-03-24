@@ -4,7 +4,7 @@
 -- 모든 덱들이 기본적으로 참고하는 전역 프리셋을 생성해야함.
 -- 프리셋 값 변경 시 해당 프리셋을 사용하는 모든 덱에 일괄 적용.
 -- ============================================================
-CREATE TABLE IF NOT EXISTS `deck_preset`(
+CREATE TABLE IF NOT EXISTS `deck_presets`(
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     user_id BIGINT NULL,
 
@@ -47,7 +47,7 @@ CREATE TABLE IF NOT EXISTS `deck_preset`(
 -- DECK
 -- MVP 단계에서는 모든 덱의 프리셋은 전역 프리셋을 참조.
 -- ============================================================
-CREATE TABLE IF NOT EXISTS `deck`(
+CREATE TABLE IF NOT EXISTS `decks`(
     id             BIGINT AUTO_INCREMENT PRIMARY KEY,
     user_id        BIGINT NOT NULL,
     deck_preset_id BIGINT NULL,
@@ -60,7 +60,7 @@ CREATE TABLE IF NOT EXISTS `deck`(
     updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
     deleted_at DATETIME(6) NULL,
 
-    CONSTRAINT fk_deck_deck_preset FOREIGN KEY (deck_preset_id) REFERENCES `deck_preset`(id),
+    CONSTRAINT fk_deck_deck_preset FOREIGN KEY (deck_preset_id) REFERENCES `deck_presets`(id),
 
     CONSTRAINT chk_deck_card_count CHECK (card_count >= 0)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
@@ -70,7 +70,7 @@ CREATE TABLE IF NOT EXISTS `deck`(
 -- NOTE_TYPE
 -- 시스템 전역 제공. user_id 없음 (사용자 커스텀 타입 미지원).
 -- ============================================================
-CREATE TABLE IF NOT EXISTS `note_type` (
+CREATE TABLE IF NOT EXISTS `note_types` (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
 
     name        VARCHAR(100) NOT NULL,
@@ -86,7 +86,7 @@ CREATE TABLE IF NOT EXISTS `note_type` (
 -- NOTE_TYPE에 소속되며, 카드 렌더링(앞/뒷면)을 정의한다.
 -- required_fields: 이 템플릿이 참조하는 필드 목록. 카드 생성 시 런타임 검증에 사용.
 -- ============================================================
-CREATE TABLE IF NOT EXISTS `card_template` (
+CREATE TABLE IF NOT EXISTS `card_templates` (
     id           BIGINT AUTO_INCREMENT PRIMARY KEY,
     note_type_id BIGINT NOT NULL,
 
@@ -97,7 +97,7 @@ CREATE TABLE IF NOT EXISTS `card_template` (
     created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
 
-    CONSTRAINT fk_card_template_note_type FOREIGN KEY (note_type_id) REFERENCES `note_type`(id)
+    CONSTRAINT fk_card_template_note_type FOREIGN KEY (note_type_id) REFERENCES `note_types`(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   COMMENT='카드 렌더링 템플릿. NOTE_TYPE에 소속';
 
@@ -108,7 +108,7 @@ CREATE TABLE IF NOT EXISTS `card_template` (
 --   동일 필드 구조(front, back)를 사용하는 서로 다른 NOTE_TYPE의 템플릿을
 --   자유롭게 교체할 수 있도록. 필드 호환성은 카드 생성 시 런타임 검증.
 -- ============================================================
-CREATE TABLE IF NOT EXISTS `note` (
+CREATE TABLE IF NOT EXISTS `notes` (
     id      BIGINT AUTO_INCREMENT PRIMARY KEY,
     user_id BIGINT NOT NULL,
 
@@ -134,7 +134,7 @@ CREATE TABLE IF NOT EXISTS `note` (
 --   FAIR/EASY는 EF 먼저 변동 후 interval 계산.
 --   AGAIN은 lapse_multiplier로 별도 계산, EF 미관여.
 -- ============================================================
-CREATE TABLE IF NOT EXISTS `card` (
+CREATE TABLE IF NOT EXISTS `cards` (
     id               BIGINT AUTO_INCREMENT PRIMARY KEY,
     card_template_id BIGINT NOT NULL,
     note_id          BIGINT NOT NULL,
@@ -147,8 +147,8 @@ CREATE TABLE IF NOT EXISTS `card` (
     updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
     deleted_at DATETIME(6) NULL,
 
-    CONSTRAINT fk_card_card_template FOREIGN KEY (card_template_id) REFERENCES `card_template`(id),
-    CONSTRAINT fk_card_note FOREIGN KEY (note_id) REFERENCES `note`(id),
-    CONSTRAINT fk_card_deck FOREIGN KEY (deck_id) REFERENCES `deck`(id)
+    CONSTRAINT fk_card_card_template FOREIGN KEY (card_template_id) REFERENCES `card_templates`(id),
+    CONSTRAINT fk_card_note FOREIGN KEY (note_id) REFERENCES `notes`(id),
+    CONSTRAINT fk_card_deck FOREIGN KEY (deck_id) REFERENCES `decks`(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   COMMENT='학습 카드. 콘텐츠 및 소속 정보만 보유';

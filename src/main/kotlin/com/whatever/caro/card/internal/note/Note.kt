@@ -11,7 +11,7 @@ import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.type.SqlTypes
 
 @Entity
-@Table(name = "note")
+@Table(name = "notes")
 class Note(
     @Column(name = "user_id", nullable = false)
     val userId: Long,

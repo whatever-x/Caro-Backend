@@ -15,7 +15,7 @@ import jakarta.persistence.OneToOne
 import jakarta.persistence.Table
 
 @Entity
-@Table(name = "social_account")
+@Table(name = "social_accounts")
 class SocialAccount(
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false, unique = true)

@@ -14,7 +14,7 @@ import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.type.SqlTypes
 
 @Entity
-@Table(name = "card_template")
+@Table(name = "card_templates")
 class CardTemplate(
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "note_type_id", nullable = false)

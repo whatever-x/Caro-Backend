@@ -4,7 +4,7 @@
 -- CARD와 1:1 관계 (uk_cls_card로 보장).
 -- FSRS 전환 시 이 테이블에 fsrs_stability, fsrs_difficulty 추가.
 -- ============================================================
-CREATE TABLE IF NOT EXISTS `card_learning_state` (
+CREATE TABLE IF NOT EXISTS `card_learning_states` (
     id      BIGINT AUTO_INCREMENT PRIMARY KEY,
     card_id BIGINT NOT NULL,
     user_id BIGINT NOT NULL,
@@ -53,7 +53,7 @@ CREATE TABLE IF NOT EXISTS `card_learning_state` (
 --   DAILY     = 오늘 범위 학습. new_per_day, review_per_day 한도 적용.
 --   FULL_DECK = 전체 덱 학습. 한도 미적용.
 -- ============================================================
-CREATE TABLE IF NOT EXISTS `study_session` (
+CREATE TABLE IF NOT EXISTS `study_sessions` (
     id      BIGINT AUTO_INCREMENT PRIMARY KEY,
     user_id BIGINT NOT NULL,
     deck_id BIGINT NOT NULL,
@@ -83,7 +83,7 @@ CREATE TABLE IF NOT EXISTS `study_session` (
 -- FSRS 전환 시 개인화 파라미터 최적화에 전체 히스토리가 필요하므로,
 -- 모든 복습 이벤트를 prev_* / 현재 값 쌍으로 영구 보존한다.
 -- ============================================================
-CREATE TABLE IF NOT EXISTS `review_log` (
+CREATE TABLE IF NOT EXISTS `review_logs` (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     study_session_id BIGINT NOT NULL,
     card_id          BIGINT NOT NULL,
@@ -104,7 +104,7 @@ CREATE TABLE IF NOT EXISTS `review_log` (
 
     created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
 
-    CONSTRAINT fk_log_session FOREIGN KEY (study_session_id) REFERENCES `study_session`(id),
+    CONSTRAINT fk_log_session FOREIGN KEY (study_session_id) REFERENCES `study_sessions`(id),
 
     CONSTRAINT chk_log_time CHECK (time_ms >= 0 AND time_ms <= 600000),
     CONSTRAINT chk_log_previous_interval CHECK (previous_interval_days >= 0),

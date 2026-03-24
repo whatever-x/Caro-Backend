@@ -1,7 +1,7 @@
 -- ============================================================
 -- USER
 -- ===========================================================
-CREATE TABLE `user`(
+CREATE TABLE `users`(
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
 
     nickname        VARCHAR(50)  NOT NULL,
@@ -25,7 +25,7 @@ CREATE TABLE `user`(
 -- SOCIAL_ACCOUNT
 -- USER와 1:1. 멀티 소셜 로그인 확장 시 uk_social_account_user 제거.
 -- ============================================================
-CREATE TABLE `social_account`(
+CREATE TABLE `social_accounts`(
     id      BIGINT AUTO_INCREMENT PRIMARY KEY,
     user_id BIGINT NOT NULL,
 
@@ -39,7 +39,7 @@ CREATE TABLE `social_account`(
     UNIQUE KEY uk_social_account_user (user_id),
     UNIQUE KEY uk_provider_user (provider, provider_user_id),
 
-    CONSTRAINT fk_social_account_user FOREIGN KEY (user_id) REFERENCES `user`(id),
+    CONSTRAINT fk_social_account_user FOREIGN KEY (user_id) REFERENCES `users`(id),
 
     CONSTRAINT chk_provider_type CHECK (provider IN ('GOOGLE', 'APPLE'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci

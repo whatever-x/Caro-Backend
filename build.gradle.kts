@@ -136,7 +136,10 @@ kover {
                     "*TestCaroApplication*",
                 )
 
-                annotatedBy("jakarta.persistence.Entity")
+                annotatedBy(
+                    "jakarta.persistence.Entity",
+                    "jakarta.persistence.MappedSuperclass",
+                )
                 classes(
                     "*Dto",
                     "*Request",

@@ -14,7 +14,7 @@ import java.math.BigDecimal
 import java.time.Instant
 
 @Entity
-@Table(name = "card_learning_state")
+@Table(name = "card_learning_states")
 class CardLearningState(
     @Column(name = "card_id", nullable = false, unique = true)
     val cardId: Long,

@@ -9,7 +9,7 @@ import jakarta.persistence.Id
 import jakarta.persistence.Table
 
 @Entity
-@Table(name = "note_type")
+@Table(name = "note_types")
 class NoteType(
     @Column(nullable = false)
     var name: String,

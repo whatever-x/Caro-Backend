@@ -12,7 +12,7 @@ import jakarta.persistence.ManyToOne
 import jakarta.persistence.Table
 
 @Entity
-@Table(name = "deck")
+@Table(name = "decks")
 class Deck(
     @Column(name = "user_id", nullable = false)
     val userId: Long,

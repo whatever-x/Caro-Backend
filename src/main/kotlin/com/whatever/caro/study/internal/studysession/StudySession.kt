@@ -14,7 +14,7 @@ import jakarta.persistence.Table
 import java.time.Instant
 
 @Entity
-@Table(name = "study_session")
+@Table(name = "study_sessions")
 class StudySession(
     @Column(name = "user_id", nullable = false)
     val userId: Long,

@@ -21,7 +21,7 @@ import java.math.BigDecimal
 import java.time.Instant
 
 @Entity
-@Table(name = "review_log")
+@Table(name = "review_logs")
 @EntityListeners(AuditingEntityListener::class)
 class ReviewLog(
     @ManyToOne(fetch = FetchType.LAZY)

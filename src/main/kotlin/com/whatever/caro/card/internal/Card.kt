@@ -15,7 +15,7 @@ import jakarta.persistence.ManyToOne
 import jakarta.persistence.Table
 
 @Entity
-@Table(name = "card")
+@Table(name = "cards")
 class Card(
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "card_template_id", nullable = false)

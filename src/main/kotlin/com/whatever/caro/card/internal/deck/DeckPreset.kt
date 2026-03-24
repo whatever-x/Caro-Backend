@@ -10,7 +10,7 @@ import jakarta.persistence.Table
 import java.math.BigDecimal
 
 @Entity
-@Table(name = "deck_preset")
+@Table(name = "deck_presets")
 class DeckPreset(
     @Column(name = "user_id", nullable = true)
     val userId: Long? = null,
