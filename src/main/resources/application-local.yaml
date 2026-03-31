@@ -16,5 +16,11 @@ spring:
 
 logging:
   level:
+    com.whatever.caro: debug
     org.flywaydb: debug
     org.springframework.modulith: debug
+
+management:
+  tracing:
+    sampling:
+      probability: 1.0
