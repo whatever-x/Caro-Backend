@@ -101,6 +101,10 @@ spotless {
 
                     // Spring 어노테이션 체인이 길어서 비활성화
                     "ktlint_standard_annotation" to "disabled",
+
+                    "ktlint_function_signature_body_expression_wrapping" to "multiline",
+                    "ktlint_function_signature_rule_force_multiline_when_parameter_count_greater_or_equal_than" to "1",
+                    "ktlint_class_signature_rule_force_multiline_when_parameter_count_greater_or_equal_than" to "1",
                 ),
             )
         toggleOffOn() // spotless:off/on 주석 지원 (특정 코드 제외)
