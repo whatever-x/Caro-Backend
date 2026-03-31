@@ -9,10 +9,34 @@ spring:
       enabled: true
   lifecycle:
     timeout-per-shutdown-phase: 30s
+  datasource:
+    hikari:
+      connection-test-query: "SELECT 1"
   jpa:
     open-in-view: false  # OSIV off
+    properties:
+      hibernate:
+        show_sql: false
+        use_sql_comments: false
+        format_sql: true
+        globally_quoted_identifiers: true
+        order_updates: true
+    hibernate:
+      ddl-auto: none
+    database-platform: org.hibernate.dialect.MySQLDialect
   jackson:
     time-zone: UTC
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    validate-on-migrate: true
+    out-of-order: false
+    clean-disabled: true
+    connect-retries: 3
+    connect-retries-interval: 2s
+  modulith:
+    runtime:
+      flyway-enabled: true
 
 server:
   shutdown: graceful

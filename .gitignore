@@ -212,7 +212,7 @@ gradle-app.setting
 *.hprof
 
 ### Env Patch ###
-.env
+.env*
 
 ### Moltbot Agent Context ###
 # These files are for local AI agent context and should not be committed
