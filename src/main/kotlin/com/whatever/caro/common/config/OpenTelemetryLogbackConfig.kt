@@ -6,7 +6,9 @@ import org.springframework.beans.factory.InitializingBean
 import org.springframework.context.annotation.Configuration
 
 @Configuration
-class OpenTelemetryLogbackConfig(private val openTelemetry: OpenTelemetry) : InitializingBean {
+class OpenTelemetryLogbackConfig(
+    private val openTelemetry: OpenTelemetry,
+) : InitializingBean {
     override fun afterPropertiesSet() {
         OpenTelemetryAppender.install(openTelemetry)
     }

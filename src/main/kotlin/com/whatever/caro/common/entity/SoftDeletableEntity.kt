@@ -10,7 +10,9 @@ abstract class SoftDeletableEntity : BaseTimeEntity() {
     var deletedAt: Instant? = null
         protected set
 
-    fun softDelete(deletedAt: Instant) {
+    fun softDelete(
+        deletedAt: Instant,
+    ) {
         this.deletedAt = deletedAt
     }
 
