@@ -1,4 +1,4 @@
-package com.whatever.caro.user
+package com.whatever.caro.user.exception
 
 import com.whatever.caro.common.response.ErrorCodeSpec
 import org.springframework.http.HttpStatus

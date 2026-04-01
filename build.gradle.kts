@@ -46,6 +46,12 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-flyway")
     implementation("org.flywaydb:flyway-mysql")
 
+    implementation("com.google.api-client:google-api-client:2.7.2")
+    implementation("org.springframework.security:spring-security-oauth2-jose")
+    implementation("io.jsonwebtoken:jjwt-api:0.12.6")
+    runtimeOnly("io.jsonwebtoken:jjwt-impl:0.12.6")
+    runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.12.6")
+
     runtimeOnly("com.mysql:mysql-connector-j")
     runtimeOnly("org.springframework.modulith:spring-modulith-actuator")
     runtimeOnly("org.springframework.modulith:spring-modulith-observability")
