@@ -21,4 +21,8 @@ interface UserApi {
         nickname: String,
         isTermsAgreed: Boolean,
     ): UserInfo
+
+    fun isNicknameAvailable(
+        nickname: String,
+    ): Boolean
 }

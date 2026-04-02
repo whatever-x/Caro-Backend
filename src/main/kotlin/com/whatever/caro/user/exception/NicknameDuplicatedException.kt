@@ -2,6 +2,6 @@ package com.whatever.caro.user.exception
 
 import com.whatever.caro.common.exception.BusinessException
 
-class NotFoundException(
+class NicknameDuplicatedException(
     message: String,
-) : BusinessException(UserErrorCode.NOT_FOUND, message = message)
+) : BusinessException(UserErrorCode.NICKNAME_DUPLICATED, message = message)
