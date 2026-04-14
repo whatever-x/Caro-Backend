@@ -158,8 +158,11 @@ kover {
                     "*Request",
                     "*Response",
                     "*Event",
-                    "*Repository",
+                    "*RepositoryKt",
                 )
+                classes("*Response\$*") // Response 클래스의 내부 클래스 (Companion 등)
+                classes("*ErrorDetail", "*FieldError")
+                classes("*RequestResponseLoggingFilter", "*RequestResponseLoggingFilterKt")
             }
         }
 
