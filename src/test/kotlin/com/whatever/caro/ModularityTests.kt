@@ -1,6 +1,7 @@
 package com.whatever.caro
 
 import io.kotest.core.spec.style.DescribeSpec
+import io.kotest.matchers.shouldBe
 import org.springframework.modulith.core.ApplicationModules
 import org.springframework.modulith.docs.Documenter
 
@@ -23,11 +24,10 @@ class ModularityTests :
                 modules.verify()
             }
 
-            // TODO 모듈 생성 뒤 복구
-//            it("모듈이 올바르게 감지되었는지 확인한다") {
-//                val moduleCount = modules.stream().count()
-//                moduleCount shouldBe 2
-//            }
+            it("모듈이 올바르게 감지되었는지 확인한다") {
+                val moduleCount = modules.stream().count()
+                moduleCount shouldBe 6
+            }
         }
 
         describe("generateDocumentation") {
