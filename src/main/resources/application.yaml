@@ -41,6 +41,18 @@ spring:
     runtime:
       flyway-enabled: true
 
+app:
+  jwt:
+    secret: ${JWT_SECRET}
+    access-token-expires-in: 30m
+    refresh-token-expires-in: 14d
+  oauth2:
+    google:
+      client-id: ${GOOGLE_CLIENT_ID}
+    apple:
+      client-id: ${APPLE_CLIENT_ID}
+      jwks-uri: https://appleid.apple.com/auth/keys
+
 server:
   port: 8080
   shutdown: graceful
