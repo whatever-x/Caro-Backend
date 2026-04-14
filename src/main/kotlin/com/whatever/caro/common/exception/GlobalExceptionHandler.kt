@@ -29,7 +29,7 @@ class GlobalExceptionHandler(
         locale: Locale,
     ): ResponseEntity<ApiResponse<Nothing>> {
         val message = resolveMessage(e.errorCode, e.args, locale)
-        logger.warn { "${e.errorCode}: $message" }
+        logger.warn { "${e.errorCode}: ${e.message}" }
         return ResponseEntity
             .status(e.errorCode.status)
             .body(ApiResponse.fail(e.errorCode, message))
@@ -55,7 +55,7 @@ class GlobalExceptionHandler(
         e: HttpMessageNotReadableException,
         locale: Locale,
     ): ResponseEntity<ApiResponse<Nothing>> {
-        logger.warn { "Unreadable request body" }
+        logger.warn { "Unreadable request body: ${e.message}" }
         return ResponseEntity
             .badRequest()
             .body(
