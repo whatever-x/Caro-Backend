@@ -236,3 +236,7 @@ CLAUDE.local.md
 .codemap/
 .claude/
 .serena/
+
+### OMC Agent State ###
+# AI agent state files - keep local
+.omc/
