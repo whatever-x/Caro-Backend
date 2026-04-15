@@ -1,13 +1,11 @@
-package com.whatever.caro.user
+package com.whatever.caro.user.internal
 
 import com.whatever.caro.TestcontainersConfiguration
+import com.whatever.caro.user.SocialProvider
+import com.whatever.caro.user.UserStatus
 import com.whatever.caro.user.exception.AlreadyCompletedException
 import com.whatever.caro.user.exception.NicknameDuplicatedException
 import com.whatever.caro.user.exception.UserNotFoundException
-import com.whatever.caro.user.internal.SocialAccount
-import com.whatever.caro.user.internal.SocialAccountRepository
-import com.whatever.caro.user.internal.User
-import com.whatever.caro.user.internal.UserRepository
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.DescribeSpec
 import io.kotest.datatest.withData
@@ -24,8 +22,8 @@ import java.util.UUID
 
 @ApplicationModuleTest(extraIncludes = ["common"])
 @Import(TestcontainersConfiguration::class)
-class UserApiTest(
-    private val userApi: UserApi,
+class UserServiceTest(
+    private val userService: UserService,
     private val userRepository: UserRepository,
     private val socialAccountRepository: SocialAccountRepository,
 ) : DescribeSpec({
@@ -61,7 +59,7 @@ class UserApiTest(
             EmailCase("test@email.com", "이메일이 존재하는 경우"),
             EmailCase(null, "이메일이 없는 경우"),
         ) { (email, _) ->
-            val result = userApi.createSocialUser(
+            val result = userService.createSocialUser(
                 provider = SocialProvider.GOOGLE,
                 providerUserId = "google-${UUID.randomUUID().toString().take(8)}}",
                 email = email,
@@ -79,7 +77,7 @@ class UserApiTest(
             val user = createSuspendedUser()
             user.status shouldBe UserStatus.SUSPENDED
 
-            val result = userApi.completeRegistration(
+            val result = userService.completeRegistration(
                 userId = user.id,
                 nickname = "NewNick",
                 isTermsAgreed = true,
@@ -96,7 +94,7 @@ class UserApiTest(
             userRepository.findByIdOrNull(invalidUserId) shouldBe null
 
             shouldThrow<UserNotFoundException> {
-                userApi.completeRegistration(
+                userService.completeRegistration(
                     userId = invalidUserId,
                     nickname = "Nick",
                     isTermsAgreed = true,
@@ -109,7 +107,7 @@ class UserApiTest(
             user.status shouldBe UserStatus.ACTIVE
 
             shouldThrow<AlreadyCompletedException> {
-                userApi.completeRegistration(
+                userService.completeRegistration(
                     userId = user.id,
                     nickname = "Nick",
                     isTermsAgreed = true,
@@ -123,7 +121,7 @@ class UserApiTest(
 
             val user2 = createSuspendedUser()
             shouldThrow<NicknameDuplicatedException> {
-                userApi.completeRegistration(
+                userService.completeRegistration(
                     userId = user2.id,
                     nickname = existingNickname,
                     isTermsAgreed = true,
@@ -136,7 +134,7 @@ class UserApiTest(
             val invalidNickname = "??invalid-nick@#!"
 
             shouldThrow<NicknameDuplicatedException> {
-                userApi.completeRegistration(
+                userService.completeRegistration(
                     userId = user.id,
                     nickname = invalidNickname,
                     isTermsAgreed = true,
@@ -146,7 +144,7 @@ class UserApiTest(
 
         it("약관 미동의 시 IllegalArgumentException을 던진다") {
             shouldThrow<IllegalArgumentException> {
-                userApi.completeRegistration(
+                userService.completeRegistration(
                     userId = 1L,
                     nickname = "Nick",
                     isTermsAgreed = false,
@@ -159,7 +157,7 @@ class UserApiTest(
         it("존재하는 유저를 반환한다") {
             val user = createSuspendedUser("TestUser")
 
-            val result = userApi.findById(user.id)
+            val result = userService.findById(user.id)
 
             result.shouldNotBeNull()
             result.id shouldBe user.id
@@ -167,7 +165,7 @@ class UserApiTest(
         }
 
         it("존재하지 않으면 null을 반환한다") {
-            userApi.findById(0L).shouldBeNull()
+            userService.findById(0L).shouldBeNull()
         }
     }
 
@@ -182,7 +180,7 @@ class UserApiTest(
                 email = "test@email.com",
             )
 
-            val result = userApi.findBySocialProvider(
+            val result = userService.findBySocialProvider(
                 provider = SocialProvider.GOOGLE,
                 providerUserId = providerUserId,
             )
@@ -192,7 +190,7 @@ class UserApiTest(
         }
 
         it("존재하지 않으면 null을 반환한다") {
-            userApi.findBySocialProvider(
+            userService.findBySocialProvider(
                 provider = SocialProvider.APPLE,
                 providerUserId = "unknown",
             ).shouldBeNull()
@@ -201,14 +199,14 @@ class UserApiTest(
 
     describe("isNicknameAvailable") {
         it("유효하고 미존재하는 닉네임은 true를 반환한다") {
-            userApi.isNicknameAvailable("valid-name").shouldBeTrue()
+            userService.isNicknameAvailable("valid-name").shouldBeTrue()
         }
 
         it("이미 존재하는 닉네임은 false를 반환한다") {
             val existingName = "existing-name"
             createActiveUser(existingName)
 
-            userApi.isNicknameAvailable(existingName).shouldBeFalse()
+            userService.isNicknameAvailable(existingName).shouldBeFalse()
         }
 
         it("soft-delete된 유저의 닉네임은 사용 가능하다") {
@@ -217,40 +215,40 @@ class UserApiTest(
             user.softDelete(Instant.now())
             userRepository.save(user)
 
-            userApi.isNicknameAvailable(softDeletedNickname).shouldBeTrue()
+            userService.isNicknameAvailable(softDeletedNickname).shouldBeTrue()
         }
 
         describe("닉네임 regex 검증") {
             it("빈 문자열은 false를 반환한다") {
-                userApi.isNicknameAvailable("").shouldBeFalse()
+                userService.isNicknameAvailable("").shouldBeFalse()
             }
 
             it("공백(whitespace)만 있는 문자열은 false를 반환한다") {
-                userApi.isNicknameAvailable("   ").shouldBeFalse()
+                userService.isNicknameAvailable("   ").shouldBeFalse()
             }
 
             it("정확히 50자 닉네임은 유효하다") {
-                userApi.isNicknameAvailable("a".repeat(50)).shouldBeTrue()
+                userService.isNicknameAvailable("a".repeat(50)).shouldBeTrue()
             }
 
             it("51자 초과 닉네임은 false를 반환한다") {
-                userApi.isNicknameAvailable("a".repeat(51)).shouldBeFalse()
+                userService.isNicknameAvailable("a".repeat(51)).shouldBeFalse()
             }
 
             it("허용 특수문자(-, _, 공백)는 유효하다") {
-                userApi.isNicknameAvailable("my-nick_name test").shouldBeTrue()
+                userService.isNicknameAvailable("my-nick_name test").shouldBeTrue()
             }
 
             it("비허용 특수문자는 false를 반환한다") {
-                userApi.isNicknameAvailable("nick@name#").shouldBeFalse()
+                userService.isNicknameAvailable("nick@name#").shouldBeFalse()
             }
 
             it("숫자가 포함되면 false를 반환한다") {
-                userApi.isNicknameAvailable("nick123").shouldBeFalse()
+                userService.isNicknameAvailable("nick123").shouldBeFalse()
             }
 
             it("한글 닉네임은 유효하다") {
-                userApi.isNicknameAvailable("멋진닉네임").shouldBeTrue()
+                userService.isNicknameAvailable("멋진닉네임").shouldBeTrue()
             }
         }
     }

@@ -1,10 +1,7 @@
-package com.whatever.caro.user
+package com.whatever.caro.user.internal
 
-import com.whatever.caro.user.internal.SocialAccount
-import com.whatever.caro.user.internal.SocialAccountRepository
-import com.whatever.caro.user.internal.User
-import com.whatever.caro.user.internal.UserRepository
-import com.whatever.caro.user.internal.UserService
+import com.whatever.caro.user.SocialProvider
+import com.whatever.caro.user.UserApi
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.DescribeSpec
 import io.kotest.matchers.shouldBe
@@ -12,7 +9,7 @@ import io.mockk.every
 import io.mockk.mockk
 import org.springframework.dao.DataIntegrityViolationException
 
-class UserApiUnitTest :
+class UserServiceUnitTest :
     DescribeSpec({
 
         val mockUserRepo = mockk<UserRepository>(relaxed = true)
