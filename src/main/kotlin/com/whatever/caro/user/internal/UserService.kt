@@ -112,7 +112,7 @@ private fun User.toInfo(): UserInfo =
     )
 
 object NicknameValidator {
-    val regex = "^[a-zA-Z가-힣\\-_ ]{1,50}$".toRegex()
+    val regex = "^(?=.{2,20}$)[a-zA-Z0-9가-힣](?:[a-zA-Z0-9가-힣]|[-_][a-zA-Z0-9가-힣])*$".toRegex()
     fun isValid(
         nickname: String,
     ): Boolean = nickname.matches(regex) && nickname.isNotBlank()

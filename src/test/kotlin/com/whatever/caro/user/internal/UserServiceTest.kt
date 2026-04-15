@@ -219,36 +219,110 @@ class UserServiceTest(
         }
 
         describe("닉네임 regex 검증") {
-            it("빈 문자열은 false를 반환한다") {
-                userService.isNicknameAvailable("").shouldBeFalse()
+            context("길이 검증") {
+                it("빈 문자열은 false를 반환한다") {
+                    userService.isNicknameAvailable("").shouldBeFalse()
+                }
+
+                it("공백(whitespace)만 있는 문자열은 false를 반환한다") {
+                    userService.isNicknameAvailable("   ").shouldBeFalse()
+                }
+
+                it("1자 닉네임은 유효하지 않다") {
+                    userService.isNicknameAvailable("a").shouldBeFalse()
+                }
+
+                it("최소 길이인 2자 닉네임은 유효하다") {
+                    userService.isNicknameAvailable("ab").shouldBeTrue()
+                    userService.isNicknameAvailable("가나").shouldBeTrue()
+                }
+
+                it("최대 길이인 20자 닉네임은 유효하다") {
+                    userService.isNicknameAvailable("a".repeat(20)).shouldBeTrue()
+                }
+
+                it("21자 초과 닉네임은 유효하지 않다") {
+                    userService.isNicknameAvailable("a".repeat(21)).shouldBeFalse()
+                }
             }
 
-            it("공백(whitespace)만 있는 문자열은 false를 반환한다") {
-                userService.isNicknameAvailable("   ").shouldBeFalse()
+            context("문자 및 기호 검증") {
+                it("한글, 영문 닉네임은 유효하다") {
+                    userService.isNicknameAvailable("멋진닉네임").shouldBeTrue()
+                    userService.isNicknameAvailable("AwesomeName").shouldBeTrue()
+                }
+
+                it("숫자가 포함된 닉네임은 유효하다") {
+                    userService.isNicknameAvailable("nick123").shouldBeTrue()
+                }
+
+                it("허용된 특수문자(-, _)가 중간에 포함되면 유효하다") {
+                    userService.isNicknameAvailable("my-nick_name").shouldBeTrue()
+                }
+
+                it("비허용 특수문자가 포함되면 false를 반환한다") {
+                    userService.isNicknameAvailable("nick@name#").shouldBeFalse()
+                    userService.isNicknameAvailable("nick name").shouldBeFalse() // 공백 포함
+                }
+
+                it("완성형이 아닌 한글 자음/모음 단독 사용은 false를 반환한다") {
+                    userService.isNicknameAvailable("ㅋㅋㅋ").shouldBeFalse()
+                    userService.isNicknameAvailable("유저ㅠㅠ").shouldBeFalse()
+                }
+
+                it("허용된 특수문자(-, _)가 연속으로 포함되면 false를 반환한다.") {
+                    userService.isNicknameAvailable("nick--name").shouldBeFalse()
+                    userService.isNicknameAvailable("nick__name").shouldBeFalse()
+                    userService.isNicknameAvailable("nick_-name").shouldBeFalse()
+                }
             }
 
-            it("정확히 50자 닉네임은 유효하다") {
-                userService.isNicknameAvailable("a".repeat(50)).shouldBeTrue()
+            context("구분자(-, _) 위치 검증") {
+                it("구분자로 시작하는 닉네임은 false를 반환한다") {
+                    userService.isNicknameAvailable("-username").shouldBeFalse()
+                    userService.isNicknameAvailable("_username").shouldBeFalse()
+                }
+
+                it("구분자로 끝나는 닉네임은 false를 반환한다") {
+                    userService.isNicknameAvailable("username-").shouldBeFalse()
+                    userService.isNicknameAvailable("username_").shouldBeFalse()
+                }
+
+                it("구분자로만 이루어진 닉네임은 false를 반환한다") {
+                    userService.isNicknameAvailable("-_-").shouldBeFalse()
+                    userService.isNicknameAvailable("___").shouldBeFalse()
+                }
             }
 
-            it("51자 초과 닉네임은 false를 반환한다") {
-                userService.isNicknameAvailable("a".repeat(51)).shouldBeFalse()
+            context("유니코드 및 비표준 문자 검증") {
+                it("Zero-width 문자가 포함되면 false를 반환한다") {
+                    userService.isNicknameAvailable("nick\u200Bname").shouldBeFalse()
+                    userService.isNicknameAvailable("nick\u200Dname").shouldBeFalse()
+                    userService.isNicknameAvailable("\uFEFFnickname").shouldBeFalse()
+                }
+
+                it("Cyrillic 유사문자가 포함되면 false를 반환한다") {
+                    userService.isNicknameAvailable("niсk").shouldBeFalse() // с = Cyrillic U+0441
+                    userService.isNicknameAvailable("аdmin").shouldBeFalse() // а = Cyrillic U+0430
+                }
+
+                it("이모지가 포함되면 false를 반환한다") {
+                    userService.isNicknameAvailable("nick🚀").shouldBeFalse()
+                    userService.isNicknameAvailable("😀닉네임").shouldBeFalse()
+                }
+
+                it("일본어/중국어 문자가 포함되면 false를 반환한다") {
+                    userService.isNicknameAvailable("勇敢な").shouldBeFalse()
+                    userService.isNicknameAvailable("ニック").shouldBeFalse()
+                }
             }
 
-            it("허용 특수문자(-, _, 공백)는 유효하다") {
-                userService.isNicknameAvailable("my-nick_name test").shouldBeTrue()
-            }
-
-            it("비허용 특수문자는 false를 반환한다") {
-                userService.isNicknameAvailable("nick@name#").shouldBeFalse()
-            }
-
-            it("숫자가 포함되면 false를 반환한다") {
-                userService.isNicknameAvailable("nick123").shouldBeFalse()
-            }
-
-            it("한글 닉네임은 유효하다") {
-                userService.isNicknameAvailable("멋진닉네임").shouldBeTrue()
+            context("앞뒤 공백 검증") {
+                it("앞뒤 공백이 포함된 닉네임은 false를 반환한다") {
+                    userService.isNicknameAvailable(" nickname").shouldBeFalse()
+                    userService.isNicknameAvailable("nickname ").shouldBeFalse()
+                    userService.isNicknameAvailable(" nickname ").shouldBeFalse()
+                }
             }
         }
     }
