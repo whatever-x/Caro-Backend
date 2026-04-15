@@ -16,11 +16,12 @@ interface NicknameBuilder {
     fun color(): NicknameBuilder
     fun noun(): NicknameBuilder
 
-    /** noun, animal, person, pokemon, superhero 중 랜덤 카테고리에서 단어를 선택한다. */
+    /** noun, animal, person, mythical, legend, food 중 랜덤 카테고리에서 단어를 선택한다. */
     fun anyNoun(): NicknameBuilder
     fun person(): NicknameBuilder
-    fun pokemon(): NicknameBuilder
-    fun superhero(): NicknameBuilder
+    fun mythical(): NicknameBuilder
+    fun legend(): NicknameBuilder
+    fun food(): NicknameBuilder
     fun withSeparator(
         separator: String,
     ): NicknameBuilder

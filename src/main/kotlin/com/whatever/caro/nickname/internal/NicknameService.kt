@@ -40,9 +40,11 @@ private class NicknameBuilderImpl(
 
     override fun person(): NicknameBuilder = appendCategory(PERSONS)
 
-    override fun pokemon(): NicknameBuilder = appendCategory(POKEMONS)
+    override fun mythical(): NicknameBuilder = appendCategory(MYTHICALS)
 
-    override fun superhero(): NicknameBuilder = appendCategory(SUPERHEROES)
+    override fun legend(): NicknameBuilder = appendCategory(LEGENDS)
+
+    override fun food(): NicknameBuilder = appendCategory(FOODS)
 
     override fun withSeparator(
         separator: String,
@@ -71,9 +73,10 @@ private class NicknameBuilderImpl(
         private const val COLORS = "colors"
         private const val NOUNS = "nouns"
         private const val PERSONS = "persons"
-        private const val POKEMONS = "pokemons"
-        private const val SUPERHEROES = "superheroes"
+        private const val MYTHICALS = "mythicals"
+        private const val LEGENDS = "legends"
+        private const val FOODS = "foods"
         private const val ANY_NOUN = "__any_noun__"
-        private val NOUN_CATEGORIES = listOf(NOUNS, ANIMALS, PERSONS, POKEMONS, SUPERHEROES)
+        private val NOUN_CATEGORIES = listOf(NOUNS, ANIMALS, PERSONS, MYTHICALS, LEGENDS, FOODS)
     }
 }

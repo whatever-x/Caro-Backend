@@ -73,19 +73,20 @@ class NicknameApiTest :
                 name.split("_") shouldHaveSize 3
             }
 
-            it("모든 7개 카테고리 메서드 체이닝이 가능하다") {
+            it("모든 8개 카테고리 메서드 체이닝이 가능하다") {
                 val name = nicknameApi.create()
                     .adjective()
                     .animal()
                     .color()
                     .noun()
                     .person()
-                    .pokemon()
-                    .superhero()
+                    .mythical()
+                    .legend()
+                    .food()
                     .get().also { logger.info { it } }
 
                 name.shouldNotBeEmpty()
-                name.split("_") shouldHaveSize 7
+                name.split("_") shouldHaveSize 8
             }
 
             it("같은 카테고리를 두 번 호출하면 두 단어를 생성한다") {

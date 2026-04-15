@@ -123,7 +123,6 @@ goat
 goose
 gopher
 gorilla
-grasshopper
 grebe
 grouse
 gull
@@ -140,7 +139,6 @@ hippo
 hoopoe
 hornbill
 horse
-hummingbird
 hyena
 ibis
 iguana
@@ -194,7 +192,6 @@ mussel
 mynah
 narwhal
 newt
-nightingale
 nightjar
 numbat
 ocelot
@@ -318,5 +315,4 @@ woodpecker
 wren
 wrasse
 yak
-yellowjacket
 zebra

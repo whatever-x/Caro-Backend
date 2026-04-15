@@ -45,19 +45,19 @@ class WordDictionaryTest :
         }
 
         describe("availableCategories") {
-            val expectedCategories = setOf("adjectives", "animals", "colors", "nouns", "persons", "pokemons", "superheroes")
+            val expectedCategories = setOf("adjectives", "animals", "colors", "nouns", "persons", "mythicals", "legends", "foods")
 
-            it("영어 locale의 7개 카테고리를 반환한다") {
+            it("영어 locale의 8개 카테고리를 반환한다") {
                 val categories = wordDictionary.availableCategories(Locale.ENGLISH)
 
-                categories.size shouldBe 7
+                categories.size shouldBe 8
                 categories shouldContainAll expectedCategories
             }
 
-            it("한국어 locale의 7개 카테고리를 반환한다") {
+            it("한국어 locale의 8개 카테고리를 반환한다") {
                 val categories = wordDictionary.availableCategories(Locale.KOREAN)
 
-                categories.size shouldBe 7
+                categories.size shouldBe 8
                 categories shouldContainAll expectedCategories
             }
         }
