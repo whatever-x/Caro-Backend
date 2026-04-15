@@ -20,5 +20,6 @@ interface NicknameApi {
     /** 형용사 + 명사 계열 단어로 구성된 랜덤 닉네임을 반환한다. */
     fun randomName(
         locale: Locale = NicknameLocales.DEFAULT,
+        separator: String = "_",
     ): String
 }

@@ -17,7 +17,8 @@ class NicknameService : NicknameApi {
 
     override fun randomName(
         locale: Locale,
-    ): String = create(locale).adjective().anyNoun().get()
+        separator: String,
+    ): String = create(locale).adjective().anyNoun().withSeparator(separator).get()
 }
 
 private class NicknameBuilderImpl(
