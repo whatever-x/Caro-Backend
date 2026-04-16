@@ -27,14 +27,17 @@ repositories {
     mavenCentral()
 }
 
-extra["springModulithVersion"] = "2.0.3"
+extra["springModulithVersion"] = "2.0.5"
 
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-actuator")
+    implementation("org.springframework.boot:spring-boot-starter-opentelemetry")
+    implementation("io.opentelemetry.instrumentation:opentelemetry-logback-appender-1.0:2.24.0-alpha")
     implementation("org.springframework.boot:spring-boot-starter-data-redis")
     implementation("org.springframework.boot:spring-boot-starter-security")
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.springframework.boot:spring-boot-starter-webmvc")
+    implementation("org.springframework.boot:spring-boot-restclient")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.springframework.modulith:spring-modulith-starter-core")
     implementation("tools.jackson.module:jackson-module-kotlin")
@@ -43,6 +46,12 @@ dependencies {
     implementation("io.github.oshai:kotlin-logging-jvm:7.0.14")
     implementation("org.springframework.boot:spring-boot-starter-flyway")
     implementation("org.flywaydb:flyway-mysql")
+
+    implementation("com.google.api-client:google-api-client:2.7.2")
+    implementation("org.springframework.security:spring-security-oauth2-jose")
+    implementation("io.jsonwebtoken:jjwt-api:0.12.6")
+    runtimeOnly("io.jsonwebtoken:jjwt-impl:0.12.6")
+    runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.12.6")
 
     runtimeOnly("com.mysql:mysql-connector-j")
     runtimeOnly("org.springframework.modulith:spring-modulith-actuator")
@@ -99,6 +108,10 @@ spotless {
 
                     // Spring 어노테이션 체인이 길어서 비활성화
                     "ktlint_standard_annotation" to "disabled",
+
+                    "ktlint_function_signature_body_expression_wrapping" to "multiline",
+                    "ktlint_function_signature_rule_force_multiline_when_parameter_count_greater_or_equal_than" to "1",
+                    "ktlint_class_signature_rule_force_multiline_when_parameter_count_greater_or_equal_than" to "1",
                 ),
             )
         toggleOffOn() // spotless:off/on 주석 지원 (특정 코드 제외)
@@ -145,8 +158,11 @@ kover {
                     "*Request",
                     "*Response",
                     "*Event",
-                    "*Repository",
+                    "*RepositoryKt",
                 )
+                classes("*Response\$*") // Response 클래스의 내부 클래스 (Companion 등)
+                classes("*ErrorDetail", "*FieldError")
+                classes("*RequestResponseLoggingFilter", "*RequestResponseLoggingFilterKt")
             }
         }
 

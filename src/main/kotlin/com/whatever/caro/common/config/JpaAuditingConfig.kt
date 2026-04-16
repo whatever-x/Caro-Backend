@@ -11,5 +11,7 @@ import java.util.Optional
 @EnableJpaAuditing(dateTimeProviderRef = "dateTimeProvider")
 class JpaAuditingConfig {
     @Bean
-    fun dateTimeProvider(clock: Clock): DateTimeProvider = DateTimeProvider { Optional.of(clock.instant()) }
+    fun dateTimeProvider(
+        clock: Clock,
+    ): DateTimeProvider = DateTimeProvider { Optional.of(clock.instant()) }
 }

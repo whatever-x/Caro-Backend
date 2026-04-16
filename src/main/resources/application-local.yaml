@@ -14,7 +14,22 @@ spring:
       username: ${REDIS_USERNAME:}
       password: ${REDIS_PASSWORD}
 
+app:
+  jwt:
+    secret: local-dev-secret-key-must-be-at-least-32-bytes-long-for-hs256
+  oauth2:
+    google:
+      client-id: local-google-client-id
+    apple:
+      client-id: local-apple-client-id
+
 logging:
   level:
+    com.whatever.caro: debug
     org.flywaydb: debug
     org.springframework.modulith: debug
+
+management:
+  tracing:
+    sampling:
+      probability: 1.0

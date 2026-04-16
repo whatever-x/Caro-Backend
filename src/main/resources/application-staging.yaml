@@ -4,12 +4,9 @@ spring:
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
-  jpa:
-    hibernate:
-      ddl-auto: validate
   flyway:
     clean-disabled: true
-    locations: classpath:db/migration,classpath:db/seed-staging
+    locations: classpath:db/migration,classpath:db/seed-dev
   data:
     redis:
       host: ${REDIS_HOST}
@@ -23,3 +20,8 @@ logging:
     com.whatever.caro: DEBUG
     org.flywaydb: DEBUG
     org.springframework.modulith: DEBUG
+
+management:
+  tracing:
+    sampling:
+      probability: 1.0

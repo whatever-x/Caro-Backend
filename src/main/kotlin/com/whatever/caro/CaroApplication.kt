@@ -14,6 +14,8 @@ class CaroApplication {
     }
 }
 
-fun main(args: Array<String>) {
+fun main(
+    args: Array<String>,
+) {
     runApplication<CaroApplication>(*args)
 }

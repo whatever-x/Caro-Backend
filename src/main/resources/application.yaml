@@ -1,7 +1,6 @@
-# 공통 설정
 spring:
   application:
-    name: caro
+    name: ${OTEL_SERVICE_NAME:caro-backend}
   profiles:
     active: local  # 기본 profile을 local
   threads:
@@ -24,6 +23,10 @@ spring:
     hibernate:
       ddl-auto: none
     database-platform: org.hibernate.dialect.MySQLDialect
+  messages:
+    basename: messages
+    encoding: UTF-8
+    fallback-to-system-locale: false
   jackson:
     time-zone: UTC
   flyway:
@@ -38,14 +41,69 @@ spring:
     runtime:
       flyway-enabled: true
 
+app:
+  jwt:
+    secret: ${JWT_SECRET}
+    access-token-expires-in: 30m
+    refresh-token-expires-in: 14d
+  oauth2:
+    google:
+      client-id: ${GOOGLE_CLIENT_ID}
+    apple:
+      client-id: ${APPLE_CLIENT_ID}
+      jwks-uri: https://appleid.apple.com/auth/keys
+
 server:
+  port: 8080
   shutdown: graceful
 
 management:
+  server:
+    port: 9090
   endpoints:
     web:
       exposure:
-        include: health, info, metrics, prometheus
+        include: health, info, metrics, modulith
   endpoint:
     health:
       show-details: always
+  otlp:
+    metrics:
+      export:
+        url: ${OTLP_ENDPOINT:http://localhost:4318}/v1/metrics
+        step: 15s
+        headers:
+          tenant_id: ${TENANT_ID:caro-backend-staging}
+        histogram-flavor: base2-exponential-bucket-histogram
+        max-scale: 20
+        max-bucket-count: 160
+  metrics:
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+  opentelemetry:
+    logging:
+      export:
+        otlp:
+          endpoint: ${OTLP_ENDPOINT:http://localhost:4318}/v1/logs
+          transport: http
+          headers:
+            tenant_id: ${TENANT_ID:caro-backend-staging}
+    tracing:
+      export:
+        otlp:
+          transport: http
+          endpoint: ${OTLP_ENDPOINT:http://localhost:4318}/v1/traces
+          headers:
+            tenant_id: ${TENANT_ID:caro-backend-staging}
+  tracing:
+    sampling:
+      probability: 1.0
+    baggage:
+      enabled: true
+      correlation:
+        fields:
+          - "trace_id"
+          - "span_id"
+          - "module.source"
+          - "module.target"

@@ -7,4 +7,6 @@ import java.time.temporal.ChronoUnit
 
 fun Instant.toKst(): ZonedDateTime = this.atZone(ZoneId.of("Asia/Seoul"))
 
-fun Instant.daysUntil(other: Instant): Long = ChronoUnit.DAYS.between(this, other)
+fun Instant.daysUntil(
+    other: Instant,
+): Long = ChronoUnit.DAYS.between(this, other)
