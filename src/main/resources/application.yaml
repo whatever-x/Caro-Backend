@@ -107,3 +107,16 @@ management:
           - "span_id"
           - "module.source"
           - "module.target"
+
+springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: true
+    path: /swagger
+    operations-sorter: alpha
+    tags-sorter: alpha
+    display-request-duration: true
+  packages-to-scan: com.whatever.caro
+  paths-to-match: /api/**, /v1/**

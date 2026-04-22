@@ -25,3 +25,9 @@ management:
   tracing:
     sampling:
       probability: 1.0
+
+app:
+  swagger:
+    auth:
+      username: ${SWAGGER_USERNAME}
+      password: ${SWAGGER_PASSWORD}

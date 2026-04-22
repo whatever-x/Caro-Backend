@@ -29,3 +29,9 @@ logging:
   level:
     root: INFO
     com.whatever.caro: INFO
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
