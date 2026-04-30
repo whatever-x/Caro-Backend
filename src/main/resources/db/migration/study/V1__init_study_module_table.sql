@@ -19,9 +19,6 @@ CREATE TABLE IF NOT EXISTS `card_learning_states` (
     ease_factor      DECIMAL(3,2) NOT NULL DEFAULT 2.50 COMMENT '난이도 계수. AGAIN:-0.20, FAIR:±0.00, EASY:+0.15',
     lapses           INT          NOT NULL DEFAULT 0    COMMENT 'REVIEW에서 AGAIN 횟수. leech_threshold 도달 시 SUSPENDED',
 
-    -- NEW 상태 전용
-    new_again_count INT NOT NULL DEFAULT 0 COMMENT 'NEW 상태 AGAIN 누적. 3회 시 강제 졸업',
-
     -- 스케줄링 시각
     next_review_at   DATETIME(6) NULL COMMENT '다음 복습 예정 시각',
     last_reviewed_at DATETIME(6) NULL COMMENT '마지막 복습 시각',
@@ -38,8 +35,7 @@ CREATE TABLE IF NOT EXISTS `card_learning_states` (
     CONSTRAINT chk_ls_interval      CHECK (interval_days >= 0),
     CONSTRAINT chk_ls_repetitions   CHECK (repetitions >= 0),
     CONSTRAINT chk_ls_ease          CHECK (ease_factor BETWEEN 1.30 AND 5.00),
-    CONSTRAINT chk_ls_lapses        CHECK (lapses >= 0),
-    CONSTRAINT chk_ls_new_again     CHECK (new_again_count >= 0)
+    CONSTRAINT chk_ls_lapses        CHECK (lapses >= 0)
 
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   COMMENT='카드 학습 상태 (SM-2). study 모듈 소유. CARD와 1:1';
