@@ -4,7 +4,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: caro-backend:staging
+    image: yijy001/caro-backend:staging
     container_name: caro-backend
     restart: unless-stopped
     ports:
