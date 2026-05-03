@@ -6,8 +6,9 @@ data class CreateDeckResponseDto(
     val description: String = "",
 )
 
-fun CreateDeckResponseDto.toResponse() = CreateDeckResponse(
-    id = id,
-    deckName = name,
-    deckDescription = description,
-)
+fun CreateDeckResponseDto.toResponse() =
+    CreateDeckResponse(
+        id = id,
+        deckName = name,
+        deckDescription = description,
+    )

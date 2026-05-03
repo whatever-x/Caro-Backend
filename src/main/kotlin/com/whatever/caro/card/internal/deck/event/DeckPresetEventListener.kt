@@ -12,8 +12,10 @@ internal class DeckPresetEventListener(
     private val deckPresetRepository: DeckPresetRepository,
 ) {
     @ApplicationModuleListener
-    fun onDeckCreated(event: DeckCreatedEvent) {
-        val preset = deckPresetRepository.findById(1L).getOrNull() ?: return// 현재는 공통 한개 뿐
+    fun onDeckCreated(
+        event: DeckCreatedEvent,
+    ) {
+        val preset = deckPresetRepository.findById(1L).getOrNull() ?: return // 현재는 공통 한개 뿐
         val deck = deckRepository.findById(event.deckId).getOrNull() ?: return
         deck.deckPreset = preset
     }

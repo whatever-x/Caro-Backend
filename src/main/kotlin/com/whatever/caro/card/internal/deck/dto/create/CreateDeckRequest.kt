@@ -13,7 +13,8 @@ data class CreateDeckRequest(
     val description: String,
 )
 
-fun CreateDeckRequest.toDto() = CreateDeckDto(
-    name = name,
-    description = description,
-)
+fun CreateDeckRequest.toDto() =
+    CreateDeckDto(
+        name = name,
+        description = description,
+    )

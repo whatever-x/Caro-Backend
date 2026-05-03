@@ -15,18 +15,21 @@ class DeckService(
     private val deckRepository: DeckRepository,
     private val eventPublisher: ApplicationEventPublisher,
 ) : DeckApi {
-    override fun getDecks(userId: Long): List<Deck> {
-        return deckRepository.findByUserId(userId) ?: error("에러처리")
-    }
+    override fun getDecks(
+        userId: Long,
+    ): List<Deck> = deckRepository.findByUserId(userId) ?: error("에러처리")
 
     @Transactional
-    fun createDeck(userId: Long, createDeckDto: CreateDeckDto): CreateDeckResponseDto {
+    fun createDeck(
+        userId: Long,
+        createDeckDto: CreateDeckDto,
+    ): CreateDeckResponseDto {
         val deck = deckRepository.save(
             Deck(
                 userId = userId,
                 name = createDeckDto.name,
                 description = createDeckDto.description,
-            )
+            ),
         )
         eventPublisher.publishEvent(DeckCreatedEvent(deckId = deck.id, userId = userId))
         return CreateDeckResponseDto(

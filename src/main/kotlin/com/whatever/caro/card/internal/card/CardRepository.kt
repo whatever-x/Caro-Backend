@@ -4,5 +4,7 @@ import org.springframework.data.jpa.repository.JpaRepository
 
 interface CardRepository : JpaRepository<Card, Long> {
 
-    fun findByNoteId(noteId: Long): List<Card>?
+    fun findByNoteId(
+        noteId: Long,
+    ): List<Card>?
 }
