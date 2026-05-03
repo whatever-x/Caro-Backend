@@ -1,10 +1,10 @@
 package com.whatever.caro.card.internal.deck.controller
 
 import com.whatever.caro.card.internal.deck.DeckService
-import com.whatever.caro.card.internal.deck.dto.CreateDeckRequest
-import com.whatever.caro.card.internal.deck.dto.CreateDeckResponse
-import com.whatever.caro.card.internal.deck.dto.toDto
-import com.whatever.caro.card.internal.deck.dto.toResponse
+import com.whatever.caro.card.internal.deck.dto.create.CreateDeckRequest
+import com.whatever.caro.card.internal.deck.dto.create.CreateDeckResponse
+import com.whatever.caro.card.internal.deck.dto.create.toDto
+import com.whatever.caro.card.internal.deck.dto.create.toResponse
 import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.PostMapping

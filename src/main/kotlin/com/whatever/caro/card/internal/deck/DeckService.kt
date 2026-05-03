@@ -1,8 +1,8 @@
 package com.whatever.caro.card.internal.deck
 
 import com.whatever.caro.card.api.deck.DeckApi
-import com.whatever.caro.card.internal.deck.dto.CreateDeckDto
-import com.whatever.caro.card.internal.deck.dto.CreateDeckResponseDto
+import com.whatever.caro.card.internal.deck.dto.create.CreateDeckDto
+import com.whatever.caro.card.internal.deck.dto.create.CreateDeckResponseDto
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 

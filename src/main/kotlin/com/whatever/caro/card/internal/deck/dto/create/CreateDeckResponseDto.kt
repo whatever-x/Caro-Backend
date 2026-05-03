@@ -1,4 +1,4 @@
-package com.whatever.caro.card.internal.deck.dto
+package com.whatever.caro.card.internal.deck.dto.create
 
 data class CreateDeckResponseDto(
     val id: Long = 0L,

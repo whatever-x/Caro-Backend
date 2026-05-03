@@ -1,4 +1,4 @@
-package com.whatever.caro.card.internal.deck.dto
+package com.whatever.caro.card.internal.deck.dto.create
 
 data class CreateDeckDto(
     val name: String = "",
