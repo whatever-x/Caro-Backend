@@ -13,8 +13,8 @@ object PublicEndpoints {
     )
 
     val AUTH = listOf(
-        "/api/v1/auth/social-login",
-        "/api/v1/auth/refresh",
+        "/v1/auth/social-login",
+        "/v1/auth/refresh",
     )
 
     val PATTERNS: List<String> = AUTH + MONITORING + SWAGGER

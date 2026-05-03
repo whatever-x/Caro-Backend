@@ -42,9 +42,6 @@ class CardLearningState(
     @Column(nullable = false)
     var lapses: Int = 0,
 
-    @Column(name = "new_again_count", nullable = false)
-    var newAgainCount: Int = 0,
-
     @Column(name = "next_review_at")
     var nextReviewAt: Instant? = null,
 

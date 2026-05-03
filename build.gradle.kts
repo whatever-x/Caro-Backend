@@ -14,7 +14,10 @@ plugins {
 }
 
 group = "com.whatever"
-version = (findProperty("version") as? String) ?: System.getenv("RELEASE_VERSION") ?: "0.0.1-SNAPSHOT"
+version = (findProperty("version") as? String)
+    ?.takeUnless { it == "unspecified" || it.isBlank() }
+    ?: System.getenv("RELEASE_VERSION")
+    ?: "0.0.1-SNAPSHOT"
 description = "Flashcard backend"
 
 java {
