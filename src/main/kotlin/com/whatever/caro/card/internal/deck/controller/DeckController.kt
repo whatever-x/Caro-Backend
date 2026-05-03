@@ -10,10 +10,12 @@ import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 import java.net.URI
 
-@RestController(value = "/decks")
+@RestController
+@RequestMapping("/decks")
 class DeckController(
     private val deckService: DeckService,
 ) {
