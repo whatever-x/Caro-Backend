@@ -55,6 +55,9 @@ class StudySession(
 
     @Column(name = "session_date", nullable = false, updatable = false)
     val sessionDate: LocalDate,
+
+    @Column(name = "deck_preset_id_snapshot", nullable = false, updatable = false)
+    val deckPresetIdSnapshot: Long,
 ) : BaseTimeEntity() {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
