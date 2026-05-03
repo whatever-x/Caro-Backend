@@ -47,6 +47,12 @@ class CardLearningState(
 
     @Column(name = "last_reviewed_at")
     var lastReviewedAt: Instant? = null,
+
+    @Column(name = "consecutive_again_count", nullable = false)
+    var consecutiveAgainCount: Int = 0,
+
+    @Column(name = "total_reviews", nullable = false)
+    var totalReviews: Int = 0,
 ) : BaseTimeEntity() {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

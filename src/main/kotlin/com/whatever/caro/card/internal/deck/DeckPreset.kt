@@ -44,6 +44,9 @@ class DeckPreset(
 
     @Column(name = "leech_threshold", nullable = false)
     var leechThreshold: Int = 8,
+
+    @Column(name = "hard_badge_threshold", nullable = false)
+    val hardBadgeThreshold: Int = 3,
 ) : BaseTimeEntity() {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
