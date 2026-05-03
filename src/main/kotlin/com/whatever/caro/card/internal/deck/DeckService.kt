@@ -1,7 +1,10 @@
 package com.whatever.caro.card.internal.deck
 
 import com.whatever.caro.card.api.deck.DeckApi
+import com.whatever.caro.card.internal.deck.dto.CreateDeckDto
+import com.whatever.caro.card.internal.deck.dto.CreateDeckResponseDto
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 
 @Service
 class DeckService(
@@ -9,5 +12,21 @@ class DeckService(
 ) : DeckApi {
     override fun getDecks(userId: Long): List<Deck> {
         return deckRepository.findByUserId(userId) ?: error("에러처리")
+    }
+
+    @Transactional
+    fun createDeck(userId: Long, createDeckDto: CreateDeckDto): CreateDeckResponseDto {
+        val deck = deckRepository.save(
+            Deck(
+                userId = userId,
+                name = createDeckDto.name,
+                description = createDeckDto.description
+            )
+        )
+        return CreateDeckResponseDto(
+            id = deck.id,
+            name = deck.name,
+            description = deck.description,
+        )
     }
 }
