@@ -41,6 +41,7 @@
 # *.iml
 # *.ipr
 
+docker-compose.yaml
 docker-compose.yml
 # CMake
 cmake-build-*/
