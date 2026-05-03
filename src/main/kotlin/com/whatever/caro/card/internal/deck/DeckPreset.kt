@@ -16,7 +16,7 @@ class DeckPreset(
     val userId: Long? = null,
 
     @Column(nullable = false)
-    var name: String,
+    var name: String = "",
 
     @Column(name = "new_per_day", nullable = false)
     var newPerDay: Int = 20,

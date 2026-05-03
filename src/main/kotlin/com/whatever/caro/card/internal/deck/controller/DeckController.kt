@@ -1,7 +1,7 @@
 package com.whatever.caro.card.internal.deck.controller
 
 import com.whatever.caro.auth.SecurityUtil
-import com.whatever.caro.card.internal.deck.DeckService
+import com.whatever.caro.card.internal.deck.service.DeckService
 import com.whatever.caro.card.internal.deck.dto.create.CreateDeckRequest
 import com.whatever.caro.card.internal.deck.dto.create.CreateDeckResponse
 import com.whatever.caro.card.internal.deck.dto.create.toDto
