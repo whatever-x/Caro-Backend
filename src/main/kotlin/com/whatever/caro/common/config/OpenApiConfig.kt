@@ -41,25 +41,26 @@ class OpenApiConfig {
     @Bean
     fun acceptLanguageHeaderCustomizer(): OperationCustomizer =
         OperationCustomizer { operation, _ ->
-            operation.addParametersItem(
-                Parameter()
-                    .`in`("header")
-                    .name("Accept-Language")
-                    .description("응답 메시지 로케일 (BCP 47). 예: ko-KR, en-US, ja. 미지정 시 영어 메시지로 응답.")
-                    .required(true)
-                    .example("ko-KR")
-                    .schema(StringSchema()._default("ko-KR")),
-            )
-            operation.addParametersItem(
-                Parameter()
-                    .`in`("header")
-                    .name("Client-Timezone")
-                    .description("클라이언트의 IANA Time Zone Database ID. 예: Asia/Seoul, America/New_York")
-                    .required(true)
-                    .example("Asia/Seoul")
-                    .schema(StringSchema()._default("Asia/Seoul")),
-            )
-            operation
+            operation.apply {
+                addParametersItem(
+                    Parameter()
+                        .`in`("header")
+                        .name("Accept-Language")
+                        .description("응답 메시지 로케일 (BCP 47). 예: ko-KR, en-US, ja. 미지정 시 영어 메시지로 응답.")
+                        .required(true)
+                        .example("ko-KR")
+                        .schema(StringSchema()._default("ko-KR")),
+                )
+                addParametersItem(
+                    Parameter()
+                        .`in`("header")
+                        .name("Client-Timezone")
+                        .description("클라이언트의 IANA Time Zone Database ID. 예: Asia/Seoul, America/New_York")
+                        .required(true)
+                        .example("Asia/Seoul")
+                        .schema(StringSchema()._default("Asia/Seoul")),
+                )
+            }
         }
 
     companion object {
