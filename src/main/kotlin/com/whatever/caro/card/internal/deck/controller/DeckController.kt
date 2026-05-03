@@ -1,5 +1,6 @@
 package com.whatever.caro.card.internal.deck.controller
 
+import com.whatever.caro.auth.SecurityUtil
 import com.whatever.caro.card.internal.deck.DeckService
 import com.whatever.caro.card.internal.deck.dto.create.CreateDeckRequest
 import com.whatever.caro.card.internal.deck.dto.create.CreateDeckResponse
@@ -21,8 +22,8 @@ class DeckController(
     fun createDeck(
         @Valid @RequestBody createDeckRequest: CreateDeckRequest,
     ): ResponseEntity<CreateDeckResponse> {
-        // val userId = "" 지금 유저 id 얻는거 있나 ?!
-        val decks = deckService.createDeck(userId = 0L, createDeckRequest.toDto()).toResponse()
+        val userId = SecurityUtil.currentUser().userId
+        val decks = deckService.createDeck(userId = userId, createDeckRequest.toDto()).toResponse()
         return ResponseEntity.created(URI.create("/decks/${decks.id}")).body(decks)
     }
 }
