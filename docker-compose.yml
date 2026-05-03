@@ -1,29 +1,29 @@
-services:
-  caro-backend:
-    # TODO 추후 환경별 분리
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: yijy001/caro-backend:staging
-    container_name: caro-backend
-    restart: unless-stopped
-    ports:
-      - "8080:8080"
-      - "9090:9090"
-    environment:
-      INFISICAL_CLIENT_ID: ${INFISICAL_CLIENT_ID}
-      INFISICAL_CLIENT_SECRET: ${INFISICAL_CLIENT_SECRET}
-      INFISICAL_PROJECT_ID: ${INFISICAL_PROJECT_ID:-b5c5cba9-678d-4272-bc01-ce6ac80769f9}
-      INFISICAL_ENV: ${INFISICAL_ENV:-staging}
-      SPRING_PROFILES_ACTIVE: staging
-    healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://localhost:9090/actuator/health"]
-      interval: 30s
-      timeout: 5s
-      start_period: 60s
-      retries: 3
-    logging:
-      driver: json-file
-      options:
-        max-size: "10m"
-        max-file: "5"
+#services:
+#  caro-backend:
+#    # TODO 추후 환경별 분리
+#    build:
+#      context: .
+#      dockerfile: Dockerfile
+#    image: yijy001/caro-backend:staging
+#    container_name: caro-backend
+#    restart: unless-stopped
+#    ports:
+#      - "8080:8080"
+#      - "9090:9090"
+#    environment:
+#      INFISICAL_CLIENT_ID: ${INFISICAL_CLIENT_ID}
+#      INFISICAL_CLIENT_SECRET: ${INFISICAL_CLIENT_SECRET}
+#      INFISICAL_PROJECT_ID: ${INFISICAL_PROJECT_ID:-b5c5cba9-678d-4272-bc01-ce6ac80769f9}
+#      INFISICAL_ENV: ${INFISICAL_ENV:-staging}
+#      SPRING_PROFILES_ACTIVE: staging
+#    healthcheck:
+#      test: ["CMD", "curl", "-fsS", "http://localhost:9090/actuator/health"]
+#      interval: 30s
+#      timeout: 5s
+#      start_period: 60s
+#      retries: 3
+#    logging:
+#      driver: json-file
+#      options:
+#        max-size: "10m"
+#        max-file: "5"
