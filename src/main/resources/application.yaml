@@ -18,7 +18,7 @@ spring:
         show_sql: false
         use_sql_comments: false
         format_sql: true
-        globally_quoted_identifiers: true
+        auto_quote_keyword: true
         order_updates: true
     hibernate:
       ddl-auto: none

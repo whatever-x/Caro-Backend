@@ -17,7 +17,7 @@ class DeckService(
 ) : DeckApi {
     override fun getDecks(
         userId: Long,
-    ): List<Deck> = deckRepository.findByUserId(userId) ?: error("에러처리")
+    ): List<Deck> = deckRepository.findByUserId(userId)
 
     @Transactional
     fun createDeck(
