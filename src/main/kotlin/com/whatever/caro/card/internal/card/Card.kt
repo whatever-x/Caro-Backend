@@ -1,4 +1,4 @@
-package com.whatever.caro.card.internal
+package com.whatever.caro.card.internal.card
 
 import com.whatever.caro.card.internal.deck.Deck
 import com.whatever.caro.card.internal.note.Note
@@ -31,9 +31,6 @@ class Card(
 
     @Column(name = "user_id", nullable = false)
     val userId: Long,
-
-    @Column(nullable = false)
-    var position: Int = 0, // TODO position 방식에 대해서는 추후 논의
 ) : SoftDeletableEntity() {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

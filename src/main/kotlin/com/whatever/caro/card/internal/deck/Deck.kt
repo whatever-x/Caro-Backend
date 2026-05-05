@@ -24,8 +24,8 @@ class Deck(
     @Column(nullable = false)
     var name: String,
 
-    @Column
-    var description: String? = null,
+    @Column(nullable = false)
+    var description: String = "",
 
     @Column(name = "card_count", nullable = false)
     var cardCount: Int = 0,

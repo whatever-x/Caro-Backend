@@ -29,6 +29,9 @@ logging:
     org.flywaydb: debug
     org.springframework.modulith: debug
 
+server:
+  port: 8081
+
 management:
   tracing:
     sampling:
