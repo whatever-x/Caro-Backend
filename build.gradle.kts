@@ -4,10 +4,10 @@ import kotlinx.kover.gradle.plugin.dsl.GroupingEntityType
 
 plugins {
     kotlin("jvm") version "2.3.10"
-    kotlin("plugin.spring") version "2.2.21"
-    id("org.springframework.boot") version "4.0.3"
+    kotlin("plugin.spring") version "2.3.10"
+    id("org.springframework.boot") version "4.0.6"
     id("io.spring.dependency-management") version "1.1.7"
-    kotlin("plugin.jpa") version "2.2.21"
+    kotlin("plugin.jpa") version "2.3.10"
 
     id("com.diffplug.spotless") version "8.3.0"
     id("org.jetbrains.kotlinx.kover") version "0.9.7"
@@ -22,7 +22,7 @@ description = "Flashcard backend"
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(24)
+        languageVersion = JavaLanguageVersion.of(25)
     }
 }
 
@@ -30,7 +30,7 @@ repositories {
     mavenCentral()
 }
 
-extra["springModulithVersion"] = "2.0.5"
+extra["springModulithVersion"] = "2.0.6"
 
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-actuator")
@@ -47,15 +47,15 @@ dependencies {
     implementation("tools.jackson.module:jackson-module-kotlin")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.modulith:spring-modulith-starter-jpa")
-    implementation("io.github.oshai:kotlin-logging-jvm:7.0.14")
+    implementation("io.github.oshai:kotlin-logging-jvm:8.0.02")
     implementation("org.springframework.boot:spring-boot-starter-flyway")
     implementation("org.flywaydb:flyway-mysql")
 
-    implementation("com.google.api-client:google-api-client:2.7.2")
+    implementation("com.google.api-client:google-api-client:2.9.0")
     implementation("org.springframework.security:spring-security-oauth2-jose")
-    implementation("io.jsonwebtoken:jjwt-api:0.12.6")
-    runtimeOnly("io.jsonwebtoken:jjwt-impl:0.12.6")
-    runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.12.6")
+    implementation("io.jsonwebtoken:jjwt-api:0.13.0")
+    runtimeOnly("io.jsonwebtoken:jjwt-impl:0.13.0")
+    runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.13.0")
 
     runtimeOnly("com.mysql:mysql-connector-j")
     runtimeOnly("org.springframework.modulith:spring-modulith-actuator")
@@ -75,7 +75,7 @@ dependencies {
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 
     // Kotest
-    testImplementation(platform("io.kotest:kotest-bom:6.1.5"))
+    testImplementation(platform("io.kotest:kotest-bom:6.1.9"))
     testImplementation("io.kotest:kotest-runner-junit5")
     testImplementation("io.kotest:kotest-assertions-core")
     testImplementation("io.kotest:kotest-extensions-spring")
