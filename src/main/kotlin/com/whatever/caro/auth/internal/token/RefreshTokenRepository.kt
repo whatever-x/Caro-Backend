@@ -4,6 +4,7 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.data.redis.RedisConnectionFailureException
 import org.springframework.data.redis.core.StringRedisTemplate
 import org.springframework.data.redis.core.script.DefaultRedisScript
+import org.springframework.data.redis.core.script.RedisScript
 import org.springframework.stereotype.Repository
 import java.time.Duration
 
@@ -113,9 +114,8 @@ class RefreshTokenRepository(
         private const val KEY_PREFIX = "refresh"
         private const val TOKEN_PAIR_KEY_PREFIX = "token_pair"
 
-        private val SAVE_SCRIPT = DefaultRedisScript<Boolean>().apply {
-            setScriptText(
-                """
+        private val SAVE_SCRIPT = RedisScript.of(
+            """
                 -- KEYS[1] = forward key (refresh:userId:deviceId)
                 -- KEYS[2] = token_pair key (token_pair:refreshToken)
                 -- ARGV[1] = refreshToken (forward value)
@@ -127,17 +127,15 @@ class RefreshTokenRepository(
                     redis.call('DEL', '${TOKEN_PAIR_KEY_PREFIX}:' .. previous)
                 end
 
-                redis.call('SETEX', KEYS[1], ARGV[3], ARGV[1])
-                redis.call('SETEX', KEYS[2], ARGV[3], ARGV[2])
+                redis.call('SET', KEYS[1], ARGV[1], 'EX', ARGV[3])
+                redis.call('SET', KEYS[2], ARGV[2], 'EX', ARGV[3])
                 return true
-                """.trimIndent(),
-            )
-            resultType = Boolean::class.java
-        }
+            """.trimIndent(),
+            Boolean::class.java,
+        )
 
-        private val CONSUME_SCRIPT = DefaultRedisScript<String>().apply {
-            setScriptText(
-                """
+        private val CONSUME_SCRIPT = RedisScript.of(
+            """
                 -- KEYS[1] = token_pair key (token_pair:refreshToken)
                 -- ARGV[1] = userId
                 -- ARGV[2] = deviceId
@@ -158,9 +156,8 @@ class RefreshTokenRepository(
                 else
                     return nil
                 end
-                """.trimIndent(),
-            )
-            resultType = String::class.java
-        }
+            """.trimIndent(),
+            String::class.java,
+        )
     }
 }
