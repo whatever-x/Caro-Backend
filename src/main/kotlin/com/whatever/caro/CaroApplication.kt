@@ -2,11 +2,13 @@ package com.whatever.caro
 
 import jakarta.annotation.PostConstruct
 import org.springframework.boot.autoconfigure.SpringBootApplication
+import org.springframework.boot.context.properties.ConfigurationPropertiesScan
 import org.springframework.boot.runApplication
 import java.time.ZoneId
 import java.util.TimeZone
 
 @SpringBootApplication
+@ConfigurationPropertiesScan
 class CaroApplication {
     @PostConstruct
     fun init() {
