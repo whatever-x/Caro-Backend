@@ -6,7 +6,6 @@ import com.whatever.caro.auth.internal.filter.JwtExceptionFilter
 import com.whatever.caro.common.response.ApiResponse
 import com.whatever.caro.common.response.ErrorCodeSpec
 import jakarta.servlet.http.HttpServletResponse
-import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.http.MediaType
@@ -24,7 +23,6 @@ import tools.jackson.databind.json.JsonMapper
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
-@EnableConfigurationProperties(JwtProperties::class, OAuth2Properties::class)
 class SecurityConfig(
     private val jwtAuthenticationFilter: JwtAuthenticationFilter,
     private val jwtExceptionFilter: JwtExceptionFilter,
