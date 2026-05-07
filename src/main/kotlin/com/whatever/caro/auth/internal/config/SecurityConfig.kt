@@ -5,7 +5,10 @@ import com.whatever.caro.auth.internal.filter.JwtAuthenticationFilter
 import com.whatever.caro.auth.internal.filter.JwtExceptionFilter
 import com.whatever.caro.common.response.ApiResponse
 import com.whatever.caro.common.response.ErrorCodeSpec
+import com.whatever.caro.common.web.filter.RequestResponseCachingFilter
+import jakarta.servlet.Filter
 import jakarta.servlet.http.HttpServletResponse
+import org.springframework.boot.web.servlet.FilterRegistrationBean
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.http.MediaType
@@ -24,6 +27,7 @@ import tools.jackson.databind.json.JsonMapper
 @EnableWebSecurity
 @EnableMethodSecurity
 class SecurityConfig(
+    private val requestResponseCachingFilter: RequestResponseCachingFilter,
     private val jwtAuthenticationFilter: JwtAuthenticationFilter,
     private val jwtExceptionFilter: JwtExceptionFilter,
     private val jsonMapper: JsonMapper,
@@ -55,6 +59,7 @@ class SecurityConfig(
 
             addFilterBefore<UsernamePasswordAuthenticationFilter>(jwtExceptionFilter)
             addFilterBefore<UsernamePasswordAuthenticationFilter>(jwtAuthenticationFilter)
+            addFilterAfter<JwtAuthenticationFilter>(requestResponseCachingFilter)
 
             exceptionHandling {
                 authenticationEntryPoint = customAuthenticationEntryPoint()
@@ -83,4 +88,26 @@ class SecurityConfig(
         response.characterEncoding = "UTF-8"
         jsonMapper.writeValue(response.writer, ApiResponse.fail(errorCode))
     }
+}
+
+@Configuration
+class SecurityFilterRegistrationConfig {
+    @Bean
+    fun jwtExceptionFilterRegistration(
+        filter: JwtExceptionFilter,
+    ): FilterRegistrationBean<JwtExceptionFilter> = disableFilterRegistration(filter)
+
+    @Bean
+    fun jwtAuthenticationFilterRegistration(
+        filter: JwtAuthenticationFilter,
+    ): FilterRegistrationBean<JwtAuthenticationFilter> = disableFilterRegistration(filter)
+
+    @Bean
+    fun requestResponseCachingFilterRegistration(
+        filter: RequestResponseCachingFilter,
+    ): FilterRegistrationBean<RequestResponseCachingFilter> = disableFilterRegistration(filter)
+
+    private fun <T : Filter> disableFilterRegistration(
+        filter: T,
+    ): FilterRegistrationBean<T> = FilterRegistrationBean(filter).apply { isEnabled = false }
 }
