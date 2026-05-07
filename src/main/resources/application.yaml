@@ -46,6 +46,9 @@ app:
     secret: ${JWT_SECRET}
     access-token-expires-in: 30m
     refresh-token-expires-in: 14d
+  idempotency:
+    response-ttl: 24h
+    processing-ttl: 30s
   oauth2:
     google:
       client-id: ${GOOGLE_CLIENT_ID}
