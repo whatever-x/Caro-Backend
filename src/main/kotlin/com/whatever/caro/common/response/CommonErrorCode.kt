@@ -14,5 +14,24 @@ enum class CommonErrorCode(
     METHOD_NOT_ALLOWED("C004", HttpStatus.METHOD_NOT_ALLOWED, "지원하지 않는 HTTP 메서드입니다", "error.common.method_not_allowed"),
     MISSING_PARAMETER("C005", HttpStatus.BAD_REQUEST, "필수 파라미터가 누락되었습니다", "error.common.missing_parameter"),
     TYPE_MISMATCH("C006", HttpStatus.BAD_REQUEST, "파라미터 타입이 올바르지 않습니다", "error.common.type_mismatch"),
+    MISSING_HEADER("C007", HttpStatus.BAD_REQUEST, "필수 헤더가 누락되었습니다", "error.common.missing_header"),
+    INVALID_IDEMPOTENCY_KEY(
+        "C008",
+        HttpStatus.BAD_REQUEST,
+        "유효하지 않은 Idempotency-Key 형식입니다",
+        "error.common.invalid_idempotency_key",
+    ),
+    IDEMPOTENCY_KEY_CONFLICT(
+        "C009",
+        HttpStatus.CONFLICT,
+        "동일한 Idempotency-Key로 다른 요청이 처리되었습니다",
+        "error.common.idempotency_key_conflict",
+    ),
+    IDEMPOTENCY_REQUEST_IN_PROGRESS(
+        "C010",
+        HttpStatus.CONFLICT,
+        "이전 요청이 처리 중입니다. 잠시 후 다시 시도해주세요",
+        "error.common.idempotency_request_in_progress",
+    ),
     INTERNAL_ERROR("C999", HttpStatus.INTERNAL_SERVER_ERROR, "내부 서버 오류가 발생했습니다", "error.common.internal_error"),
 }
