@@ -5,8 +5,11 @@ import com.whatever.caro.auth.internal.AuthService
 import com.whatever.caro.auth.internal.web.request.CompleteRegistrationRequest
 import com.whatever.caro.auth.internal.web.request.RefreshTokenRequest
 import com.whatever.caro.auth.internal.web.request.SocialLoginRequest
+import com.whatever.caro.auth.internal.web.response.SocialLoginResponse
+import com.whatever.caro.auth.internal.web.response.TokenResponse
 import com.whatever.caro.common.openapi.PublicApi
 import com.whatever.caro.common.response.ApiResponse
+import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
@@ -23,35 +26,51 @@ import org.springframework.web.bind.annotation.RestController
 class AuthController(
     private val authService: AuthService,
 ) {
+    @Operation(
+        summary = "소셜 로그인",
+        description = "소셜 ID 토큰을 검증해 access/refresh 토큰을 발급한다. 신규 사용자는 isRegistrationComplete=false 로 응답.",
+    )
     @PublicApi
     @PostMapping("/social-login")
     fun socialLogin(
         @Valid @RequestBody request: SocialLoginRequest,
-    ): ResponseEntity<ApiResponse<Any>> {
+    ): ResponseEntity<ApiResponse<SocialLoginResponse>> {
         val response = authService.socialLogin(request)
         return ResponseEntity.ok(ApiResponse.ok(response))
     }
 
+    @Operation(
+        summary = "회원가입 완료",
+        description = "닉네임/약관 동의 입력 후 access/refresh 토큰을 재발급한다.",
+    )
     @PostMapping("/complete-registration")
     fun completeRegistration(
         @Valid @RequestBody request: CompleteRegistrationRequest,
         @Parameter(name = "Device-Id", description = "디바이스 식별자", required = true, example = "unique-device-identifier")
         @RequestHeader(name = "Device-Id", required = true) deviceId: String,
-    ): ResponseEntity<ApiResponse<Any>> {
+    ): ResponseEntity<ApiResponse<TokenResponse>> {
         val authUser = SecurityUtil.currentUser()
         val response = authService.completeRegistration(authUser, request, deviceId)
         return ResponseEntity.ok(ApiResponse.ok(response))
     }
 
+    @Operation(
+        summary = "토큰 재발급",
+        description = "Refresh Token 으로 access/refresh 토큰을 재발급한다. 단일 사용 정책.",
+    )
     @PublicApi
     @PostMapping("/refresh")
     fun refreshToken(
         @Valid @RequestBody request: RefreshTokenRequest,
-    ): ResponseEntity<ApiResponse<Any>> {
+    ): ResponseEntity<ApiResponse<TokenResponse>> {
         val response = authService.reissueToken(request)
         return ResponseEntity.ok(ApiResponse.ok(response))
     }
 
+    @Operation(
+        summary = "로그아웃",
+        description = "현재 access token 을 블랙리스트 처리하고 디바이스 refresh token 을 폐기한다.",
+    )
     @PostMapping("/logout")
     fun logout(
         @Parameter(name = "Device-Id", description = "디바이스 식별자", required = true, example = "unique-device-identifier")

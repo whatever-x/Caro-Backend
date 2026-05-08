@@ -7,6 +7,8 @@ import com.whatever.caro.card.internal.deck.dto.create.toDto
 import com.whatever.caro.card.internal.deck.dto.create.toResponse
 import com.whatever.caro.card.internal.deck.service.DeckService
 import com.whatever.caro.common.response.ApiResponse
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.PostMapping
@@ -14,12 +16,17 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
+@Tag(name = "Deck", description = "단어/표현 덱 관리")
 @RestController
 @RequestMapping("/v1/decks")
 class DeckController(
     private val deckService: DeckService,
 ) {
 
+    @Operation(
+        summary = "덱 생성",
+        description = "새 덱을 생성하고 기본 프리셋을 연결한다.",
+    )
     @PostMapping
     fun createDeck(
         @Valid @RequestBody createDeckRequest: CreateDeckRequest,
