@@ -162,8 +162,8 @@ class AuthServiceTest(
                 request = CompleteRegistrationRequest(
                     nickname = "ReturningUser",
                     isTermsAgreed = true,
-                    deviceId = deviceId,
                 ),
+                deviceId = deviceId,
             )
 
             // 2차 로그인 (기존 ACTIVE 사용자)
@@ -218,8 +218,8 @@ class AuthServiceTest(
                 request = CompleteRegistrationRequest(
                     nickname = nickname,
                     isTermsAgreed = true,
-                    deviceId = deviceId,
                 ),
+                deviceId = deviceId,
             )
 
             val newClaims = jwtTokenProvider.parseAccessToken(registrationResult.accessToken)
@@ -254,8 +254,8 @@ class AuthServiceTest(
                 request = CompleteRegistrationRequest(
                     nickname = "BlacklistUser",
                     isTermsAgreed = true,
-                    deviceId = deviceId,
                 ),
+                deviceId = deviceId,
             )
             val newClaims = jwtTokenProvider.parseAccessToken(registrationResult.accessToken)
 

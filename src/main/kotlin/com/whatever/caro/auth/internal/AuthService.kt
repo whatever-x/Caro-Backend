@@ -76,6 +76,7 @@ class AuthService(
     fun completeRegistration(
         authUser: AuthUser,
         request: CompleteRegistrationRequest,
+        deviceId: String,
     ): TokenResponse {
         val userInfo = userApi.completeRegistration(
             userId = authUser.userId,
@@ -95,13 +96,13 @@ class AuthService(
         val newRefreshToken = jwtTokenProvider.generateRefreshToken()
         refreshTokenRepository.save(
             userId = userInfo.id,
-            deviceId = request.deviceId,
+            deviceId = deviceId,
             refreshToken = newRefreshToken,
             accessTokenJti = generated.jti,
             expiresIn = jwtProperties.refreshTokenExpiresIn,
         )
 
-        logger.info { "Registration completed: userId=${authUser.userId}, deviceId=${request.deviceId}" }
+        logger.info { "Registration completed: userId=${authUser.userId}, deviceId=$deviceId" }
         return TokenResponse(
             accessToken = generated.token,
             refreshToken = newRefreshToken,

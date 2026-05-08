@@ -11,7 +11,4 @@ data class CompleteRegistrationRequest(
 
     @field:AssertTrue(message = "약관에 동의해야 합니다")
     val isTermsAgreed: Boolean,
-
-    @field:NotBlank(message = "Device ID는 필수입니다")
-    val deviceId: String,
 )

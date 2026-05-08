@@ -3,16 +3,17 @@ package com.whatever.caro.auth.internal.web
 import com.whatever.caro.auth.SecurityUtil
 import com.whatever.caro.auth.internal.AuthService
 import com.whatever.caro.auth.internal.web.request.CompleteRegistrationRequest
-import com.whatever.caro.auth.internal.web.request.LogoutRequest
 import com.whatever.caro.auth.internal.web.request.RefreshTokenRequest
 import com.whatever.caro.auth.internal.web.request.SocialLoginRequest
 import com.whatever.caro.common.openapi.PublicApi
 import com.whatever.caro.common.response.ApiResponse
+import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
@@ -34,9 +35,11 @@ class AuthController(
     @PostMapping("/complete-registration")
     fun completeRegistration(
         @Valid @RequestBody request: CompleteRegistrationRequest,
+        @Parameter(name = "Device-Id", description = "디바이스 식별자", required = true, example = "unique-device-identifier")
+        @RequestHeader(name = "Device-Id", required = true) deviceId: String,
     ): ResponseEntity<ApiResponse<Any>> {
         val authUser = SecurityUtil.currentUser()
-        val response = authService.completeRegistration(authUser, request)
+        val response = authService.completeRegistration(authUser, request, deviceId)
         return ResponseEntity.ok(ApiResponse.ok(response))
     }
 
@@ -51,10 +54,11 @@ class AuthController(
 
     @PostMapping("/logout")
     fun logout(
-        @Valid @RequestBody request: LogoutRequest,
+        @Parameter(name = "Device-Id", description = "디바이스 식별자", required = true, example = "unique-device-identifier")
+        @RequestHeader(name = "Device-Id", required = true) deviceId: String,
     ): ResponseEntity<ApiResponse<Unit>> {
         val authUser = SecurityUtil.currentUser()
-        authService.logout(authUser, request.deviceId)
+        authService.logout(authUser, deviceId)
         return ResponseEntity.ok(ApiResponse.ok(Unit))
     }
 }
