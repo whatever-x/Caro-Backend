@@ -5,7 +5,7 @@ import com.whatever.caro.card.internal.deck.Deck
 import com.whatever.caro.card.internal.deck.DeckRepository
 import com.whatever.caro.card.internal.deck.dto.create.CreateDeckDto
 import com.whatever.caro.card.internal.deck.dto.create.CreateDeckResponseDto
-import com.whatever.caro.card.internal.deck.event.DeckCreatedEvent
+import com.whatever.caro.card.internal.deck.event.created.DeckCreatedEvent
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
