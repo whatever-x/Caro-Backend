@@ -9,6 +9,10 @@ import com.whatever.caro.card.internal.deck.dto.delete.DeleteDeckRequest
 import com.whatever.caro.card.internal.deck.dto.delete.DeleteDeckResponse
 import com.whatever.caro.card.internal.deck.dto.delete.toDto
 import com.whatever.caro.card.internal.deck.dto.delete.toResponse
+import com.whatever.caro.card.internal.deck.dto.update.UpdateDeckRequest
+import com.whatever.caro.card.internal.deck.dto.update.UpdateDeckResponse
+import com.whatever.caro.card.internal.deck.dto.update.toDto
+import com.whatever.caro.card.internal.deck.dto.update.toResponse
 import com.whatever.caro.card.internal.deck.service.DeckService
 import com.whatever.caro.common.response.ApiResponse
 import io.swagger.v3.oas.annotations.Parameter
@@ -16,6 +20,7 @@ import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
 import org.springframework.validation.annotation.Validated
 import org.springframework.web.bind.annotation.DeleteMapping
+import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -48,6 +53,17 @@ class DeckController(
             userId = userId,
             deleteDeckDto = DeleteDeckRequest(deckId = deckId).toDto(),
         ).toResponse()
+        return ResponseEntity.ok(ApiResponse.ok(deck))
+    }
+
+    @PatchMapping("/{deckId}")
+    fun updateDeck(
+        @Parameter(description = "덱 ID", required = true)
+        @PathVariable deckId: Long,
+        @Valid @RequestBody updateDeckRequest: UpdateDeckRequest,
+    ): ResponseEntity<ApiResponse<UpdateDeckResponse>> {
+        val userId = SecurityUtil.currentUser().userId
+        val deck = deckService.updateDeck(userId = userId, updateDeckDto = updateDeckRequest.toDto(deckId)).toResponse()
         return ResponseEntity.ok(ApiResponse.ok(deck))
     }
 }
