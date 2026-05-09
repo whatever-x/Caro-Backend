@@ -26,6 +26,13 @@ class DeckService(
         userId: Long,
     ): List<Deck> = deckRepository.findByUserId(userId)
 
+    override fun getDeck(
+        deckId: Long,
+    ): Deck =
+        deckRepository.findById(deckId).orElseThrow {
+            DeckNotFoundException("deckId=$deckId 덱을 찾을 수 없습니다")
+        }
+
     @Transactional
     fun createDeck(
         userId: Long,
