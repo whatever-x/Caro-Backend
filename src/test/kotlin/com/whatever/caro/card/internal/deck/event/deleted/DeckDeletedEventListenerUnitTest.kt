@@ -6,6 +6,7 @@ import io.kotest.core.spec.style.DescribeSpec
 import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.nulls.shouldNotBeNull
+import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -16,6 +17,10 @@ class DeckDeletedEventListenerUnitTest :
 
         val deckRepository = mockk<DeckRepository>(relaxed = true)
         val listener = DeckDeletedEventListener(deckRepository)
+
+        beforeEach {
+            clearMocks(deckRepository)
+        }
 
         fun createDeckWithId(
             id: Long,

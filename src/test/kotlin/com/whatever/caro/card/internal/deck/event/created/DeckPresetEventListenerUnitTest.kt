@@ -6,6 +6,7 @@ import com.whatever.caro.card.internal.deck.DeckPresetRepository
 import com.whatever.caro.card.internal.deck.DeckRepository
 import io.kotest.core.spec.style.DescribeSpec
 import io.kotest.matchers.shouldBe
+import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -17,6 +18,10 @@ class DeckPresetEventListenerUnitTest :
         val deckRepository = mockk<DeckRepository>(relaxed = true)
         val deckPresetRepository = mockk<DeckPresetRepository>(relaxed = true)
         val listener = DeckPresetEventListener(deckRepository, deckPresetRepository)
+
+        beforeEach {
+            clearMocks(deckRepository, deckPresetRepository)
+        }
 
         describe("onDeckCreated") {
             it("프리셋과 덱 모두 존재하면 덱에 프리셋을 할당한다") {
