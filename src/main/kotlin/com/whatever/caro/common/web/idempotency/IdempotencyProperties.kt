@@ -14,10 +14,10 @@ data class IdempotencyProperties(
 ) {
     @PostConstruct
     fun validate() {
-        require(!responseTtl.isNegative && !responseTtl.isZero) {
+        require(responseTtl.isPositive && !responseTtl.isZero) {
             "app.idempotency.response-ttl must be positive: $responseTtl"
         }
-        require(!processingTtl.isNegative && !processingTtl.isZero) {
+        require(processingTtl.isPositive && !processingTtl.isZero) {
             "app.idempotency.processing-ttl must be positive: $processingTtl"
         }
         logger.info {
