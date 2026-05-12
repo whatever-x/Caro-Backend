@@ -97,14 +97,16 @@ class IdempotencyInterceptor(
             return
         }
 
-        var isSaved = false
-        try {
-            val response = WebUtils.getNativeResponse(
-                response,
-                ContentCachingResponseWrapper::class.java,
-            ) ?: return
-            val body = response.contentAsByteArray.toString(Charsets.UTF_8)
+        val response = WebUtils.getNativeResponse(
+            response,
+            ContentCachingResponseWrapper::class.java,
+        ) ?: run {
+            deleteProcessingOnCacheSkip(redisKey)
+            return
+        }
 
+        try {
+            val body = response.contentAsByteArray.toString(Charsets.UTF_8)
             repository.saveResponse(
                 redisKey,
                 hash,
@@ -113,13 +115,16 @@ class IdempotencyInterceptor(
                 body,
                 properties.responseTtl,
             )
-            isSaved = true
-        } finally {
-            if (!isSaved) { // 캐싱 과정에서 예외 발생 시 processing key 제거
-                runCatching { repository.deleteIdempotencyProcessing(redisKey) }
-                logger.warn { "Idempotency response cache skipped. Processing key released. key: $redisKey" }
-            }
+        } catch (e: Exception) {
+            deleteProcessingOnCacheSkip(redisKey)
         }
+    }
+
+    private fun deleteProcessingOnCacheSkip(
+        redisKey: String,
+    ) {
+        runCatching { repository.deleteIdempotencyProcessing(redisKey) }
+        logger.warn { "Idempotency response cache skipped. Processing key released. key: $redisKey" }
     }
 
     private fun isValidKey(
