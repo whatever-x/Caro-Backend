@@ -124,14 +124,13 @@ class IdempotencyInterceptor(
 
     private fun isValidKey(
         key: String,
-    ): Boolean {
-        return try {
+    ): Boolean =
+        try {
             UUID.fromString(key)
             true
         } catch (e: IllegalArgumentException) {
             false
         }
-    }
 
     private fun computeHash(
         method: String,
