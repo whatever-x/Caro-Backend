@@ -1,4 +1,4 @@
-package com.whatever.caro.card.internal.deck.event
+package com.whatever.caro.card.internal.deck.event.created
 
 import com.whatever.caro.card.internal.deck.DeckPresetRepository
 import com.whatever.caro.card.internal.deck.DeckRepository
