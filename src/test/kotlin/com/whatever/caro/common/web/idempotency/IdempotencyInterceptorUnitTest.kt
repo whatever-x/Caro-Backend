@@ -459,7 +459,7 @@ class IdempotencyInterceptorUnitTest :
             }
 
             context("saveResponse에서 예외가 발생할 때") {
-                it("응답을 캐싱하지 않으며 processing 마커를 제거한다") {
+                it("응답을 캐싱하지 않고 processing 마커를 제거하며 예외는 삼켜진다") {
                     val request = requestWith()
                     val wrapped = wrappedResponseWith()
 
@@ -467,9 +467,7 @@ class IdempotencyInterceptorUnitTest :
                         idempotencyRepository.saveResponse(any(), any(), any(), any(), any(), any())
                     } throws RuntimeException("redis down")
 
-                    shouldThrow<RuntimeException> {
-                        interceptor.afterCompletion(request, wrapped, handlerMethod(), null)
-                    }
+                    interceptor.afterCompletion(request, wrapped, handlerMethod(), null)
 
                     verify { idempotencyRepository.deleteIdempotencyProcessing(defaultRedisKey) }
                 }
