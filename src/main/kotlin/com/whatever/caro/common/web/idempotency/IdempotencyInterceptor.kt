@@ -49,7 +49,7 @@ class IdempotencyInterceptor(
             )
 
         val path = cachedRequest.requestURI.trimEnd('/').ifEmpty { "/" }
-        val query = cachedRequest.queryString ?: ""
+        val query = cachedRequest.queryString.orEmpty()
         val newHash = computeHash(
             cachedRequest.method,
             "$path?$query",
@@ -125,11 +125,11 @@ class IdempotencyInterceptor(
     private fun isValidKey(
         key: String,
     ): Boolean {
-        try {
+        return try {
             UUID.fromString(key)
-            return true
+            true
         } catch (e: IllegalArgumentException) {
-            return false
+            false
         }
     }
 
