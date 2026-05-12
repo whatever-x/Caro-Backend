@@ -25,14 +25,13 @@ class DeckService(
 ) : DeckApi {
     override fun getDecks(
         userId: Long,
-    ): List<Deck> = deckRepository.findByUserId(userId)
+    ): List<Deck> = deckRepository.findByUserIdAndDeletedAtIsNull(userId)
 
     override fun getDeck(
         deckId: Long,
     ): Deck =
-        deckRepository.findById(deckId).orElseThrow {
-            DeckNotFoundException("deckId=$deckId 덱을 찾을 수 없습니다")
-        }
+        deckRepository.findByIdAndDeletedAtIsNull(deckId)
+            ?: throw DeckNotFoundException("deckId=$deckId 덱을 찾을 수 없습니다")
 
     @Transactional
     fun createDeck(
