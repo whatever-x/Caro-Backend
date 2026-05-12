@@ -1,4 +1,4 @@
-package com.whatever.caro.card.internal.deck.event.deleted
+package com.whatever.caro.card.api.deck
 
 data class DeckDeletedEvent(
     val deckId: Long,
