@@ -5,15 +5,16 @@ import com.whatever.caro.card.internal.deck.Deck
 import com.whatever.caro.card.internal.deck.DeckRepository
 import com.whatever.caro.card.internal.deck.dto.create.CreateDeckDto
 import com.whatever.caro.card.internal.deck.dto.create.CreateDeckResponseDto
+import com.whatever.caro.card.api.deck.DeckDeletedEvent
 import com.whatever.caro.card.internal.deck.dto.delete.DeleteDeckDto
 import com.whatever.caro.card.internal.deck.dto.delete.DeleteDeckResponseDto
 import com.whatever.caro.card.internal.deck.dto.update.UpdateDeckDto
 import com.whatever.caro.card.internal.deck.dto.update.UpdateDeckResponseDto
 import com.whatever.caro.card.internal.deck.event.created.DeckCreatedEvent
-import com.whatever.caro.card.internal.deck.event.deleted.DeckDeletedEvent
 import com.whatever.caro.card.internal.deck.exception.DeckForbiddenException
 import com.whatever.caro.card.internal.deck.exception.DeckNotFoundException
 import org.springframework.context.ApplicationEventPublisher
+import java.time.Instant
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -64,6 +65,7 @@ class DeckService(
         if (deck.userId != userId) {
             throw DeckForbiddenException("deckId=${deleteDeckDto.deckId} 에 대한 접근 권한이 없습니다")
         }
+        deck.softDelete(deletedAt = Instant.now())
         eventPublisher.publishEvent(DeckDeletedEvent(deckId = deleteDeckDto.deckId, userId = userId))
         return DeleteDeckResponseDto(id = deleteDeckDto.deckId)
     }
