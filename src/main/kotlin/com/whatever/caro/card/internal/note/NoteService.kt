@@ -7,6 +7,7 @@ import com.whatever.caro.card.internal.deck.exception.DeckForbiddenException
 import com.whatever.caro.card.internal.deck.exception.DeckNotFoundException
 import com.whatever.caro.card.internal.note.dto.create.CreateNoteDto
 import com.whatever.caro.card.internal.note.dto.create.CreateNoteResponseDto
+import com.whatever.caro.card.internal.note.dto.read.NoteWithCardsResponseDto
 import com.whatever.caro.card.internal.note.exception.NoteInvalidFieldsException
 import com.whatever.caro.card.internal.notetype.CardTemplateRepository
 import com.whatever.caro.card.internal.notetype.NoteTypeRepository
@@ -70,5 +71,30 @@ class NoteService(
             fields = note.fields,
             cardIds = cards.map { it.id },
         )
+    }
+
+    @Transactional(readOnly = true)
+    fun getNotesByDeck(
+        userId: Long,
+        deckId: Long,
+    ): List<NoteWithCardsResponseDto> {
+        val deck = deckRepository.findByIdAndDeletedAtIsNull(deckId)
+            ?: throw DeckNotFoundException("deckId=$deckId 덱을 찾을 수 없습니다")
+
+        if (deck.userId != userId) {
+            throw DeckForbiddenException("deckId=$deckId 에 대한 접근 권한이 없습니다")
+        }
+
+        val cards = cardRepository.findByDeckIdAndDeletedAtIsNull(deckId)
+
+        return cards
+            .groupBy { it.note.id }
+            .map { (noteId, noteCards) ->
+                NoteWithCardsResponseDto(
+                    noteId = noteId,
+                    fields = noteCards.first().note.fields,
+                    cardIds = noteCards.map { it.id },
+                )
+            }
     }
 }
