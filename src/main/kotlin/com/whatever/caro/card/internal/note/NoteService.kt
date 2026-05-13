@@ -8,7 +8,11 @@ import com.whatever.caro.card.internal.deck.exception.DeckNotFoundException
 import com.whatever.caro.card.internal.note.dto.create.CreateNoteDto
 import com.whatever.caro.card.internal.note.dto.create.CreateNoteResponseDto
 import com.whatever.caro.card.internal.note.dto.read.NoteWithCardsResponseDto
+import com.whatever.caro.card.internal.note.dto.update.UpdateNoteDto
+import com.whatever.caro.card.internal.note.dto.update.UpdateNoteResponseDto
+import com.whatever.caro.card.internal.note.exception.NoteForbiddenException
 import com.whatever.caro.card.internal.note.exception.NoteInvalidFieldsException
+import com.whatever.caro.card.internal.note.exception.NoteNotFoundException
 import com.whatever.caro.card.internal.notetype.CardTemplateRepository
 import com.whatever.caro.card.internal.notetype.NoteTypeRepository
 import com.whatever.caro.card.internal.notetype.exception.NoteTypeNotFoundException
@@ -96,5 +100,33 @@ class NoteService(
                     cardIds = noteCards.map { it.id },
                 )
             }
+    }
+
+    @Transactional
+    fun updateNote(
+        userId: Long,
+        dto: UpdateNoteDto,
+    ): UpdateNoteResponseDto {
+        val note = noteRepository.findByIdAndDeletedAtIsNull(dto.noteId)
+            ?: throw NoteNotFoundException("noteId=${dto.noteId} 노트를 찾을 수 없습니다")
+
+        if (note.userId != userId) {
+            throw NoteForbiddenException("noteId=${dto.noteId} 에 대한 접근 권한이 없습니다")
+        }
+
+        // 기존 카드들의 requiredFields 검증 (템플릿 구조 유지)
+        cardRepository.findByNoteIdAndDeletedAtIsNull(dto.noteId).forEach { card ->
+            val missing = card.cardTemplate.requiredFields - dto.fields.keys
+            if (missing.isNotEmpty()) {
+                throw NoteInvalidFieldsException("필수 필드가 누락되었습니다: $missing")
+            }
+        }
+
+        note.fields = dto.fields
+
+        return UpdateNoteResponseDto(
+            noteId = note.id,
+            fields = note.fields,
+        )
     }
 }
