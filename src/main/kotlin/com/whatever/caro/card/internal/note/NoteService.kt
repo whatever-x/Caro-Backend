@@ -8,6 +8,8 @@ import com.whatever.caro.card.internal.deck.exception.DeckNotFoundException
 import com.whatever.caro.card.internal.note.dto.create.CreateNoteDto
 import com.whatever.caro.card.internal.note.dto.create.CreateNoteResponseDto
 import com.whatever.caro.card.internal.note.dto.read.NoteWithCardsResponseDto
+import com.whatever.caro.card.internal.note.dto.delete.DeleteNoteDto
+import com.whatever.caro.card.internal.note.dto.delete.DeleteNoteResponseDto
 import com.whatever.caro.card.internal.note.dto.update.UpdateNoteDto
 import com.whatever.caro.card.internal.note.dto.update.UpdateNoteResponseDto
 import com.whatever.caro.card.internal.note.exception.NoteForbiddenException
@@ -19,6 +21,7 @@ import com.whatever.caro.card.internal.notetype.exception.NoteTypeNotFoundExcept
 import com.whatever.caro.card.internal.notetype.exception.NoteTypeNoTemplatesException
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.Instant
 
 @Service
 class NoteService(
@@ -128,5 +131,24 @@ class NoteService(
             noteId = note.id,
             fields = note.fields,
         )
+    }
+
+    @Transactional
+    fun deleteNote(
+        userId: Long,
+        dto: DeleteNoteDto,
+    ): DeleteNoteResponseDto {
+        val note = noteRepository.findByIdAndDeletedAtIsNull(dto.noteId)
+            ?: throw NoteNotFoundException("noteId=${dto.noteId} 노트를 찾을 수 없습니다")
+
+        if (note.userId != userId) {
+            throw NoteForbiddenException("noteId=${dto.noteId} 에 대한 접근 권한이 없습니다")
+        }
+
+        val now = Instant.now()
+        note.softDelete(deletedAt = now)
+        cardRepository.findByNoteIdAndDeletedAtIsNull(dto.noteId).forEach { it.softDelete(deletedAt = now) }
+
+        return DeleteNoteResponseDto(noteId = dto.noteId)
     }
 }
