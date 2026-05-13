@@ -1,18 +1,21 @@
 package com.whatever.caro.card.internal.deck.service
 
+import com.whatever.caro.card.api.deck.DeckDeletedEvent
 import com.whatever.caro.card.internal.deck.Deck
 import com.whatever.caro.card.internal.deck.DeckRepository
 import com.whatever.caro.card.internal.deck.dto.create.CreateDeckDto
 import com.whatever.caro.card.internal.deck.dto.delete.DeleteDeckDto
 import com.whatever.caro.card.internal.deck.dto.update.UpdateDeckDto
 import com.whatever.caro.card.internal.deck.event.created.DeckCreatedEvent
-import com.whatever.caro.card.internal.deck.event.deleted.DeckDeletedEvent
 import com.whatever.caro.card.internal.deck.exception.DeckForbiddenException
 import com.whatever.caro.card.internal.deck.exception.DeckNotFoundException
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.DescribeSpec
+import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.collections.shouldBeEmpty
+import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
+import java.time.Instant
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -56,7 +59,7 @@ class DeckServiceUnitTest :
         }
 
         describe("deleteDeck") {
-            it("소유자가 삭제 요청 시 DeckDeletedEvent를 발행하고 덱 id를 반환한다") {
+            it("소유자가 삭제 요청 시 soft delete를 수행하고 DeckDeletedEvent를 발행한다") {
                 val userId = 1L
                 val deckId = 10L
                 val deck = createDeckWithId(id = deckId, userId = userId)
@@ -65,6 +68,8 @@ class DeckServiceUnitTest :
                 val result = deckService.deleteDeck(userId, DeleteDeckDto(deckId))
 
                 result.id shouldBe deckId
+                deck.isDeleted.shouldBeTrue()
+                deck.deletedAt.shouldNotBeNull()
                 verify { eventPublisher.publishEvent(DeckDeletedEvent(deckId = deckId, userId = userId)) }
             }
 
@@ -84,6 +89,20 @@ class DeckServiceUnitTest :
                     deckService.deleteDeck(1L, DeleteDeckDto(10L))
                 }
             }
+
+            it("이미 soft delete된 덱을 삭제 요청하면 deletedAt을 덮어쓴다") {
+                val userId = 1L
+                val deckId = 10L
+                val deck = createDeckWithId(id = deckId, userId = userId)
+                val firstDeletedAt = Instant.now().minusSeconds(60)
+                deck.softDelete(firstDeletedAt)
+                every { deckRepository.findById(deckId) } returns Optional.of(deck)
+
+                deckService.deleteDeck(userId, DeleteDeckDto(deckId))
+
+                deck.isDeleted.shouldBeTrue()
+                deck.deletedAt!!.isAfter(firstDeletedAt).shouldBeTrue()
+            }
         }
 
         describe("updateDeck") {
@@ -100,6 +119,8 @@ class DeckServiceUnitTest :
                 result.id shouldBe 10L
                 result.name shouldBe "새 이름"
                 result.description shouldBe "새 설명"
+                deck.name shouldBe "새 이름"
+                deck.description shouldBe "새 설명"
             }
 
             it("존재하지 않는 덱이면 DeckNotFoundException을 던진다") {
@@ -121,9 +142,9 @@ class DeckServiceUnitTest :
         }
 
         describe("getDeck") {
-            it("덱을 반환한다") {
+            it("soft delete되지 않은 덱을 반환한다") {
                 val deck = createDeckWithId(id = 10L, userId = 1L, name = "내 덱")
-                every { deckRepository.findById(10L) } returns Optional.of(deck)
+                every { deckRepository.findByIdAndDeletedAtIsNull(10L) } returns deck
 
                 val result = deckService.getDeck(10L)
 
@@ -132,22 +153,30 @@ class DeckServiceUnitTest :
             }
 
             it("존재하지 않으면 DeckNotFoundException을 던진다") {
-                every { deckRepository.findById(any()) } returns Optional.empty()
+                every { deckRepository.findByIdAndDeletedAtIsNull(any()) } returns null
 
                 shouldThrow<DeckNotFoundException> {
                     deckService.getDeck(999L)
                 }
             }
+
+            it("soft delete된 덱이면 DeckNotFoundException을 던진다") {
+                every { deckRepository.findByIdAndDeletedAtIsNull(any()) } returns null
+
+                shouldThrow<DeckNotFoundException> {
+                    deckService.getDeck(10L)
+                }
+            }
         }
 
         describe("getDecks") {
-            it("유저의 덱 목록을 반환한다") {
+            it("soft delete되지 않은 유저의 덱 목록을 반환한다") {
                 val userId = 1L
                 val decks = listOf(
                     createDeckWithId(id = 1L, userId = userId),
                     createDeckWithId(id = 2L, userId = userId),
                 )
-                every { deckRepository.findByUserId(userId) } returns decks
+                every { deckRepository.findByUserIdAndDeletedAtIsNull(userId) } returns decks
 
                 val result = deckService.getDecks(userId)
 
@@ -155,9 +184,20 @@ class DeckServiceUnitTest :
             }
 
             it("덱이 없으면 빈 목록을 반환한다") {
-                every { deckRepository.findByUserId(any()) } returns emptyList()
+                every { deckRepository.findByUserIdAndDeletedAtIsNull(any()) } returns emptyList()
 
                 deckService.getDecks(1L).shouldBeEmpty()
+            }
+
+            it("soft delete된 덱은 목록에 포함되지 않는다") {
+                val userId = 1L
+                val activeDecks = listOf(createDeckWithId(id = 1L, userId = userId))
+                every { deckRepository.findByUserIdAndDeletedAtIsNull(userId) } returns activeDecks
+
+                val result = deckService.getDecks(userId)
+
+                result.size shouldBe 1
+                result[0].id shouldBe 1L
             }
         }
     })

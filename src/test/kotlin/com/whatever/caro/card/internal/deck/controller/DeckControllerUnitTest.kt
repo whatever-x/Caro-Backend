@@ -9,8 +9,11 @@ import com.whatever.caro.card.internal.deck.dto.update.UpdateDeckResponseDto
 import com.whatever.caro.card.internal.deck.service.DeckService
 import io.kotest.core.spec.style.DescribeSpec
 import io.kotest.matchers.shouldBe
+import com.whatever.caro.card.internal.deck.dto.delete.DeleteDeckDto
+import com.whatever.caro.card.internal.deck.dto.update.UpdateDeckDto
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import org.springframework.http.HttpStatus
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
@@ -57,6 +60,7 @@ class DeckControllerUnitTest :
                 response.statusCode shouldBe HttpStatus.OK
                 response.body!!.success shouldBe true
                 response.body!!.data!!.id shouldBe 1L
+                verify { deckService.deleteDeck(1L, DeleteDeckDto(deckId = 1L)) }
             }
         }
 
@@ -74,6 +78,7 @@ class DeckControllerUnitTest :
                     deckName shouldBe "새 이름"
                     deckDescription shouldBe "새 설명"
                 }
+                verify { deckService.updateDeck(1L, UpdateDeckDto(deckId = 1L, name = "새 이름", description = "새 설명")) }
             }
         }
     })
