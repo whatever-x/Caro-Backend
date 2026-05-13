@@ -33,7 +33,7 @@ import org.springframework.web.bind.annotation.RestController
 class NoteController(
     private val noteService: NoteService,
 ) {
-    @PostMapping("/v1/decks/{deckId}/notes")
+    @PostMapping("/v1/decks/{deckId}/cards")
     fun createNote(
         @Parameter(description = "덱 ID", required = true)
         @Positive @PathVariable deckId: Long,
@@ -44,7 +44,7 @@ class NoteController(
         return ResponseEntity.ok(ApiResponse.ok(result))
     }
 
-    @GetMapping("/v1/decks/{deckId}/notes")
+    @GetMapping("/v1/decks/{deckId}/cards")
     fun getNotes(
         @Parameter(description = "덱 ID", required = true)
         @Positive @PathVariable deckId: Long,
@@ -54,7 +54,7 @@ class NoteController(
         return ResponseEntity.ok(ApiResponse.ok(result))
     }
 
-    @PatchMapping("/v1/notes/{noteId}")
+    @PatchMapping("/v1/cards/{noteId}")
     fun updateNote(
         @Parameter(description = "노트 ID", required = true)
         @Positive @PathVariable noteId: Long,
@@ -65,7 +65,7 @@ class NoteController(
         return ResponseEntity.ok(ApiResponse.ok(result))
     }
 
-    @DeleteMapping("/v1/notes/{noteId}")
+    @DeleteMapping("/v1/cards/{noteId}")
     fun deleteNote(
         @Parameter(description = "노트 ID", required = true)
         @Positive @PathVariable noteId: Long,

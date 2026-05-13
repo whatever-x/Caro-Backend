@@ -8,6 +8,7 @@ import com.whatever.caro.card.internal.deck.exception.DeckNotFoundException
 import com.whatever.caro.card.internal.note.dto.create.CreateNoteDto
 import com.whatever.caro.card.internal.note.dto.create.CreateNoteResponseDto
 import com.whatever.caro.card.internal.note.dto.read.NoteWithCardsResponseDto
+import com.whatever.caro.card.api.note.CardsCreatedEvent
 import com.whatever.caro.card.internal.note.dto.delete.DeleteNoteDto
 import com.whatever.caro.card.internal.note.dto.delete.DeleteNoteResponseDto
 import com.whatever.caro.card.internal.note.dto.update.UpdateNoteDto
@@ -19,6 +20,7 @@ import com.whatever.caro.card.internal.notetype.CardTemplateRepository
 import com.whatever.caro.card.internal.notetype.NoteTypeRepository
 import com.whatever.caro.card.internal.notetype.exception.NoteTypeNotFoundException
 import com.whatever.caro.card.internal.notetype.exception.NoteTypeNoTemplatesException
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
@@ -30,6 +32,7 @@ class NoteService(
     private val deckRepository: DeckRepository,
     private val noteTypeRepository: NoteTypeRepository,
     private val cardTemplateRepository: CardTemplateRepository,
+    private val eventPublisher: ApplicationEventPublisher,
 ) {
     @Transactional
     fun createNote(
@@ -72,6 +75,9 @@ class NoteService(
                 ),
             )
         }
+
+        deck.cardCount += cards.size
+        eventPublisher.publishEvent(CardsCreatedEvent(cardIds = cards.map { it.id }, userId = userId))
 
         return CreateNoteResponseDto(
             noteId = note.id,
