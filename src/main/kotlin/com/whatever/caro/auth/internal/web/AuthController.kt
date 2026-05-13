@@ -33,9 +33,11 @@ class AuthController(
     @PublicApi
     @PostMapping("/social-login")
     fun socialLogin(
+        @Parameter(name = "Device-Id", description = "디바이스 식별자", required = true, example = "unique-device-identifier")
+        @RequestHeader(name = "Device-Id", required = true) deviceId: String,
         @Valid @RequestBody request: SocialLoginRequest,
     ): ResponseEntity<ApiResponse<SocialLoginResponse>> {
-        val response = authService.socialLogin(request)
+        val response = authService.socialLogin(request, deviceId)
         return ResponseEntity.ok(ApiResponse.ok(response))
     }
 
@@ -45,9 +47,9 @@ class AuthController(
     )
     @PostMapping("/complete-registration")
     fun completeRegistration(
-        @Valid @RequestBody request: CompleteRegistrationRequest,
         @Parameter(name = "Device-Id", description = "디바이스 식별자", required = true, example = "unique-device-identifier")
         @RequestHeader(name = "Device-Id", required = true) deviceId: String,
+        @Valid @RequestBody request: CompleteRegistrationRequest,
     ): ResponseEntity<ApiResponse<TokenResponse>> {
         val authUser = SecurityUtil.currentUser()
         val response = authService.completeRegistration(authUser, request, deviceId)
@@ -61,9 +63,11 @@ class AuthController(
     @PublicApi
     @PostMapping("/refresh")
     fun refreshToken(
+        @Parameter(name = "Device-Id", description = "디바이스 식별자", required = true, example = "unique-device-identifier")
+        @RequestHeader(name = "Device-Id", required = true) deviceId: String,
         @Valid @RequestBody request: RefreshTokenRequest,
     ): ResponseEntity<ApiResponse<TokenResponse>> {
-        val response = authService.reissueToken(request)
+        val response = authService.reissueToken(request, deviceId)
         return ResponseEntity.ok(ApiResponse.ok(response))
     }
 
