@@ -71,7 +71,7 @@ class NoteController(
         @Valid @RequestBody request: UpdateNoteRequest,
     ): ResponseEntity<ApiResponse<UpdateNoteResponse>> {
         val userId = SecurityUtil.currentUser().userId
-        val result = noteService.updateNote(userId = userId, dto = request.toDto(id)).toResponse()
+        val result = noteService.updateNote(userId = userId, dto = request.toDto(noteId = id)).toResponse()
         return ResponseEntity.ok(ApiResponse.ok(result))
     }
 

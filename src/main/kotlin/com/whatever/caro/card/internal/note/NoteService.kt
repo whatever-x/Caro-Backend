@@ -99,10 +99,12 @@ class NoteService(
             throw NoteForbiddenException("noteId=$noteId 에 대한 접근 권한이 없습니다")
         }
 
+        val cardIds = cardRepository.findByNoteIdAndDeletedAtIsNull(noteId).map { it.id }
+
         return NoteWithCardsResponseDto(
             noteId = note.id,
             fields = note.fields,
-            cardIds = emptyList(),
+            cardIds = cardIds,
         )
     }
 
