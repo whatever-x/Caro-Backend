@@ -54,24 +54,24 @@ class NoteController(
         return ResponseEntity.ok(ApiResponse.ok(result))
     }
 
-    @PatchMapping("/v1/cards/{noteId}")
+    @PatchMapping("/v1/cards/{id}")
     fun updateNote(
-        @Parameter(description = "노트 ID", required = true)
-        @Positive @PathVariable noteId: Long,
+        @Parameter(description = "카드 ID", required = true)
+        @Positive @PathVariable id: Long,
         @Valid @RequestBody request: UpdateNoteRequest,
     ): ResponseEntity<ApiResponse<UpdateNoteResponse>> {
         val userId = SecurityUtil.currentUser().userId
-        val result = noteService.updateNote(userId = userId, dto = request.toDto(noteId)).toResponse()
+        val result = noteService.updateNote(userId = userId, dto = request.toDto(id)).toResponse()
         return ResponseEntity.ok(ApiResponse.ok(result))
     }
 
-    @DeleteMapping("/v1/cards/{noteId}")
+    @DeleteMapping("/v1/cards/{id}")
     fun deleteNote(
-        @Parameter(description = "노트 ID", required = true)
-        @Positive @PathVariable noteId: Long,
+        @Parameter(description = "카드 ID", required = true)
+        @Positive @PathVariable id: Long,
     ): ResponseEntity<ApiResponse<DeleteNoteResponse>> {
         val userId = SecurityUtil.currentUser().userId
-        val result = noteService.deleteNote(userId = userId, dto = DeleteNoteDto(noteId = noteId)).toResponse()
+        val result = noteService.deleteNote(userId = userId, dto = DeleteNoteDto(noteId = id)).toResponse()
         return ResponseEntity.ok(ApiResponse.ok(result))
     }
 }

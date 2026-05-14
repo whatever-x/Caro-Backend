@@ -5,4 +5,4 @@ data class DeleteNoteResponseDto(
 )
 
 fun DeleteNoteResponseDto.toResponse() =
-    DeleteNoteResponse(noteId = noteId)
+    DeleteNoteResponse(id = noteId)

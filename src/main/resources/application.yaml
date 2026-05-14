@@ -78,6 +78,7 @@ management:
         histogram-flavor: base2-exponential-bucket-histogram
         max-scale: 20
         max-bucket-count: 160
+        enabled: false
   metrics:
     distribution:
       percentiles-histogram:

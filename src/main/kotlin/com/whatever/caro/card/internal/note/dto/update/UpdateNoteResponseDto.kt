@@ -7,6 +7,6 @@ data class UpdateNoteResponseDto(
 
 fun UpdateNoteResponseDto.toResponse() =
     UpdateNoteResponse(
-        noteId = noteId,
+        id = noteId,
         fields = fields,
     )

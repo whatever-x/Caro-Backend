@@ -8,7 +8,6 @@ data class CreateNoteResponseDto(
 
 fun CreateNoteResponseDto.toResponse() =
     CreateNoteResponse(
-        noteId = noteId,
+        id = noteId,
         fields = fields,
-        cardIds = cardIds,
     )
