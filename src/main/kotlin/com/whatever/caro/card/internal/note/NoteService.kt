@@ -1,5 +1,7 @@
 package com.whatever.caro.card.internal.note
 
+import com.whatever.caro.card.api.note.CardsCreatedEvent
+import com.whatever.caro.card.api.note.CardsDeletedEvent
 import com.whatever.caro.card.internal.card.Card
 import com.whatever.caro.card.internal.card.CardRepository
 import com.whatever.caro.card.internal.deck.DeckRepository
@@ -7,11 +9,9 @@ import com.whatever.caro.card.internal.deck.exception.DeckForbiddenException
 import com.whatever.caro.card.internal.deck.exception.DeckNotFoundException
 import com.whatever.caro.card.internal.note.dto.create.CreateNoteDto
 import com.whatever.caro.card.internal.note.dto.create.CreateNoteResponseDto
-import com.whatever.caro.card.internal.note.dto.read.NoteWithCardsResponseDto
-import com.whatever.caro.card.api.note.CardsCreatedEvent
-import com.whatever.caro.card.api.note.CardsDeletedEvent
 import com.whatever.caro.card.internal.note.dto.delete.DeleteNoteDto
 import com.whatever.caro.card.internal.note.dto.delete.DeleteNoteResponseDto
+import com.whatever.caro.card.internal.note.dto.read.NoteWithCardsResponseDto
 import com.whatever.caro.card.internal.note.dto.update.UpdateNoteDto
 import com.whatever.caro.card.internal.note.dto.update.UpdateNoteResponseDto
 import com.whatever.caro.card.internal.note.exception.NoteForbiddenException
@@ -19,8 +19,8 @@ import com.whatever.caro.card.internal.note.exception.NoteInvalidFieldsException
 import com.whatever.caro.card.internal.note.exception.NoteNotFoundException
 import com.whatever.caro.card.internal.notetype.CardTemplateRepository
 import com.whatever.caro.card.internal.notetype.NoteTypeRepository
-import com.whatever.caro.card.internal.notetype.exception.NoteTypeNotFoundException
 import com.whatever.caro.card.internal.notetype.exception.NoteTypeNoTemplatesException
+import com.whatever.caro.card.internal.notetype.exception.NoteTypeNotFoundException
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional

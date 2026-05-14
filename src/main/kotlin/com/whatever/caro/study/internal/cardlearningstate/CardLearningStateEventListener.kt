@@ -9,7 +9,9 @@ internal class CardLearningStateEventListener(
     private val cardLearningStateRepository: CardLearningStateRepository,
 ) {
     @ApplicationModuleListener
-    fun onCardsCreated(event: CardsCreatedEvent) {
+    fun onCardsCreated(
+        event: CardsCreatedEvent,
+    ) {
         val states = event.cardIds.map { cardId ->
             CardLearningState(cardId = cardId, userId = event.userId)
         }

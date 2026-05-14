@@ -4,5 +4,4 @@ data class DeleteNoteResponseDto(
     val noteId: Long,
 )
 
-fun DeleteNoteResponseDto.toResponse() =
-    DeleteNoteResponse(id = noteId)
+fun DeleteNoteResponseDto.toResponse() = DeleteNoteResponse(id = noteId)

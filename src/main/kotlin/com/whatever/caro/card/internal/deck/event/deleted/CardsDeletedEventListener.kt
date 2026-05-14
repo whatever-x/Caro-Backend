@@ -11,7 +11,9 @@ internal class CardsDeletedEventListener(
     private val deckRepository: DeckRepository,
 ) {
     @ApplicationModuleListener
-    fun onCardsDeleted(event: CardsDeletedEvent) {
+    fun onCardsDeleted(
+        event: CardsDeletedEvent,
+    ) {
         val deck = deckRepository.findById(event.deckId).getOrNull() ?: return
         deck.cardCount = maxOf(0, deck.cardCount - event.deletedCount)
     }

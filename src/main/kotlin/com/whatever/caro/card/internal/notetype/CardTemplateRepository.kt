@@ -4,5 +4,7 @@ import org.springframework.data.jpa.repository.JpaRepository
 
 interface CardTemplateRepository : JpaRepository<CardTemplate, Long> {
 
-    fun findByNoteTypeId(noteTypeId: Long): List<CardTemplate>
+    fun findByNoteTypeId(
+        noteTypeId: Long,
+    ): List<CardTemplate>
 }

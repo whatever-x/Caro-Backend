@@ -12,9 +12,10 @@ data class CreateNoteRequest(
     val fields: Map<String, String>,
 )
 
-fun CreateNoteRequest.toDto(deckId: Long) =
-    CreateNoteDto(
-        deckId = deckId,
-        noteTypeId = cardType.noteTypeId,
-        fields = fields,
-    )
+fun CreateNoteRequest.toDto(
+    deckId: Long,
+) = CreateNoteDto(
+    deckId = deckId,
+    noteTypeId = cardType.noteTypeId,
+    fields = fields,
+)

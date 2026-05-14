@@ -9,8 +9,9 @@ data class UpdateNoteRequest(
     val fields: Map<String, String>,
 )
 
-fun UpdateNoteRequest.toDto(noteId: Long) =
-    UpdateNoteDto(
-        noteId = noteId,
-        fields = fields,
-    )
+fun UpdateNoteRequest.toDto(
+    noteId: Long,
+) = UpdateNoteDto(
+    noteId = noteId,
+    fields = fields,
+)
