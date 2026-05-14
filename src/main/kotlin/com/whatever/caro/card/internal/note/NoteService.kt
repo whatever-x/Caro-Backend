@@ -118,7 +118,7 @@ class NoteService(
             throw DeckForbiddenException("deckId=$deckId 에 대한 접근 권한이 없습니다")
         }
 
-        val cards = cardRepository.findByDeckIdAndDeletedAtIsNull(deckId)
+        val cards = cardRepository.findByDeckIdAndDeletedAtIsNullWithNote(deckId)
 
         return cards
             .groupBy { it.note.id }
@@ -144,7 +144,7 @@ class NoteService(
         }
 
         // 기존 카드들의 requiredFields 검증 (템플릿 구조 유지)
-        cardRepository.findByNoteIdAndDeletedAtIsNull(dto.noteId).forEach { card ->
+        cardRepository.findByNoteIdAndDeletedAtIsNullWithTemplate(dto.noteId).forEach { card ->
             val missing = card.cardTemplate.requiredFields - dto.fields.keys
             if (missing.isNotEmpty()) {
                 throw NoteInvalidFieldsException("필수 필드가 누락되었습니다: $missing")
