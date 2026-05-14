@@ -87,6 +87,25 @@ class NoteService(
     }
 
     @Transactional(readOnly = true)
+    fun getNoteById(
+        userId: Long,
+        noteId: Long,
+    ): NoteWithCardsResponseDto {
+        val note = noteRepository.findByIdAndDeletedAtIsNull(noteId)
+            ?: throw NoteNotFoundException("noteId=$noteId 노트를 찾을 수 없습니다")
+
+        if (note.userId != userId) {
+            throw NoteForbiddenException("noteId=$noteId 에 대한 접근 권한이 없습니다")
+        }
+
+        return NoteWithCardsResponseDto(
+            noteId = note.id,
+            fields = note.fields,
+            cardIds = emptyList(),
+        )
+    }
+
+    @Transactional(readOnly = true)
     fun getNotesByDeck(
         userId: Long,
         deckId: Long,

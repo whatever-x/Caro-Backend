@@ -54,6 +54,16 @@ class NoteController(
         return ResponseEntity.ok(ApiResponse.ok(result))
     }
 
+    @GetMapping("/v1/cards/{id}")
+    fun getCard(
+        @Parameter(description = "카드 ID", required = true)
+        @Positive @PathVariable id: Long,
+    ): ResponseEntity<ApiResponse<NoteWithCardsResponse>> {
+        val userId = SecurityUtil.currentUser().userId
+        val result = noteService.getNoteById(userId = userId, noteId = id).toResponse()
+        return ResponseEntity.ok(ApiResponse.ok(result))
+    }
+
     @PatchMapping("/v1/cards/{id}")
     fun updateNote(
         @Parameter(description = "카드 ID", required = true)
