@@ -9,6 +9,7 @@ import com.whatever.caro.card.internal.note.dto.create.CreateNoteDto
 import com.whatever.caro.card.internal.note.dto.create.CreateNoteResponseDto
 import com.whatever.caro.card.internal.note.dto.read.NoteWithCardsResponseDto
 import com.whatever.caro.card.api.note.CardsCreatedEvent
+import com.whatever.caro.card.api.note.CardsDeletedEvent
 import com.whatever.caro.card.internal.note.dto.delete.DeleteNoteDto
 import com.whatever.caro.card.internal.note.dto.delete.DeleteNoteResponseDto
 import com.whatever.caro.card.internal.note.dto.update.UpdateNoteDto
@@ -172,7 +173,13 @@ class NoteService(
 
         val now = Instant.now()
         note.softDelete(deletedAt = now)
-        cardRepository.findByNoteIdAndDeletedAtIsNull(dto.noteId).forEach { it.softDelete(deletedAt = now) }
+        val cards = cardRepository.findByNoteIdAndDeletedAtIsNull(dto.noteId)
+        cards.forEach { it.softDelete(deletedAt = now) }
+
+        if (cards.isNotEmpty()) {
+            val deckId = cards.first().deck.id
+            eventPublisher.publishEvent(CardsDeletedEvent(deckId = deckId, deletedCount = cards.size, userId = userId))
+        }
 
         return DeleteNoteResponseDto(noteId = dto.noteId)
     }
