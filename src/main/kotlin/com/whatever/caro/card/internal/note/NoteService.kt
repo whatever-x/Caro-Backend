@@ -1,7 +1,7 @@
 package com.whatever.caro.card.internal.note
 
-import com.whatever.caro.card.api.note.CardsCreatedEvent
-import com.whatever.caro.card.api.note.CardsDeletedEvent
+import com.whatever.caro.card.api.event.CardsCreatedEvent
+import com.whatever.caro.card.api.event.CardsDeletedEvent
 import com.whatever.caro.card.internal.card.Card
 import com.whatever.caro.card.internal.card.CardRepository
 import com.whatever.caro.card.internal.deck.DeckRepository

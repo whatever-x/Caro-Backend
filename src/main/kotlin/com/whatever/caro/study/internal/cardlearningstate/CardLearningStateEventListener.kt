@@ -1,6 +1,6 @@
 package com.whatever.caro.study.internal.cardlearningstate
 
-import com.whatever.caro.card.api.note.CardsCreatedEvent
+import com.whatever.caro.card.api.event.CardsCreatedEvent
 import org.springframework.modulith.events.ApplicationModuleListener
 import org.springframework.stereotype.Component
 

@@ -1,4 +1,4 @@
-package com.whatever.caro.card.api.note
+package com.whatever.caro.card.api.event
 
 data class CardsCreatedEvent(
     val cardIds: List<Long>,

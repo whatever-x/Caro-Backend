@@ -1,6 +1,6 @@
 package com.whatever.caro.card.internal.deck.event.deleted
 
-import com.whatever.caro.card.api.note.CardsDeletedEvent
+import com.whatever.caro.card.api.event.CardsDeletedEvent
 import com.whatever.caro.card.internal.deck.DeckRepository
 import org.springframework.modulith.events.ApplicationModuleListener
 import org.springframework.stereotype.Component
