@@ -21,7 +21,9 @@ app:
     google:
       client-id: local-google-client-id
     apple:
-      client-id: local-apple-client-id
+      client-ids:
+        - local-apple-client-id-1
+        - local-apple-client-id-2
 
 logging:
   level:

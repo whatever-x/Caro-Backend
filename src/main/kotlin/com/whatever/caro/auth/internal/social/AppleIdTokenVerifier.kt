@@ -73,7 +73,7 @@ class AppleIdTokenVerifier(
 
         return NimbusJwtDecoder.withJwkSource(jwkSource).build().also { decoder ->
             val audienceValidator = JwtClaimValidator<List<String>>(JwtClaimNames.AUD) { aud ->
-                aud != null && aud.contains(oauth2Properties.apple.clientId)
+                aud != null && aud.any { oauth2Properties.apple.clientIds.contains(it) }
             }
 
             val tokenValidator = DelegatingOAuth2TokenValidator(
