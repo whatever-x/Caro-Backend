@@ -19,6 +19,9 @@ class CardLearningState(
     @Column(name = "card_id", nullable = false, unique = true)
     val cardId: Long,
 
+    @Column(name = "deck_id", nullable = false)
+    val deckId: Long,
+
     @Column(name = "user_id", nullable = false)
     val userId: Long,
 
