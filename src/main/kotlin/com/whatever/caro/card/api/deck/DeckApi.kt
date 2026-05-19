@@ -6,4 +6,8 @@ interface DeckApi {
     fun getDecks(
         userId: Long,
     ): List<Deck>
+
+    fun getDeck(
+        deckId: Long,
+    ): Deck
 }
