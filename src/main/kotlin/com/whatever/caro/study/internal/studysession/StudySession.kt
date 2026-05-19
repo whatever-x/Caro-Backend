@@ -62,4 +62,8 @@ class StudySession(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0L
+
+    fun isTodaySession(
+        now: Instant,
+    ): Boolean = sessionDate == now.atZone(timezone).minusHours(dayCutoffHour.toLong()).toLocalDate()
 }
