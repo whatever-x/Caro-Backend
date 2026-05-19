@@ -12,7 +12,9 @@ class TestcontainersConfiguration {
 
     @Bean
     @ServiceConnection
-    fun mysqlContainer(): MySQLContainer = MySQLContainer(DockerImageName.parse(MYSQL_VERSION))
+    fun mysqlContainer(): MySQLContainer =
+        MySQLContainer(DockerImageName.parse(MYSQL_VERSION))
+            .withUrlParam("connectionTimeZone", "UTC")
 
     @Bean
     @ServiceConnection(name = "redis")

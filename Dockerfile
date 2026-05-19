@@ -39,6 +39,7 @@ RUN chmod +x /app/entrypoint.sh
 
 USER app
 
+ENV TZ=UTC
 ENV JAVA_OPTS="-XX:MaxRAMPercentage=75.0 -XX:+ExitOnOutOfMemoryError -Djava.security.egd=file:/dev/./urandom"
 #ENV SPRING_PROFILES_ACTIVE=staging
 #ENV INFISICAL_ENV=staging
