@@ -205,4 +205,5 @@ tasks.named("check") {
 
 tasks.withType<Test> {
     useJUnitPlatform()
+    systemProperty("user.timezone", "UTC")
 }
