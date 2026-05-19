@@ -1,5 +1,5 @@
 # ===== Build stage =====
-FROM eclipse-temurin:24-jdk AS builder
+FROM eclipse-temurin:25-jdk AS builder
 WORKDIR /workspace
 
 # Cache dependencies first
@@ -16,7 +16,7 @@ RUN java -Djarmode=tools -jar build/libs/app.jar \
         extract --layers --destination application
 
 # ===== Runtime stage =====
-FROM eclipse-temurin:24-jre
+FROM eclipse-temurin:25-jre
 
 # Infisical CLI install
 RUN apt-get update \
