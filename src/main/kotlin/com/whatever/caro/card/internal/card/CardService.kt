@@ -48,6 +48,7 @@ class CardService(
             throw DeckForbiddenException("deckId=${dto.deckId} 에 대한 접근 권한이 없습니다")
         }
 
+        // 여러개중에 하나라도 터지면, 실패시키는게 맞을까 ???
         val createdCards = dto.items.flatMap { item ->
             noteTypeRepository.findById(item.noteTypeId).orElseThrow {
                 NoteTypeNotFoundException("noteTypeId=${item.noteTypeId} 노트 타입을 찾을 수 없습니다")
