@@ -8,7 +8,6 @@ import io.kotest.matchers.shouldBe
 import org.springframework.context.annotation.Import
 import org.springframework.modulith.test.ApplicationModuleTest
 import java.time.Instant
-import java.time.LocalDate
 import java.time.ZoneId
 
 @ApplicationModuleTest(extraIncludes = ["common"])
@@ -18,7 +17,6 @@ class StudySessionRepositoryTest(
 ) : DescribeSpec({
     val kstZoneId = ZoneId.of("Asia/Seoul")
     val now: Instant = Instant.parse("2026-05-19T01:00:00Z")
-    val today: LocalDate = LocalDate.parse("2026-05-19")
 
     afterEach { studySessionRepository.deleteAllInBatch() }
 
@@ -34,7 +32,6 @@ class StudySessionRepositoryTest(
                 startedAt = now,
                 timezone = kstZoneId,
                 dayCutoffHour = 4,
-                sessionDate = today,
                 deckPresetIdSnapshot = 1L,
             ),
         )

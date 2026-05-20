@@ -11,6 +11,7 @@ import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.Table
+import org.springframework.data.annotation.Transient
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -44,8 +45,11 @@ class StudySession(
     @Column(name = "review_cards_studied", nullable = false)
     var reviewCardsStudied: Int = 0,
 
-    @Column(name = "estimated_total", nullable = false)
-    var estimatedTotal: Int = 0,
+    @Column(name = "new_cards_goal", nullable = false)
+    var newCardsGoal: Int = 0,
+
+    @Column(name = "review_cards_goal", nullable = false)
+    var reviewCardsGoal: Int = 0,
 
     @Column(name = "timezone", nullable = false, length = 64, updatable = false)
     val timezone: ZoneId,
@@ -53,15 +57,19 @@ class StudySession(
     @Column(name = "day_cutoff_hour", nullable = false, updatable = false)
     val dayCutoffHour: Int,
 
-    @Column(name = "session_date", nullable = false, updatable = false)
-    val sessionDate: LocalDate,
-
     @Column(name = "deck_preset_id_snapshot", nullable = false, updatable = false)
     val deckPresetIdSnapshot: Long,
 ) : BaseTimeEntity() {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0L
+
+    @Column(name = "session_date", nullable = false, updatable = false)
+    val sessionDate: LocalDate = startedAt.atZone(timezone).minusHours(dayCutoffHour.toLong()).toLocalDate()
+
+    @get:Transient
+    val estimatedTotal: Int
+        get() = newCardsGoal + reviewCardsGoal
 
     fun isTodaySession(
         now: Instant,

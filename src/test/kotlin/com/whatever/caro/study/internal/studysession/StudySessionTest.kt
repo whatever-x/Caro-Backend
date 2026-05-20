@@ -6,7 +6,6 @@ import io.kotest.core.spec.style.DescribeSpec
 import io.kotest.datatest.withData
 import io.kotest.matchers.shouldBe
 import java.time.Instant
-import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
 
@@ -16,7 +15,6 @@ class StudySessionTest :
         val dayCutoffHour = 4
         // 산식: isTodaySession(now) = (sessionDate == now.atZone(KST).minusHours(4).toLocalDate())
         // sessionDate=2026-05-18 기준으로 "now가 cutoff 04:00 직전인지" 경계 검증
-        val sessionDate: LocalDate = LocalDate.parse("2026-05-18")
 
         fun createSession(): StudySession =
             StudySession(
@@ -27,7 +25,6 @@ class StudySessionTest :
                 startedAt = Instant.parse("2026-05-18T00:00:00Z"),
                 timezone = kstZoneId,
                 dayCutoffHour = dayCutoffHour,
-                sessionDate = sessionDate,
                 deckPresetIdSnapshot = 1L,
             )
 

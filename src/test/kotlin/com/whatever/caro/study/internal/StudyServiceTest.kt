@@ -19,9 +19,9 @@ import org.springframework.context.annotation.Import
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.modulith.test.ApplicationModuleTest
 import java.time.Instant
-import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
+import java.time.temporal.ChronoUnit
 
 @ApplicationModuleTest(extraIncludes = ["common"])
 @Import(TestcontainersConfiguration::class)
@@ -35,8 +35,7 @@ class StudyServiceTest(
     val dayCutoffHour = 4
 
     val baseNow: Instant = LocalDateTime.parse("2026-05-19T10:00:00").atZone(kstZoneId).toInstant()
-    val today: LocalDate = LocalDate.parse("2026-05-19")
-    val yesterday: LocalDate = LocalDate.parse("2026-05-18")
+    val yesterday: Instant = baseNow.minus(1, ChronoUnit.DAYS)
 
     afterEach {
         studySessionRepository.deleteAllInBatch()
@@ -47,11 +46,11 @@ class StudyServiceTest(
         userId: Long = USER_ID,
         deckId: Long = DECK_ID,
         status: StudySessionStatus = StudySessionStatus.ACTIVE,
-        sessionDate: LocalDate = today,
         startedAt: Instant = baseNow,
         newStudied: Int = 0,
         reviewStudied: Int = 0,
-        estimatedTotal: Int = 20,
+        newCardsGoal: Int = 10,
+        reviewCardsGoal: Int = 10,
     ): StudySession =
         studySessionRepository.save(
             StudySession(
@@ -62,11 +61,11 @@ class StudyServiceTest(
                 startedAt = startedAt,
                 timezone = kstZoneId,
                 dayCutoffHour = dayCutoffHour,
-                sessionDate = sessionDate,
                 deckPresetIdSnapshot = 1L,
                 newCardsStudied = newStudied,
                 reviewCardsStudied = reviewStudied,
-                estimatedTotal = estimatedTotal,
+                newCardsGoal = newCardsGoal,
+                reviewCardsGoal = reviewCardsGoal,
             ),
         )
 
@@ -104,10 +103,8 @@ class StudyServiceTest(
         it("ACTIVE 상태인 오늘 세션이면 IN_PROGRESS인 dto를 반환한다") {
             val session = createSession(
                 status = StudySessionStatus.ACTIVE,
-                sessionDate = today,
                 newStudied = 3,
                 reviewStudied = 5,
-                estimatedTotal = 20,
             )
 
             val result = studyService.getTodaySummary(
@@ -126,7 +123,7 @@ class StudyServiceTest(
         it("ACTIVE 상태이지만 오늘이 아닌 세션이면 STOPPED으로 변경되고, NOT_STARTED dto를 반환한다") {
             val staleSession = createSession(
                 status = StudySessionStatus.ACTIVE,
-                sessionDate = yesterday,
+                startedAt = yesterday,
             )
 
             val result = studyService.getTodaySummary(
@@ -145,10 +142,9 @@ class StudyServiceTest(
         it("COMPLETED 상태인 오늘 세션이면 COMPLETED dto를 매핑해 반환한다") {
             val session = createSession(
                 status = StudySessionStatus.COMPLETED,
-                sessionDate = today,
+                startedAt = baseNow,
                 newStudied = 10,
                 reviewStudied = 10,
-                estimatedTotal = 20,
             )
 
             val result = studyService.getTodaySummary(
@@ -168,7 +164,7 @@ class StudyServiceTest(
         it("COMPLETED 상태지만 오늘이 아닌 세션이면 NOT_STARTED dto를 반환하고 status는 변경되지 않는다") {
             val session = createSession(
                 status = StudySessionStatus.COMPLETED,
-                sessionDate = yesterday,
+                startedAt = yesterday,
             )
 
             val result = studyService.getTodaySummary(
@@ -188,7 +184,7 @@ class StudyServiceTest(
             // 정상 flow에서는 나올 수 없음
             val session = createSession(
                 status = StudySessionStatus.STOPPED,
-                sessionDate = today,
+                startedAt = baseNow,
             )
 
             val result = studyService.getTodaySummary(
@@ -207,13 +203,11 @@ class StudyServiceTest(
             // 어제 세션
             createSession(
                 status = StudySessionStatus.COMPLETED,
-                sessionDate = yesterday,
-                startedAt = yesterday.atTime(dayCutoffHour, 0).atZone(kstZoneId).toInstant(),
+                startedAt = yesterday,
             )
             // 오늘 세션
             val latestSession = createSession(
                 status = StudySessionStatus.ACTIVE,
-                sessionDate = today,
                 startedAt = baseNow,
             )
 
@@ -233,13 +227,13 @@ class StudyServiceTest(
                 userId = 2L,
                 deckId = DECK_ID,
                 status = StudySessionStatus.ACTIVE,
-                sessionDate = today,
+                startedAt = baseNow,
             )
             createSession( // 다른 deck의 오늘 ACTIVE 세션
                 userId = USER_ID,
                 deckId = 2L,
                 status = StudySessionStatus.ACTIVE,
-                sessionDate = today,
+                startedAt = baseNow,
             )
 
             val result = studyService.getTodaySummary(
