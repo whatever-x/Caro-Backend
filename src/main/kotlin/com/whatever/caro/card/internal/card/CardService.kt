@@ -187,6 +187,5 @@ class CardService(
     private fun projectFields(
         template: CardTemplate,
         noteFields: Map<String, String>,
-    ): Map<String, String> =
-        template.requiredFields.associateWith { key -> noteFields[key].orEmpty() }
+    ): Map<String, String> = template.requiredFields.associateWith { key -> noteFields[key].orEmpty() }
 }
