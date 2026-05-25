@@ -32,4 +32,9 @@ interface StudySessionRepository : JpaRepository<StudySession, Long> {
     fun setStoppedIfActive(
         id: Long,
     ): Int
+
+    fun findByIdAndUserId(
+        id: Long,
+        userId: Long,
+    ): StudySession?
 }

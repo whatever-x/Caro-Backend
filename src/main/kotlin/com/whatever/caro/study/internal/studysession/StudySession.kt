@@ -71,6 +71,17 @@ class StudySession(
     val estimatedTotal: Int
         get() = newCardsGoal + reviewCardsGoal
 
+    /**
+     * 세션의 시작 경계(논리적인 시작 시간)
+     */
+    @get:Transient
+    val sessionStart: Instant
+        get() = sessionDate.atTime(dayCutoffHour, 0).atZone(timezone).toInstant()
+
+    @get:Transient
+    val nextSessionStart: Instant
+        get() = sessionDate.plusDays(1).atTime(dayCutoffHour, 0).atZone(timezone).toInstant()
+
     fun isTodaySession(
         now: Instant,
     ): Boolean = sessionDate == now.atZone(timezone).minusHours(dayCutoffHour.toLong()).toLocalDate()
