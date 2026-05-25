@@ -25,7 +25,8 @@ interface CardRepository : JpaRepository<Card, Long> {
         deckId: Long,
     ): List<Card>
 
-    fun countByNoteIdAndDeletedAtIsNull(
+    fun countByNoteIdAndDeletedAtIsNullAndIdNot(
         noteId: Long,
+        id: Long,
     ): Long
 }

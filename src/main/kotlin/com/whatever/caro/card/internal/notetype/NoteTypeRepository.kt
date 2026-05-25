@@ -2,4 +2,9 @@ package com.whatever.caro.card.internal.notetype
 
 import org.springframework.data.jpa.repository.JpaRepository
 
-interface NoteTypeRepository : JpaRepository<NoteType, Long>
+interface NoteTypeRepository : JpaRepository<NoteType, Long> {
+
+    fun findAllByIdIn(
+        ids: Set<Long>,
+    ): List<NoteType>
+}

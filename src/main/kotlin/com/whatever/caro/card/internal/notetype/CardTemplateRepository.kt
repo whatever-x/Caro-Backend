@@ -7,4 +7,8 @@ interface CardTemplateRepository : JpaRepository<CardTemplate, Long> {
     fun findByNoteTypeId(
         noteTypeId: Long,
     ): List<CardTemplate>
+
+    fun findAllByNoteTypeIdIn(
+        noteTypeIds: Set<Long>,
+    ): List<CardTemplate>
 }
