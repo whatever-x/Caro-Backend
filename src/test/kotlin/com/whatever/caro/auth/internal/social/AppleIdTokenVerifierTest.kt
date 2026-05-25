@@ -56,7 +56,7 @@ class AppleIdTokenVerifierTest(
         .build()
     val jwksJson = JWKSet(rsaKey).toString()
 
-    val clientId = "com.test.caro"
+    val clientIds = setOf("com.test.caro.1", "com.test.caro.2")
     val appleIssuer = "https://appleid.apple.com"
     val jwksUri = "https://appleid.apple.com/auth/keys"
 
@@ -70,7 +70,7 @@ class AppleIdTokenVerifierTest(
         val properties = OAuth2Properties(
             google = OAuth2Properties.GoogleProperties(clientId = "unused"),
             apple = OAuth2Properties.AppleProperties(
-                clientId = clientId,
+                clientIds = clientIds,
                 jwksUri = jwksUri,
             ),
         )
@@ -85,7 +85,7 @@ class AppleIdTokenVerifierTest(
     fun buildIdToken(
         sub: String? = DEFAULT_PROVIDER_USER_ID,
         iss: String = appleIssuer,
-        aud: String = clientId,
+        aud: String = clientIds.last(),
         exp: Date = Date.from(Instant.now().plus(Duration.ofMinutes(10))),
         iat: Date = Date.from(Instant.now()),
         email: String? = "user@example.com",

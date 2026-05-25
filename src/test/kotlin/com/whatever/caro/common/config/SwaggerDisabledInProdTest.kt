@@ -21,7 +21,7 @@ import org.springframework.test.web.servlet.get
     properties = [
         "JWT_SECRET=test-secret-key-must-be-at-least-32-bytes-long-for-hs256",
         "GOOGLE_CLIENT_ID=test-google-client-id",
-        "APPLE_CLIENT_ID=test-apple-client-id",
+        "APPLE_CLIENT_ID=test-apple-client-id-1,test-apple-client-id-2",
         "DB_URL=jdbc:mysql://dummy:3306/dummy",
         "DB_USERNAME=dummy",
         "DB_PASSWORD=dummy",

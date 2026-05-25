@@ -50,7 +50,7 @@ app:
     google:
       client-id: ${GOOGLE_CLIENT_ID}
     apple:
-      client-id: ${APPLE_CLIENT_ID}
+      client-ids: ${APPLE_CLIENT_ID}
       jwks-uri: https://appleid.apple.com/auth/keys
 
 server:
@@ -121,3 +121,5 @@ springdoc:
     display-request-duration: true
   packages-to-scan: com.whatever.caro
   paths-to-match: /api/**, /v1/**
+  default-produces-media-type: application/json
+  default-consumes-media-type: application/json

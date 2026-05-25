@@ -79,13 +79,13 @@ class AuthServiceTest(
     describe("socialLogin") {
         it("신규 사용자 소셜 로그인 시 isRegistrationComplete=false이고 토큰이 발급된다") {
             stubSocialVerifier(providerUserId = "new-user-001")
+            val deviceId = "device-1"
             val request = SocialLoginRequest(
                 provider = SocialProvider.GOOGLE,
                 idToken = TEST_ID_TOKEN,
-                deviceId = "device-1",
             )
 
-            val result = authService.socialLogin(request)
+            val result = authService.socialLogin(request, deviceId)
 
             result.isRegistrationComplete shouldBe false
             result.accessToken.shouldNotBeEmpty()
@@ -101,10 +101,9 @@ class AuthServiceTest(
             val request = SocialLoginRequest(
                 provider = SocialProvider.GOOGLE,
                 idToken = TEST_ID_TOKEN,
-                deviceId = deviceId,
             )
 
-            val result = authService.socialLogin(request)
+            val result = authService.socialLogin(request, deviceId)
             val claims = jwtTokenProvider.parseAccessToken(result.accessToken)
 
             redisTemplate.opsForValue().get("refresh:${claims.userId}:$deviceId") shouldBe result.refreshToken
@@ -120,8 +119,8 @@ class AuthServiceTest(
                 SocialLoginRequest(
                     provider = SocialProvider.GOOGLE,
                     idToken = TEST_ID_TOKEN,
-                    deviceId = deviceId,
                 ),
+                deviceId,
             )
             val firstClaims = jwtTokenProvider.parseAccessToken(firstLogin.accessToken)
 
@@ -130,8 +129,8 @@ class AuthServiceTest(
                 SocialLoginRequest(
                     provider = SocialProvider.GOOGLE,
                     idToken = TEST_ID_TOKEN,
-                    deviceId = deviceId,
                 ),
+                deviceId,
             )
             val secondClaims = jwtTokenProvider.parseAccessToken(secondLogin.accessToken)
 
@@ -147,8 +146,8 @@ class AuthServiceTest(
                 SocialLoginRequest(
                     provider = SocialProvider.GOOGLE,
                     idToken = TEST_ID_TOKEN,
-                    deviceId = deviceId,
                 ),
+                deviceId,
             )
             val firstClaims = jwtTokenProvider.parseAccessToken(firstLogin.accessToken)
 
@@ -162,8 +161,8 @@ class AuthServiceTest(
                 request = CompleteRegistrationRequest(
                     nickname = "ReturningUser",
                     isTermsAgreed = true,
-                    deviceId = deviceId,
                 ),
+                deviceId = deviceId,
             )
 
             // 2차 로그인 (기존 ACTIVE 사용자)
@@ -171,14 +170,15 @@ class AuthServiceTest(
                 SocialLoginRequest(
                     provider = SocialProvider.GOOGLE,
                     idToken = TEST_ID_TOKEN,
-                    deviceId = deviceId,
                 ),
+                deviceId,
             )
 
             secondLogin.isRegistrationComplete shouldBe true
         }
 
         it("ID 토큰 검증 실패 시 InvalidSocialTokenException을 던진다") {
+            val deviceId = "device-1"
             every { socialIdTokenVerifierFactory.getVerifier(SocialProvider.GOOGLE) } returns mockVerifier
             every { mockVerifier.verify(any()) } throws RuntimeException("verification failed")
 
@@ -187,8 +187,8 @@ class AuthServiceTest(
                     SocialLoginRequest(
                         provider = SocialProvider.GOOGLE,
                         idToken = "invalid-token",
-                        deviceId = "device-1",
                     ),
+                    deviceId,
                 )
             }
         }
@@ -198,13 +198,12 @@ class AuthServiceTest(
         it("등록 완료 시 새 access token에 ACTIVE status가 포함된다") {
             stubSocialVerifier(providerUserId = "reg-complete-user")
             val deviceId = "device-1"
-
             val loginResult = authService.socialLogin(
                 SocialLoginRequest(
                     provider = SocialProvider.GOOGLE,
                     idToken = TEST_ID_TOKEN,
-                    deviceId = deviceId,
                 ),
+                deviceId,
             )
             val loginClaims = jwtTokenProvider.parseAccessToken(loginResult.accessToken)
 
@@ -218,8 +217,8 @@ class AuthServiceTest(
                 request = CompleteRegistrationRequest(
                     nickname = nickname,
                     isTermsAgreed = true,
-                    deviceId = deviceId,
                 ),
+                deviceId = deviceId,
             )
 
             val newClaims = jwtTokenProvider.parseAccessToken(registrationResult.accessToken)
@@ -235,13 +234,12 @@ class AuthServiceTest(
         it("등록 완료 시 이전 access token JTI가 블랙리스트에 추가된다") {
             stubSocialVerifier(providerUserId = "blacklist-check-user")
             val deviceId = "device-1"
-
             val loginResult = authService.socialLogin(
                 SocialLoginRequest(
                     provider = SocialProvider.GOOGLE,
                     idToken = TEST_ID_TOKEN,
-                    deviceId = deviceId,
                 ),
+                deviceId,
             )
             val loginClaims = jwtTokenProvider.parseAccessToken(loginResult.accessToken)
 
@@ -254,8 +252,8 @@ class AuthServiceTest(
                 request = CompleteRegistrationRequest(
                     nickname = "BlacklistUser",
                     isTermsAgreed = true,
-                    deviceId = deviceId,
                 ),
+                deviceId = deviceId,
             )
             val newClaims = jwtTokenProvider.parseAccessToken(registrationResult.accessToken)
 
@@ -268,22 +266,21 @@ class AuthServiceTest(
         it("정상 토큰 갱신 시 새 토큰이 발급되고 이전 JTI가 블랙리스트에 추가된다") {
             stubSocialVerifier(providerUserId = "reissue-user")
             val deviceId = "device-1"
-
             val loginResult = authService.socialLogin(
                 SocialLoginRequest(
                     provider = SocialProvider.GOOGLE,
                     idToken = TEST_ID_TOKEN,
-                    deviceId = deviceId,
                 ),
+                deviceId,
             )
             val loginClaims = jwtTokenProvider.parseAccessToken(loginResult.accessToken)
 
             val reissueResult = authService.reissueToken(
                 RefreshTokenRequest(
                     refreshToken = loginResult.refreshToken,
-                    deviceId = deviceId,
                     accessToken = loginResult.accessToken,
                 ),
+                deviceId,
             )
             val newClaims = jwtTokenProvider.parseAccessToken(reissueResult.accessToken)
 
@@ -299,22 +296,21 @@ class AuthServiceTest(
         it("유효하지 않은 refresh token 시 예외를 던진다") {
             stubSocialVerifier(providerUserId = "invalid-refresh-user")
             val deviceId = "device-1"
-
             val loginResult = authService.socialLogin(
                 SocialLoginRequest(
                     provider = SocialProvider.GOOGLE,
                     idToken = TEST_ID_TOKEN,
-                    deviceId = deviceId,
                 ),
+                deviceId,
             )
 
             shouldThrow<InvalidRefreshTokenException> {
                 authService.reissueToken(
                     RefreshTokenRequest(
                         refreshToken = "wrong-refresh-token",
-                        deviceId = deviceId,
                         accessToken = loginResult.accessToken,
                     ),
+                    deviceId,
                 )
             }
         }
@@ -328,13 +324,14 @@ class AuthServiceTest(
             val wrongProvider = JwtTokenProvider(wrongProperties, java.time.Clock.systemUTC()).apply { init() }
             val wrongToken = wrongProvider.generateAccessToken(1L, UserStatus.ACTIVE.name)
 
+            val deviceId = "device-1"
             shouldThrow<io.jsonwebtoken.security.SignatureException> {
                 authService.reissueToken(
                     RefreshTokenRequest(
                         refreshToken = "any-refresh",
-                        deviceId = "device-1",
                         accessToken = wrongToken.token,
                     ),
+                    deviceId,
                 )
             }
         }
@@ -344,13 +341,12 @@ class AuthServiceTest(
         it("로그아웃 시 access token이 블랙리스트에 추가되고 refresh token이 삭제된다") {
             stubSocialVerifier(providerUserId = "logout-user")
             val deviceId = "device-1"
-
             val loginResult = authService.socialLogin(
                 SocialLoginRequest(
                     provider = SocialProvider.GOOGLE,
                     idToken = TEST_ID_TOKEN,
-                    deviceId = deviceId,
                 ),
+                deviceId,
             )
             val loginClaims = jwtTokenProvider.parseAccessToken(loginResult.accessToken)
 

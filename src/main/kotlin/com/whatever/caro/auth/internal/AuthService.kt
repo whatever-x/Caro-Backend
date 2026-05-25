@@ -31,6 +31,7 @@ class AuthService(
 ) {
     fun socialLogin(
         request: SocialLoginRequest,
+        deviceId: String,
     ): SocialLoginResponse {
         val verifier = socialIdTokenVerifierFactory.getVerifier(request.provider)
         val socialUserInfo = try {
@@ -56,14 +57,14 @@ class AuthService(
 
         refreshTokenRepository.save(
             userId = userInfo.id,
-            deviceId = request.deviceId,
+            deviceId = deviceId,
             refreshToken = refreshToken,
             accessTokenJti = generated.jti,
             expiresIn = jwtProperties.refreshTokenExpiresIn,
         )
 
         logger.info {
-            "Social login successful: userId=${userInfo.id}, provider=${request.provider}, deviceId=${request.deviceId}"
+            "Social login successful: userId=${userInfo.id}, provider=${request.provider}, deviceId=$deviceId"
         }
 
         return SocialLoginResponse(
@@ -76,6 +77,7 @@ class AuthService(
     fun completeRegistration(
         authUser: AuthUser,
         request: CompleteRegistrationRequest,
+        deviceId: String,
     ): TokenResponse {
         val userInfo = userApi.completeRegistration(
             userId = authUser.userId,
@@ -95,13 +97,13 @@ class AuthService(
         val newRefreshToken = jwtTokenProvider.generateRefreshToken()
         refreshTokenRepository.save(
             userId = userInfo.id,
-            deviceId = request.deviceId,
+            deviceId = deviceId,
             refreshToken = newRefreshToken,
             accessTokenJti = generated.jti,
             expiresIn = jwtProperties.refreshTokenExpiresIn,
         )
 
-        logger.info { "Registration completed: userId=${authUser.userId}, deviceId=${request.deviceId}" }
+        logger.info { "Registration completed: userId=${authUser.userId}, deviceId=$deviceId" }
         return TokenResponse(
             accessToken = generated.token,
             refreshToken = newRefreshToken,
@@ -110,13 +112,14 @@ class AuthService(
 
     fun reissueToken(
         request: RefreshTokenRequest,
+        deviceId: String,
     ): TokenResponse {
         val claims = jwtTokenProvider.parseAccessTokenAllowExpired(request.accessToken)
 
         val consumed = refreshTokenRepository.consumeToken(
             refreshToken = request.refreshToken,
             userId = claims.userId,
-            deviceId = request.deviceId,
+            deviceId = deviceId,
         ) ?: throw InvalidRefreshTokenException("유효하지 않은 Refresh Token입니다")
 
         tokenBlacklistRepository.add(consumed.accessTokenJti, jwtProperties.accessTokenExpiresIn)
@@ -128,13 +131,13 @@ class AuthService(
         val newRefreshToken = jwtTokenProvider.generateRefreshToken()
         refreshTokenRepository.save(
             claims.userId,
-            request.deviceId,
+            deviceId,
             newRefreshToken,
             generated.jti,
             jwtProperties.refreshTokenExpiresIn,
         )
 
-        logger.info { "Token refreshed: userId=${claims.userId}, deviceId=${request.deviceId}" }
+        logger.info { "Token refreshed: userId=${claims.userId}, deviceId=$deviceId" }
 
         return TokenResponse(accessToken = generated.token, refreshToken = newRefreshToken)
     }

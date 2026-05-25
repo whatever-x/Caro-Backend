@@ -12,7 +12,7 @@ data class OAuth2Properties(
     )
 
     data class AppleProperties(
-        val clientId: String,
+        val clientIds: Set<String>,
         val jwksUri: String,
     )
 }

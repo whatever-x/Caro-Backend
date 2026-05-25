@@ -29,7 +29,7 @@ private fun basicAuthHeader(
     properties = [
         "JWT_SECRET=test-secret-key-must-be-at-least-32-bytes-long-for-hs256",
         "GOOGLE_CLIENT_ID=test-google",
-        "APPLE_CLIENT_ID=test-apple",
+        "APPLE_CLIENT_ID=test-apple-1,test-apple-2",
         "DB_URL=jdbc:mysql://dummy:3306/dummy",
         "DB_USERNAME=dummy",
         "DB_PASSWORD=dummy",

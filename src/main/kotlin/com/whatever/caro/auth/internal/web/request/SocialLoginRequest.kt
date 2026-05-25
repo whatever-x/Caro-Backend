@@ -8,7 +8,4 @@ data class SocialLoginRequest(
 
     @field:NotBlank(message = "ID Token은 필수입니다")
     val idToken: String,
-
-    @field:NotBlank(message = "Device ID는 필수입니다")
-    val deviceId: String,
 )

@@ -3,6 +3,8 @@ package com.whatever.caro.user.internal.web
 import com.whatever.caro.common.response.ApiResponse
 import com.whatever.caro.user.UserApi
 import com.whatever.caro.user.internal.web.response.NicknameCheckResponse
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.Size
 import org.springframework.http.ResponseEntity
@@ -12,6 +14,7 @@ import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
+@Tag(name = "User", description = "사용자 정보 조회")
 @Validated
 @RestController
 @RequestMapping("/v1/users")
@@ -19,11 +22,15 @@ class UserController(
     private val userApi: UserApi,
 ) {
 
+    @Operation(
+        summary = "닉네임 사용 가능 여부 조회",
+        description = "닉네임 중복 여부를 반환한다. 길이 제한 50자.",
+    )
     @GetMapping("/nicknames/{nickname}/availability")
     fun checkNicknameAvailability(
         @PathVariable
         @NotBlank(message = "Nickname is required")
-        @Size(max = 50, message = "Nickname is required")
+        @Size(max = 50, message = "Nickname must be 50 characters or fewer")
         nickname: String,
     ): ResponseEntity<ApiResponse<NicknameCheckResponse>> {
         val available = userApi.isNicknameAvailable(nickname)
