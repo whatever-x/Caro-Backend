@@ -25,31 +25,28 @@ class StudyService(
         now: Instant,
         userId: Long,
         deckId: Long,
-    ): TodaySummaryDto? {
-        val latestSession = studySessionRepository.findByUserAndDeckOrderByStartedAtDesc(userId, deckId) ?: return null
+    ): TodaySummaryDto {
+        val latestSession = studySessionRepository.findByUserAndDeckOrderByStartedAtDesc(userId, deckId)
+            ?: return TodaySummaryDto.notStarted()
+
+        if (latestSession.isTodaySession(now).not()) {
+            handleStaleSession(latestSession)
+            return TodaySummaryDto.notStarted()
+        }
 
         return when (latestSession.status) {
-            StudySessionStatus.ACTIVE -> {
-                if (latestSession.isTodaySession(now)) {
-                    latestSession.toTodaySummaryDto(TodaySummaryState.IN_PROGRESS)
-                } else {
-                    val effectedRow = studySessionRepository.setStoppedIfActive(latestSession.id)
-                    logger.warn {
-                        "Stale active study session detected. sessionId=${latestSession.id} effected row: $effectedRow"
-                    }
-                    null
-                }
-            }
+            StudySessionStatus.ACTIVE -> latestSession.toTodaySummaryDto(TodaySummaryState.IN_PROGRESS)
+            StudySessionStatus.COMPLETED -> latestSession.toTodaySummaryDto(TodaySummaryState.COMPLETED)
+            StudySessionStatus.STOPPED -> TodaySummaryDto.notStarted()
+        }
+    }
 
-            StudySessionStatus.COMPLETED -> {
-                if (latestSession.isTodaySession(now)) {
-                    latestSession.toTodaySummaryDto(TodaySummaryState.COMPLETED)
-                } else {
-                    null
-                }
-            }
-
-            StudySessionStatus.STOPPED -> null
+    private fun handleStaleSession(
+        latestSession: StudySession,
+    ) {
+        val effectedRow = studySessionRepository.setStoppedIfActive(latestSession.id)
+        logger.warn {
+            "Stale active study session detected. sessionId=${latestSession.id} effected row: $effectedRow"
         }
     }
 

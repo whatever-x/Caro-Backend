@@ -91,14 +91,14 @@ class StudyServiceTest(
 
     describe("getTodaySummary") {
 
-        it("일일학습 세션이 없으면 null을 반환한다") {
+        it("일일학습 세션이 없으면 NOT_STARTED dto를 반환한다") {
             val result = studyService.getTodaySummary(
                 now = baseNow,
                 userId = USER_ID,
                 deckId = DECK_ID,
             )
 
-            result shouldBe null
+            result.state shouldBe TodaySummaryState.NOT_STARTED
         }
 
         it("ACTIVE 상태인 오늘 세션이면 IN_PROGRESS인 dto를 반환한다") {
@@ -123,7 +123,7 @@ class StudyServiceTest(
             result.totalCardCount shouldBe 20
         }
 
-        it("ACTIVE 상태이지만 오늘이 아닌 세션이면 STOPPED으로 변경되고 null을 반환한다") {
+        it("ACTIVE 상태이지만 오늘이 아닌 세션이면 STOPPED으로 변경되고, NOT_STARTED dto를 반환한다") {
             val staleSession = createSession(
                 status = StudySessionStatus.ACTIVE,
                 sessionDate = yesterday,
@@ -135,7 +135,7 @@ class StudyServiceTest(
                 deckId = DECK_ID,
             )
 
-            result shouldBe null
+            result.state shouldBe TodaySummaryState.NOT_STARTED
 
             val stoppedSession = studySessionRepository.findByIdOrNull(staleSession.id)
             stoppedSession.shouldNotBeNull()
@@ -165,7 +165,7 @@ class StudyServiceTest(
             result.studiedCardCount shouldBeEqual result.totalCardCount
         }
 
-        it("COMPLETED 상태지만 오늘이 아닌 세션이면 null을 반환하고 status는 변경되지 않는다") {
+        it("COMPLETED 상태지만 오늘이 아닌 세션이면 NOT_STARTED dto를 반환하고 status는 변경되지 않는다") {
             val session = createSession(
                 status = StudySessionStatus.COMPLETED,
                 sessionDate = yesterday,
@@ -177,14 +177,14 @@ class StudyServiceTest(
                 deckId = DECK_ID,
             )
 
-            result shouldBe null
+            result.state shouldBe TodaySummaryState.NOT_STARTED
 
             val completedSession = studySessionRepository.findByIdOrNull(session.id)
             completedSession.shouldNotBeNull()
             completedSession.status shouldBe StudySessionStatus.COMPLETED
         }
 
-        it("STOPPED 상태지만 오늘 세션이라면 null을 반환한다") {
+        it("STOPPED 상태지만 오늘 세션이라면 NOT_STARTED dto를 반환한다") {
             // 정상 flow에서는 나올 수 없음
             val session = createSession(
                 status = StudySessionStatus.STOPPED,
@@ -196,7 +196,7 @@ class StudyServiceTest(
                 userId = USER_ID,
                 deckId = DECK_ID,
             )
-            result shouldBe null
+            result.state shouldBe TodaySummaryState.NOT_STARTED
 
             val stoppedSession = studySessionRepository.findByIdOrNull(session.id)
             stoppedSession.shouldNotBeNull()
@@ -248,7 +248,7 @@ class StudyServiceTest(
                 deckId = DECK_ID,
             )
 
-            result shouldBe null
+            result.state shouldBe TodaySummaryState.NOT_STARTED
         }
     }
 
