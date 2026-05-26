@@ -2,6 +2,7 @@ package com.whatever.caro.card.internal.deck.service
 
 import com.whatever.caro.card.api.deck.DeckApi
 import com.whatever.caro.card.api.deck.DeckDeletedEvent
+import com.whatever.caro.card.api.deck.DeckInfoResponse
 import com.whatever.caro.card.internal.deck.Deck
 import com.whatever.caro.card.internal.deck.DeckRepository
 import com.whatever.caro.card.internal.deck.dto.create.CreateDeckDto
@@ -13,6 +14,7 @@ import com.whatever.caro.card.internal.deck.dto.update.UpdateDeckResponseDto
 import com.whatever.caro.card.internal.deck.event.created.DeckCreatedEvent
 import com.whatever.caro.card.internal.deck.exception.DeckForbiddenException
 import com.whatever.caro.card.internal.deck.exception.DeckNotFoundException
+import com.whatever.caro.card.internal.deck.toInfo
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -25,13 +27,15 @@ class DeckService(
 ) : DeckApi {
     override fun getDecks(
         userId: Long,
-    ): List<Deck> = deckRepository.findByUserIdAndDeletedAtIsNull(userId)
+    ): List<DeckInfoResponse> = deckRepository.findByUserIdAndDeletedAtIsNull(userId).map { it.toInfo() }
 
     override fun getDeck(
         deckId: Long,
-    ): Deck =
-        deckRepository.findByIdAndDeletedAtIsNull(deckId)
-            ?: throw DeckNotFoundException("deckId=$deckId 덱을 찾을 수 없습니다")
+    ): DeckInfoResponse =
+        (
+            deckRepository.findByIdAndDeletedAtIsNull(deckId)
+                ?: throw DeckNotFoundException("deckId=$deckId 덱을 찾을 수 없습니다")
+            ).toInfo()
 
     @Transactional
     fun createDeck(

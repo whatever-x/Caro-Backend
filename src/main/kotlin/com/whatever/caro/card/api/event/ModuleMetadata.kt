@@ -1,8 +1,8 @@
-package com.whatever.caro.user.exception
+package com.whatever.caro.card.api.event
 
 import org.springframework.modulith.NamedInterface
 import org.springframework.modulith.PackageInfo
 
 @PackageInfo
-@NamedInterface("exception")
+@NamedInterface("event")
 class ModuleMetadata
