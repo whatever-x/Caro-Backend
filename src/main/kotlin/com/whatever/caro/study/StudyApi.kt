@@ -1,7 +1,9 @@
 package com.whatever.caro.study
 
 import java.time.Instant
+import java.time.ZoneId
 
+// TODO StudySessionApi로 분리
 interface StudyApi {
     /**
      * 오늘 학습 세션에 대한 정보를 반환한다.
@@ -22,4 +24,19 @@ interface StudyApi {
         userId: Long,
         cardIds: Collection<Long>,
     ): Map<Long, CardLearningStateDto>
+
+    fun startOrResumeDailyStudySession(
+        now: Instant,
+        userId: Long,
+        deckId: Long,
+        studyType: StudyType,
+        timezone: ZoneId,
+        dayCutoffHour: Int = 0
+    ): StudySessionDto
+
+    fun getStudySessionCardQueue(
+        userId: Long,
+        sessionId: Long,
+        now: Instant
+    ): StudySessionCardQueueDto
 }

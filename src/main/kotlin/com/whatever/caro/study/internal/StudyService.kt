@@ -34,13 +34,13 @@ class StudyService(
 ) : StudyApi {
 
     @Transactional
-    fun startOrResumeDailyStudySession(
+    override fun startOrResumeDailyStudySession(  // TODO 동시성 고려
         now: Instant,
         userId: Long,
         deckId: Long,
         studyType: StudyType,
         timezone: ZoneId,
-        dayCutoffHour: Int = 0,
+        dayCutoffHour: Int,
     ): StudySessionDto {
         val todaySession = getTodayStudySession(now, userId, deckId)
         if (todaySession != null) {
@@ -76,7 +76,7 @@ class StudyService(
     }
 
     @Transactional(readOnly = true)
-    fun getStudySessionCardQueue(
+    override fun getStudySessionCardQueue(
         userId: Long,
         sessionId: Long,
         now: Instant,
