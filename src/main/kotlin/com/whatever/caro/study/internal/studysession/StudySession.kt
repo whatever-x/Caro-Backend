@@ -1,6 +1,8 @@
 package com.whatever.caro.study.internal.studysession
 
 import com.whatever.caro.common.entity.BaseTimeEntity
+import com.whatever.caro.study.CardLearningStatus
+import com.whatever.caro.study.ReviewType
 import com.whatever.caro.study.StudySessionStatus
 import com.whatever.caro.study.StudyType
 import jakarta.persistence.Column
@@ -85,4 +87,20 @@ class StudySession(
     fun isTodaySession(
         now: Instant,
     ): Boolean = sessionDate == now.atZone(timezone).minusHours(dayCutoffHour.toLong()).toLocalDate()
+
+    fun updateStudiedCard(
+        status: ReviewType,
+    ) {
+        when (status) {
+            ReviewType.NEW -> newCardsStudied++
+            ReviewType.REVIEW -> reviewCardsStudied++
+        }
+    }
+
+    fun complete(
+        now: Instant,
+    ) {
+        status = StudySessionStatus.COMPLETED
+        endedAt = now
+    }
 }

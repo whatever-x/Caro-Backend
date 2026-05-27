@@ -31,12 +31,12 @@ interface StudyApi {
         deckId: Long,
         studyType: StudyType,
         timezone: ZoneId,
-        dayCutoffHour: Int = 0
+        dayCutoffHour: Int = 0,
     ): StudySessionDto
 
     fun getStudySessionCardQueue(
         userId: Long,
         sessionId: Long,
-        now: Instant
+        now: Instant,
     ): StudySessionCardQueueDto
 }

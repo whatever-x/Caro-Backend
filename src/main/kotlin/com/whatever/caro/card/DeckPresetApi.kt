@@ -7,6 +7,10 @@ interface DeckPresetApi {
         deckId: Long,
         userId: Long,
     ): DeckPresetDto
+
+    fun getDeckPresetById(
+        deckPresetIdSnapshot: Long,
+    ): DeckPresetDto
 }
 
 data class DeckPresetDto(
