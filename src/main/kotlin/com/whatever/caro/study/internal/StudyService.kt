@@ -94,11 +94,11 @@ class StudyService(
         val reviewPoolSize = todaySession.reviewCardsGoal - todaySession.reviewCardsStudied
 
         val newCardQueue = if (newPoolSize > 0) {
-            // 같은 세션에서 `AGAIN(모르겠어요)` 평가 시, 해당 쿼리에서 재조회되므로 주의 필요
             cardLearningStateRepository.findAllNewCard(
                 userId = userId,
                 deckId = todaySession.deckId,
                 pageable = PageRequest.ofSize(newPoolSize),
+                sessionStart = todaySession.sessionStart,
             )
         } else {
             emptyList()
