@@ -6,6 +6,8 @@ import com.whatever.caro.study.CardLearningStatus
 import com.whatever.caro.study.ReviewType
 import com.whatever.caro.study.StudySessionStatus
 import com.whatever.caro.study.exception.SessionExpiredException
+import com.whatever.caro.study.exception.SessionNotActiveException
+import com.whatever.caro.study.exception.SessionNotFoundException
 import com.whatever.caro.study.internal.cardlearningstate.CardLearningStateRepository
 import com.whatever.caro.study.internal.studysession.ReviewLog
 import com.whatever.caro.study.internal.studysession.ReviewLogRepository
@@ -31,9 +33,9 @@ class EvaluationService(
         val session = studySessionRepository.findByIdAndUserId(
             id = sessionId,
             userId = userId,
-        ) ?: throw RuntimeException() // TODO custom exception
+        ) ?: throw SessionNotFoundException()
         if (session.status != StudySessionStatus.ACTIVE) {
-            throw RuntimeException() // TODO custom exception
+            throw SessionNotActiveException()
         }
         if (session.isTodaySession(now).not()) {
             throw SessionExpiredException()
@@ -58,7 +60,8 @@ class EvaluationService(
 
         // 평가 계산 & 기록
         val newReviewLogs = validItems.filterIsInstance<ValidatedItem>().map {
-            val cls = clsByCardId[it.item.cardId] ?: throw RuntimeException() // TODO custom exception
+            val cls = clsByCardId[it.item.cardId]
+                ?: error("CardLearningState not exist for cardId=${it.item.cardId}")
 
             val context = SchedulingContext(now, params)
             val nextState = cls.toSchedulingState().nextStates(context).pick(it.item.rating)

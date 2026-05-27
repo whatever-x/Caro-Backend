@@ -11,4 +11,5 @@ enum class StudyErrorCode(
 ) : ErrorCodeSpec {
     SESSION_NOT_FOUND("S001", HttpStatus.NOT_FOUND, "학습 세션을 찾을 수 없습니다", "error.study.session_not_found"),
     SESSION_EXPIRED("S002", HttpStatus.CONFLICT, "오늘의 학습 세션이 아닙니다", "error.study.session_expired"),
+    SESSION_NOT_ACTIVE("S003", HttpStatus.CONFLICT, "학습 세션이 활성 상태가 아닙니다", "error.study.session_not_active"),
 }
