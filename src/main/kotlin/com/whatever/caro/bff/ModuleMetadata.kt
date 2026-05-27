@@ -6,6 +6,6 @@ import org.springframework.modulith.PackageInfo
 @PackageInfo
 @ApplicationModule(
     displayName = "BackendForFrontend",
-    allowedDependencies = ["common", "study"],
+    allowedDependencies = ["common", "study", "card"],
 )
 class ModuleMetadata
