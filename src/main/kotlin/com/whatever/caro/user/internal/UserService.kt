@@ -76,7 +76,7 @@ class UserService(
         require(isTermsAgreed) { "약관 동의가 필요합니다" }
 
         val user = userRepository.findByIdOrNull(userId)
-            ?: throw UserNotFoundException("User not found: $userId")
+            ?: throw UserNotFoundException("사용자를 찾을 수 없습니다: $userId")
 
         if (user.status == UserStatus.ACTIVE) {
             throw AlreadyCompletedException("이미 가입이 완료된 사용자입니다")
@@ -91,6 +91,26 @@ class UserService(
             this.isTermsAgreed = true
             this.status = UserStatus.ACTIVE
         }
+        return user.toInfo()
+    }
+
+    @Transactional
+    override fun updateNickname(
+        userId: Long,
+        nickname: String,
+    ): UserInfo {
+        val user = userRepository.findByIdOrNull(userId)
+            ?: throw UserNotFoundException("사용자를 찾을 수 없습니다: $userId")
+
+        if (user.nickname == nickname) {
+            return user.toInfo()
+        }
+
+        if (!isNicknameAvailable(nickname)) {
+            throw NicknameDuplicatedException("이미 사용 중인 닉네임입니다: $nickname")
+        }
+
+        user.nickname = nickname
         return user.toInfo()
     }
 

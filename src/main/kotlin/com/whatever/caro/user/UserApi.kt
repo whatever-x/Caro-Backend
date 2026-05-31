@@ -22,6 +22,11 @@ interface UserApi {
         isTermsAgreed: Boolean,
     ): UserInfo
 
+    fun updateNickname(
+        userId: Long,
+        nickname: String,
+    ): UserInfo
+
     fun isNicknameAvailable(
         nickname: String,
     ): Boolean

@@ -153,6 +153,85 @@ class UserServiceTest(
         }
     }
 
+    describe("updateNickname") {
+        it("정상적으로 닉네임을 변경한다") {
+            val user = createActiveUser(nickname = "oldNick")
+
+            val result = userService.updateNickname(
+                userId = user.id,
+                nickname = "newNick",
+            )
+
+            result.id shouldBe user.id
+            result.nickname shouldBe "newNick"
+            userRepository.findByIdOrNull(user.id)!!.nickname shouldBe "newNick"
+        }
+
+        it("존재하지 않는 userId이면 UserNotFoundException을 던진다") {
+            val invalidUserId = 0L
+            userRepository.findByIdOrNull(invalidUserId) shouldBe null
+
+            shouldThrow<UserNotFoundException> {
+                userService.updateNickname(
+                    userId = invalidUserId,
+                    nickname = "newNick",
+                )
+            }
+        }
+
+        it("이미 다른 유저가 사용 중인 닉네임이면 NicknameDuplicatedException을 던진다") {
+            val takenNickname = "takenNick"
+            createActiveUser(nickname = takenNickname)
+            val target = createActiveUser(nickname = "myNick")
+
+            shouldThrow<NicknameDuplicatedException> {
+                userService.updateNickname(
+                    userId = target.id,
+                    nickname = takenNickname,
+                )
+            }
+        }
+
+        it("유효하지 않은 닉네임 형식이면 예외를 던진다") {
+            val user = createActiveUser(nickname = "myNick")
+
+            shouldThrow<NicknameDuplicatedException> {
+                userService.updateNickname(
+                    userId = user.id,
+                    nickname = "??invalid@#",
+                )
+            }
+        }
+
+        it("현재 닉네임과 동일하면 변경 없이 현재 정보를 반환한다") {
+            val sameNickname = "sameNick"
+            val user = createActiveUser(nickname = sameNickname)
+
+            val result = userService.updateNickname(
+                userId = user.id,
+                nickname = sameNickname,
+            )
+
+            result.nickname shouldBe sameNickname
+            userRepository.findByIdOrNull(user.id)!!.nickname shouldBe sameNickname
+        }
+
+        it("다른 유저가 soft-delete된 닉네임은 사용 가능하다") {
+            val recycledNickname = "recycledNick"
+            val deletedUser = createActiveUser(nickname = recycledNickname)
+            deletedUser.softDelete(Instant.now())
+            userRepository.save(deletedUser)
+
+            val target = createActiveUser(nickname = "myNick")
+            val result = userService.updateNickname(
+                userId = target.id,
+                nickname = recycledNickname,
+            )
+
+            result.nickname shouldBe recycledNickname
+        }
+    }
+
     describe("findById") {
         it("존재하는 유저를 반환한다") {
             val user = createSuspendedUser("TestUser")
