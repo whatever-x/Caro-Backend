@@ -95,7 +95,8 @@ sealed interface SchedulingState {
         ): Review {
             val newEf = (easeFactor + EF_DELTA_EASY).coerceIn(MIN_EF, MAX_EF).setScale(2, RoundingMode.HALF_UP)
             val newIntervalDays = (intervalDays.toBigDecimal() * newEf)
-                .coerceIn((intervalDays + 1).toBigDecimal(), context.params.reviewMaxInterval.toBigDecimal())
+                .coerceAtLeast((intervalDays + 1).toBigDecimal())
+                .coerceAtMost(context.params.reviewMaxInterval.toBigDecimal())
                 .setScale(0, RoundingMode.HALF_UP)
                 .toInt()
             return Review(
@@ -113,7 +114,8 @@ sealed interface SchedulingState {
             context: SchedulingContext,
         ): Review {
             val newIntervalDays = (intervalDays.toBigDecimal() * easeFactor)
-                .coerceIn((intervalDays + 1).toBigDecimal(), context.params.reviewMaxInterval.toBigDecimal())
+                .coerceAtLeast((intervalDays + 1).toBigDecimal())
+                .coerceAtMost(context.params.reviewMaxInterval.toBigDecimal())
                 .setScale(0, RoundingMode.HALF_UP)
                 .toInt()
             return Review(
@@ -132,10 +134,8 @@ sealed interface SchedulingState {
         ): Review {
             val newEf = (easeFactor + EF_DELTA_AGAIN).coerceIn(MIN_EF, MAX_EF).setScale(2, RoundingMode.HALF_UP)
             val newIntervalDays = (intervalDays.toBigDecimal() * context.params.lapseIntervalMultiplier)
-                .coerceIn(
-                    context.params.lapseMinInterval.toBigDecimal(),
-                    context.params.reviewMaxInterval.toBigDecimal(),
-                )
+                .coerceAtLeast(context.params.lapseMinInterval.toBigDecimal())
+                .coerceAtMost(context.params.reviewMaxInterval.toBigDecimal())
                 .setScale(0, RoundingMode.HALF_UP)
                 .toInt()
             return Review(
