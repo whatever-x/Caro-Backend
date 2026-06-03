@@ -12,9 +12,10 @@ interface StudyApi {
      */
     fun getTodaySummary(
         now: Instant,
+        timezone: ZoneId,
         userId: Long,
         deckId: Long,
-    ): TodaySummaryDto
+    ): TodayStudySessionState
 
     /**
      * 카드별 학습 상태를 cardId 기준 맵으로 반환한다.
@@ -32,7 +33,7 @@ interface StudyApi {
         studyType: StudyType,
         timezone: ZoneId,
         dayCutoffHour: Int = 0,
-    ): StudySessionDto
+    ): TodayStudySessionState
 
     fun getStudySessionCardQueue(
         userId: Long,

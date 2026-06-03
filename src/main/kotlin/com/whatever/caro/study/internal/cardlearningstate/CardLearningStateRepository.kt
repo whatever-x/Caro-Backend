@@ -64,7 +64,7 @@ interface CardLearningStateRepository : JpaRepository<CardLearningState, Long> {
         where cls.userId = :userId
             and cls.deckId = :deckId
             and cls.status = CardLearningStatus.NEW
-            and cls.lastReviewedAt = null or cls.lastReviewedAt < :sessionStart
+            and (cls.lastReviewedAt is null or cls.lastReviewedAt < :sessionStart)
         order by cls.id asc
     """,
     )

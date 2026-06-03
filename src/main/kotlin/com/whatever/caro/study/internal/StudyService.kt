@@ -8,8 +8,7 @@ import com.whatever.caro.study.StudySessionDto
 import com.whatever.caro.study.StudySessionStatus
 import com.whatever.caro.study.StudyTargetPoolCalculator
 import com.whatever.caro.study.StudyType
-import com.whatever.caro.study.TodaySummaryDto
-import com.whatever.caro.study.TodaySummaryState
+import com.whatever.caro.study.TodayStudySessionState
 import com.whatever.caro.study.exception.SessionExpiredException
 import com.whatever.caro.study.exception.SessionNotFoundException
 import com.whatever.caro.study.internal.cardlearningstate.CardLearningState
@@ -41,38 +40,38 @@ class StudyService(
         studyType: StudyType,
         timezone: ZoneId,
         dayCutoffHour: Int,
-    ): StudySessionDto {
-        val todaySession = getTodayStudySession(now, userId, deckId)
-        if (todaySession != null) {
-            return todaySession
-        }
-
-        val preset = deckPresetApi.getLatestDeckPresetByUser(deckId, userId)
-
-        val todayPool = studyTargetPoolCalculator.getTodayPool(
-            now,
-            userId,
-            timezone,
-            deckId,
-            preset.newPerDay,
-            preset.reviewPerDay,
-            dayCutoffHour,
-        )
-
-        val studySession = StudySession(
+    ): TodayStudySessionState {
+        cleanupStaleSession(
+            now = now,
             userId = userId,
             deckId = deckId,
-            status = StudySessionStatus.ACTIVE,
-            studyType = studyType,
-            startedAt = now,
-            newCardsGoal = todayPool.newCount,
-            reviewCardsGoal = todayPool.reviewCount,
-            timezone = timezone,
-            dayCutoffHour = dayCutoffHour,
-            deckPresetIdSnapshot = preset.id,
         )
-        studySessionRepository.save(studySession)
-        return studySession.toDto()
+
+        val todayStudy = resolveTodayStudy(
+            now = now,
+            timezone = timezone,
+            userId = userId,
+            deckId = deckId,
+        )
+        return when (todayStudy) {
+            is TodayStudySessionState.NotStarted -> {
+                val studySession = StudySession(
+                    userId = userId,
+                    deckId = deckId,
+                    status = StudySessionStatus.ACTIVE,
+                    studyType = studyType,
+                    startedAt = now,
+                    newCardsGoal = todayStudy.pool.newCount,
+                    reviewCardsGoal = todayStudy.pool.reviewCount,
+                    timezone = timezone,
+                    dayCutoffHour = dayCutoffHour,
+                    deckPresetIdSnapshot = todayStudy.presetId,
+                )
+                studySessionRepository.save(studySession)
+                TodayStudySessionState.InProgress(studySession.toDto())
+            }
+            else -> todayStudy
+        }
     }
 
     @Transactional(readOnly = true)
@@ -121,64 +120,77 @@ class StudyService(
         )
     }
 
+    @Transactional(readOnly = true)
     override fun getTodaySummary(
         now: Instant,
+        timezone: ZoneId,
         userId: Long,
         deckId: Long,
-    ): TodaySummaryDto {
-        val latestSession = studySessionRepository.findByUserAndDeckOrderByStartedAtDesc(userId, deckId)
-            ?: return TodaySummaryDto.notStarted()
+    ): TodayStudySessionState = resolveTodayStudy(
+            now = now,
+            timezone = timezone,
+            userId = userId,
+            deckId = deckId,
+        )
 
-        if (latestSession.isTodaySession(now).not()) {
-            handleStaleSession(latestSession)
-            return TodaySummaryDto.notStarted()
+    private fun resolveTodayStudy(
+        now: Instant,
+        timezone: ZoneId,
+        userId: Long,
+        deckId: Long,
+    ): TodayStudySessionState {
+        findTodaySession(
+            now = now,
+            userId = userId,
+            deckId = deckId,
+        )?.let {
+            return if (it.status == StudySessionStatus.ACTIVE) {
+                TodayStudySessionState.InProgress(it.toDto())
+            } else {
+                TodayStudySessionState.Completed(it.toDto())
+            }
         }
 
-        return when (latestSession.status) {
-            StudySessionStatus.ACTIVE -> latestSession.toTodaySummaryDto(TodaySummaryState.IN_PROGRESS)
-            StudySessionStatus.COMPLETED -> latestSession.toTodaySummaryDto(TodaySummaryState.COMPLETED)
-            StudySessionStatus.STOPPED -> TodaySummaryDto.notStarted()
+        val preset = deckPresetApi.getLatestDeckPresetByUser(deckId, userId)
+        val todayPool = studyTargetPoolCalculator.getTodayPool(
+            now = now,
+            userId = userId,
+            timezone = timezone,
+            deckId = deckId,
+            newCardPerDay = preset.newPerDay,
+            reviewCardPerDay = preset.reviewPerDay,
+            dayCutoffHour = 0,
+        )
+        if (todayPool.newCount == 0 && todayPool.reviewCount == 0) {
+            return TodayStudySessionState.RestDay
         }
+        return TodayStudySessionState.NotStarted(todayPool, preset.id)
     }
 
-    private fun handleStaleSession(
-        latestSession: StudySession,
-    ) {
-        val effectedRow = studySessionRepository.setStoppedIfActive(latestSession.id)
-        logger.warn {
-            "Stale active study session detected. sessionId=${latestSession.id} effected row: $effectedRow"
-        }
-    }
-
-    private fun getTodayStudySession(
+    private fun findTodaySession(
         now: Instant,
         userId: Long,
         deckId: Long,
-    ): StudySessionDto? {
-        val latestSession = studySessionRepository.findByUserAndDeckOrderByStartedAtDesc(userId, deckId) ?: return null
-
-        return when (latestSession.status) {
-            StudySessionStatus.ACTIVE -> {
-                if (latestSession.isTodaySession(now)) {
-                    latestSession.toDto()
-                } else {
-                    val effectedRow = studySessionRepository.setStoppedIfActive(latestSession.id)
-                    logger.warn {
-                        "Stale active study session detected. sessionId=${latestSession.id} effected row: $effectedRow"
-                    }
-                    null
-                }
-            }
-
-            StudySessionStatus.COMPLETED -> {
-                if (latestSession.isTodaySession(now)) {
-                    latestSession.toDto()
-                } else {
-                    null
-                }
-            }
-
+    ): StudySession? {
+        val latest = studySessionRepository.findByUserAndDeckOrderByStartedAtDesc(userId, deckId) ?: return null
+        return when (latest.status) {
+            StudySessionStatus.ACTIVE -> if (latest.isTodaySession(now)) latest else null
+            StudySessionStatus.COMPLETED -> if (latest.isTodaySession(now)) latest else null
             StudySessionStatus.STOPPED -> null
+        }
+    }
+
+    private fun cleanupStaleSession(
+        now: Instant,
+        userId: Long,
+        deckId: Long,
+    ) {
+        val latestSession = studySessionRepository.findByUserAndDeckOrderByStartedAtDesc(userId, deckId) ?: return
+        if (latestSession.status == StudySessionStatus.ACTIVE && !latestSession.isTodaySession(now)) {
+            val effectedRow = studySessionRepository.setStoppedIfActive(latestSession.id)
+            logger.warn {
+                "Stale active study session detected. sessionId=${latestSession.id} effected row: $effectedRow"
+            }
         }
     }
 
@@ -190,16 +202,6 @@ class StudyService(
         return learningStates.associate { it.cardId to it.toDto() }
     }
 }
-
-private fun StudySession.toTodaySummaryDto(
-    state: TodaySummaryState,
-): TodaySummaryDto =
-    TodaySummaryDto(
-        state = state,
-        studiedCardCount = newCardsStudied + reviewCardsStudied,
-        totalCardCount = estimatedTotal,
-        sessionId = id,
-    )
 
 private fun CardLearningState.toDto(): CardLearningStateDto =
     CardLearningStateDto(
