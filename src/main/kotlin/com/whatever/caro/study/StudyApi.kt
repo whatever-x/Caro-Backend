@@ -39,5 +39,5 @@ interface StudyApi {
         userId: Long,
         sessionId: Long,
         now: Instant,
-    ): StudySessionCardQueueDto
+    ): List<CardLearningStateDto>
 }

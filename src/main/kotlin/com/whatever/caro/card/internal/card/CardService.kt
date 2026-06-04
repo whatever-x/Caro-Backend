@@ -1,5 +1,7 @@
 package com.whatever.caro.card.internal.card
 
+import com.whatever.caro.card.api.card.CardApi
+import com.whatever.caro.card.api.card.CardContentDto
 import com.whatever.caro.card.api.event.CardsCreatedEvent
 import com.whatever.caro.card.api.event.CardsDeletedEvent
 import com.whatever.caro.card.internal.card.dto.create.CreateCardsDto
@@ -35,7 +37,23 @@ class CardService(
     private val noteTypeRepository: NoteTypeRepository,
     private val cardTemplateRepository: CardTemplateRepository,
     private val eventPublisher: ApplicationEventPublisher,
-) {
+) : CardApi {
+    override fun getCardsByIds(
+        userId: Long,
+        cardIds: Collection<Long>,
+    ): Map<Long, CardContentDto> {
+        if (cardIds.isEmpty()) {
+            return emptyMap()
+        }
+        return cardRepository.findAllByIdInAndUserIdAndDeletedAtIsNullWithNoteAndTemplate(cardIds, userId)
+            .associate { card ->
+                card.id to CardContentDto(
+                    cardId = card.id,
+                    fields = projectFields(card.cardTemplate, card.note.fields),
+                )
+            }
+    }
+
     @Transactional
     fun createCards(
         userId: Long,

@@ -79,7 +79,7 @@ class StudyService(
         userId: Long,
         sessionId: Long,
         now: Instant,
-    ): StudySessionCardQueueDto {
+    ): List<CardLearningStateDto> {
         val todaySession = studySessionRepository.findByIdAndUserId(
             id = sessionId,
             userId = userId,
@@ -114,10 +114,7 @@ class StudyService(
             emptyList()
         }
 
-        return StudySessionCardQueueDto(
-            newQueue = newCardQueue.map { it.toDto() },
-            reviewQueue = reviewCardQueue.map { it.toDto() },
-        )
+        return newCardQueue.map { it.toDto() } + reviewCardQueue.map { it.toDto() }
     }
 
     @Transactional(readOnly = true)
@@ -206,6 +203,7 @@ class StudyService(
 private fun CardLearningState.toDto(): CardLearningStateDto =
     CardLearningStateDto(
         cardId = cardId,
+        status = status,
         totalReviews = totalReviews,
         consecutiveAgainCount = consecutiveAgainCount,
     )
