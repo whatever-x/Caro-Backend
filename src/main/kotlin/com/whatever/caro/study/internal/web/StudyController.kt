@@ -14,13 +14,13 @@ import java.time.Instant
 import java.time.ZoneId
 
 @RestController
-@RequestMapping("/v1/study")
+@RequestMapping("/v1/study-sessions")
 class StudyController(
     private val clock: Clock,
     private val studyService: StudyService,
 ) {
 
-    @GetMapping("/sessions/daily/summary")
+    @GetMapping("/daily/summary")
     fun getTodayStudySummary(
         @RequestHeader("Client-Timezone") timezone: ZoneId,
         @RequestParam(value = "deckId", required = true) deckId: Long,

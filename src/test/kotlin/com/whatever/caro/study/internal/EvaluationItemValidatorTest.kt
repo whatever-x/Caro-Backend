@@ -17,7 +17,6 @@ class EvaluationItemValidatorTest : DescribeSpec({
         cardId = cardId,
         rating = rating,
         timeMs = timeMs,
-        evaluatedAt = now,
     )
 
     describe("validate") {
@@ -29,7 +28,7 @@ class EvaluationItemValidatorTest : DescribeSpec({
                     evaluatedCardIds = emptySet(),
                 )
 
-                result.shouldBeInstanceOf<ValidatedItem>()
+                result.shouldBeInstanceOf<ValidItem>()
             }
 
             it("timeMs=600000이면 ValidatedItem을 반환한다") {
@@ -38,7 +37,7 @@ class EvaluationItemValidatorTest : DescribeSpec({
                     evaluatedCardIds = emptySet(),
                 )
 
-                result.shouldBeInstanceOf<ValidatedItem>()
+                result.shouldBeInstanceOf<ValidItem>()
             }
 
             it("평가되지 않은 cardId는 ValidatedItem을 반환한다") {
@@ -47,7 +46,7 @@ class EvaluationItemValidatorTest : DescribeSpec({
                     evaluatedCardIds = emptySet(),
                 )
 
-                result.shouldBeInstanceOf<ValidatedItem>()
+                result.shouldBeInstanceOf<ValidItem>()
             }
         }
 

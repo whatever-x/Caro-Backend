@@ -18,7 +18,6 @@ import com.whatever.caro.study.internal.studysession.StudySessionRepository
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.DescribeSpec
 import io.kotest.matchers.bigdecimal.shouldBeGreaterThan
-import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.ints.shouldBeGreaterThan
 import io.kotest.matchers.ints.shouldBeGreaterThanOrEqual
 import io.kotest.matchers.nulls.shouldBeNull
@@ -133,7 +132,6 @@ class EvaluationServiceTest(
         cardId = cardId,
         rating = rating,
         timeMs = timeMs,
-        evaluatedAt = baseNow,
     )
 
     fun stubPreset() {

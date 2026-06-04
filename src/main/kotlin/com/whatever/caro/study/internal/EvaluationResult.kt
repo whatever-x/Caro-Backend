@@ -3,7 +3,7 @@ package com.whatever.caro.study.internal
 import com.whatever.caro.study.StudySessionStatus
 
 data class EvaluationResult(
-    val evaluatedItems: List<ValidationResult>,
-    val failedItems: List<ValidationResult>,
+    val evaluatedItems: List<ValidItem>,
+    val failedItems: List<InvalidItem>,
     val sessionStatus: StudySessionStatus,
 )

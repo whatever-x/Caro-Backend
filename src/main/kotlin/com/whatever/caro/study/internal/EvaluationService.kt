@@ -51,15 +51,17 @@ class EvaluationService(
         ).associateBy { it.cardId }
 
         val evaluatedCardIds = reviewLogRepository.findAllByStudySessionId(session.id).map { it.cardId }.toSet()
-        val (validItems, invalidItems) = dedupedItems.map {
+        val validationResults = dedupedItems.map {
             EvaluationItemValidator.validate(
                 item = it,
                 evaluatedCardIds = evaluatedCardIds,
             )
-        }.partition { it is ValidatedItem }
+        }
+        val validItems = validationResults.filterIsInstance<ValidItem>()
+        val invalidItems = validationResults.filterIsInstance<InvalidItem>()
 
         // 평가 계산 & 기록
-        val newReviewLogs = validItems.filterIsInstance<ValidatedItem>().map {
+        val newReviewLogs = validItems.map {
             val cls = clsByCardId[it.item.cardId]
                 ?: error("CardLearningState not exist for cardId=${it.item.cardId}")
 
@@ -110,7 +112,7 @@ object EvaluationItemValidator {
         when {
             isValidTimeMs(item).not() -> InvalidItem(item)
             isAlreadyEvaluated(item, evaluatedCardIds) -> InvalidItem(item)
-            else -> ValidatedItem(item)
+            else -> ValidItem(item)
         }
 
     private fun isValidTimeMs(
@@ -124,7 +126,7 @@ object EvaluationItemValidator {
 }
 
 sealed interface ValidationResult
-data class ValidatedItem(
+data class ValidItem(
     val item: EvaluatedCardDto,
 ) : ValidationResult
 data class InvalidItem(
