@@ -1,7 +1,7 @@
 package com.whatever.caro.study.internal
 
 import com.whatever.caro.TestcontainersConfiguration
-import com.whatever.caro.card.DeckPresetApi
+import com.whatever.caro.card.api.deck.DeckPresetApi
 import com.whatever.caro.study.CardLearningStatus
 import com.whatever.caro.study.Rating
 import com.whatever.caro.study.ReviewType

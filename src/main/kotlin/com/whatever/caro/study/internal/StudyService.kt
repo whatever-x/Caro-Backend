@@ -1,9 +1,8 @@
 package com.whatever.caro.study.internal
 
-import com.whatever.caro.card.DeckPresetApi
+import com.whatever.caro.card.api.deck.DeckPresetApi
 import com.whatever.caro.study.CardLearningStateDto
 import com.whatever.caro.study.StudyApi
-import com.whatever.caro.study.StudySessionCardQueueDto
 import com.whatever.caro.study.StudySessionDto
 import com.whatever.caro.study.StudySessionStatus
 import com.whatever.caro.study.StudyTargetPoolCalculator

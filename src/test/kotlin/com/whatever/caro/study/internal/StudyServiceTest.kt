@@ -1,7 +1,7 @@
 package com.whatever.caro.study.internal
 
 import com.whatever.caro.TestcontainersConfiguration
-import com.whatever.caro.card.DeckPresetApi
+import com.whatever.caro.card.api.deck.DeckPresetApi
 import com.whatever.caro.study.CardLearningStatus
 import com.whatever.caro.study.StudySessionStatus
 import com.whatever.caro.study.StudyType
@@ -32,7 +32,7 @@ import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.temporal.ChronoUnit
 
-@ApplicationModuleTest(extraIncludes = ["common", "card"])
+@ApplicationModuleTest(extraIncludes = ["common"])
 @Import(TestcontainersConfiguration::class, MockDeckPresetApiConfig::class)
 class StudyServiceTest(
     private val studyService: StudyService,
@@ -558,8 +558,8 @@ class StudyServiceTest(
                 now = baseNow,
             )
 
-            result.newQueue.size shouldBe (session.newCardsGoal - session.newCardsStudied)
-            result.reviewQueue.size shouldBe (session.reviewCardsGoal - session.reviewCardsStudied)
+            result.filter { it.status == CardLearningStatus.NEW }.size shouldBe (session.newCardsGoal - session.newCardsStudied)
+            result.filter { it.status == CardLearningStatus.REVIEW }.size shouldBe (session.reviewCardsGoal - session.reviewCardsStudied)
         }
 
         it("존재하지 않는 sessionId면 SessionNotFoundException을 던진다") {
@@ -610,7 +610,7 @@ class StudyServiceTest(
                 now = baseNow,
             )
 
-            result.newQueue.size shouldBe 0
+            result.filter { it.status == CardLearningStatus.NEW }.size shouldBe 0
         }
 
         it("REVIEW 카드를 모두 학습했다면 reviewQueue가 비어있다") {
@@ -622,7 +622,7 @@ class StudyServiceTest(
                 now = baseNow,
             )
 
-            result.reviewQueue.size shouldBe 0
+            result.filter { it.status == CardLearningStatus.REVIEW }.size shouldBe 0
         }
 
         it("세션 진입 이후 평가된 카드는 같은 세션에서 다시 나오지 않는다") {
@@ -646,8 +646,8 @@ class StudyServiceTest(
                 now = baseNow,
             )
 
-            result.newQueue.size shouldBe 0
-            result.reviewQueue.size shouldBe 0
+            result.filter { it.status == CardLearningStatus.NEW }.size shouldBe 0
+            result.filter { it.status == CardLearningStatus.REVIEW }.size shouldBe 0
         }
 
         it("REVIEW queue는 nextReviewAt 기준 오름차순으로 정렬된다") {
@@ -683,7 +683,9 @@ class StudyServiceTest(
                 secondReview.cardId,
                 thirdReview.cardId,
             )
-            result.reviewQueue.map { it.cardId } shouldContainExactly orderedCardId
+            result
+                .filter { it.status == CardLearningStatus.REVIEW }
+                .map { it.cardId } shouldContainExactly orderedCardId
         }
 
     }

@@ -1,6 +1,6 @@
 package com.whatever.caro.study.internal
 
-import com.whatever.caro.card.DeckPresetDto
+import com.whatever.caro.card.api.deck.DeckPresetDto
 import java.math.BigDecimal
 
 /**

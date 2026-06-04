@@ -1,4 +1,4 @@
-package com.whatever.caro.card
+package com.whatever.caro.card.api.deck
 
 import java.math.BigDecimal
 
