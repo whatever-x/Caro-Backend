@@ -2,6 +2,7 @@ package com.whatever.caro.user.internal.web
 
 import com.whatever.caro.common.response.ApiResponse
 import com.whatever.caro.user.UserApi
+import com.whatever.caro.user.internal.UserService
 import com.whatever.caro.user.internal.web.request.UpdateNicknameRequest
 import com.whatever.caro.user.internal.web.response.NicknameCheckResponse
 import com.whatever.caro.user.internal.web.response.UpdateNicknameResponse
@@ -27,6 +28,7 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/v1/users")
 class UserController(
     private val userApi: UserApi,
+    private val userService: UserService,
 ) {
 
     @Operation(
@@ -54,7 +56,7 @@ class UserController(
         @AuthenticationPrincipal(expression = "userId")
         userId: Long,
     ): ResponseEntity<ApiResponse<UpdateNicknameResponse>> {
-        val updated = userApi.updateNickname(userId = userId, nickname = request.nickname)
+        val updated = userService.updateNickname(userId = userId, nickname = request.nickname)
         return ResponseEntity.ok(ApiResponse.ok(updated.toUpdateNicknameResponse()))
     }
 }

@@ -95,7 +95,7 @@ class UserService(
     }
 
     @Transactional
-    override fun updateNickname(
+    fun updateNickname(
         userId: Long,
         nickname: String,
     ): UserInfo {
