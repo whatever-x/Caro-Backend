@@ -13,7 +13,7 @@ internal class CardLearningStateEventListener(
         event: CardsCreatedEvent,
     ) {
         val states = event.cardIds.map { cardId ->
-            CardLearningState(cardId = cardId, userId = event.userId)
+            CardLearningState(cardId = cardId, deckId = event.deckId, userId = event.userId)
         }
         cardLearningStateRepository.saveAll(states)
     }

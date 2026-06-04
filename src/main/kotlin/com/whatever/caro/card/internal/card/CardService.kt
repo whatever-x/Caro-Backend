@@ -94,7 +94,7 @@ class CardService(
 
         deck.cardCount += createdCards.size
         eventPublisher.publishEvent(
-            CardsCreatedEvent(cardIds = createdCards.map { it.cardId }, userId = userId),
+            CardsCreatedEvent(cardIds = createdCards.map { it.cardId }, deckId = deck.id, userId = userId),
         )
 
         return CreateCardsResponseDto(items = createdCards)
