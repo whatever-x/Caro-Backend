@@ -3,6 +3,7 @@ package com.whatever.caro.study.internal.studysession
 import com.whatever.caro.TestcontainersConfiguration
 import com.whatever.caro.study.StudySessionStatus
 import com.whatever.caro.study.StudyType
+import com.whatever.caro.study.internal.MockDeckPresetApiConfig
 import io.kotest.core.spec.style.DescribeSpec
 import io.kotest.matchers.shouldBe
 import org.springframework.context.annotation.Import
@@ -11,7 +12,7 @@ import java.time.Instant
 import java.time.ZoneId
 
 @ApplicationModuleTest(extraIncludes = ["common"])
-@Import(TestcontainersConfiguration::class)
+@Import(TestcontainersConfiguration::class, MockDeckPresetApiConfig::class)
 class StudySessionRepositoryTest(
     private val studySessionRepository: StudySessionRepository,
 ) : DescribeSpec({
