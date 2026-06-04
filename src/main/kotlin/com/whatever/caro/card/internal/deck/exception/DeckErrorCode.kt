@@ -11,4 +11,5 @@ enum class DeckErrorCode(
 ) : ErrorCodeSpec {
     NOT_FOUND("D001", HttpStatus.NOT_FOUND, "덱을 찾을 수 없습니다", "error.deck.not_found"),
     FORBIDDEN("D002", HttpStatus.FORBIDDEN, "해당 덱에 접근할 권한이 없습니다", "error.deck.forbidden"),
+    PRESET_NOT_FOUND("D003", HttpStatus.NOT_FOUND, "덱 프리셋을 찾을 수 없습니다", "error.deck.preset_not_found"),
 }
