@@ -32,7 +32,7 @@ class StudyService(
 ) : StudyApi {
 
     @Transactional
-    override fun startOrResumeDailyStudySession(  // TODO 동시성 고려
+    override fun startOrResumeDailyStudySession( // TODO 동시성 고려
         now: Instant,
         userId: Long,
         deckId: Long,
@@ -69,6 +69,7 @@ class StudyService(
                 studySessionRepository.save(studySession)
                 TodayStudySessionState.InProgress(studySession.toDto())
             }
+
             else -> todayStudy
         }
     }
@@ -122,7 +123,8 @@ class StudyService(
         timezone: ZoneId,
         userId: Long,
         deckId: Long,
-    ): TodayStudySessionState = resolveTodayStudy(
+    ): TodayStudySessionState =
+        resolveTodayStudy(
             now = now,
             timezone = timezone,
             userId = userId,

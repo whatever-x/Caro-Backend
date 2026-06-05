@@ -128,11 +128,12 @@ class EvaluationServiceTest(
         cardId: Long,
         rating: Rating = Rating.FAIR,
         timeMs: Int = 1000,
-    ): EvaluatedCardDto = EvaluatedCardDto(
-        cardId = cardId,
-        rating = rating,
-        timeMs = timeMs,
-    )
+    ): EvaluatedCardDto =
+        EvaluatedCardDto(
+            cardId = cardId,
+            rating = rating,
+            timeMs = timeMs,
+        )
 
     fun stubPreset() {
         every { deckPresetApi.getDeckPresetById(any()) } returns Sm2ParamsFixture.DECK_PRESET_DTO_FIXTURE

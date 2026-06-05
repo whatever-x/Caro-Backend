@@ -32,15 +32,13 @@ class DeckPresetServiceTest(
         userId: Long? = 1L,
         name: String = "기본 프리셋",
         newPerDay: Int = 30,
-    ): DeckPreset =
-        deckPresetRepository.save(DeckPreset(userId = userId, name = name, newPerDay = newPerDay))
+    ): DeckPreset = deckPresetRepository.save(DeckPreset(userId = userId, name = name, newPerDay = newPerDay))
 
     fun saveDeck(
         userId: Long,
         preset: DeckPreset? = null,
         name: String = "테스트 덱",
-    ): Deck =
-        deckRepository.save(Deck(userId = userId, deckPreset = preset, name = name))
+    ): Deck = deckRepository.save(Deck(userId = userId, deckPreset = preset, name = name))
 
     describe("getLatestDeckPresetByUser") {
         it("덱에 연결된 프리셋을 DTO로 반환한다") {

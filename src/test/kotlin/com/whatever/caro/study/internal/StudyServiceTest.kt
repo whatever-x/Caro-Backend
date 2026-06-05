@@ -632,12 +632,12 @@ class StudyServiceTest(
                 cardId = 1L,
                 status = CardLearningStatus.REVIEW,
                 nextReviewAt = baseNow,
-                lastReviewedAt = afterSessionStart,  // 세션 시작 이후 평가
+                lastReviewedAt = afterSessionStart, // 세션 시작 이후 평가
             )
             createCls(
                 cardId = 2L,
                 status = CardLearningStatus.NEW,
-                lastReviewedAt = afterSessionStart,  // 세션 시작 이후 평가
+                lastReviewedAt = afterSessionStart, // 세션 시작 이후 평가
             )
 
             val result = studyService.getStudySessionCardQueue(
@@ -687,7 +687,6 @@ class StudyServiceTest(
                 .filter { it.status == CardLearningStatus.REVIEW }
                 .map { it.cardId } shouldContainExactly orderedCardId
         }
-
     }
 }) {
     companion object {

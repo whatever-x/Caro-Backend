@@ -171,7 +171,7 @@ class StudyBFFServiceUnitTest :
                     val result = service.startOrResumeDailyStudy(now, userId, deckId, tz)
 
                     val dto = result.shouldBeInstanceOf<DailyStudyView.InProgressDto>()
-                    dto.cards.map { it.cardId } shouldBe cardQueue.map { it.cardId }  // queue의 순서를 보존
+                    dto.cards.map { it.cardId } shouldBe cardQueue.map { it.cardId } // queue의 순서를 보존
                 }
 
                 it("큐가 비어 있으면 CompletedDto를 early return한다") {
@@ -195,14 +195,14 @@ class StudyBFFServiceUnitTest :
                     stubStartOrResumeDailyStudySession(TodayStudySessionState.InProgress(session))
 
                     val cardQueue = listOf(cls(1L), cls(2L), cls(3L))
-                    val cardContentsById = mapOf(1L to content(1L), 3L to content(3L))  // 2번 카드 콘텐츠 없음(orphan)
+                    val cardContentsById = mapOf(1L to content(1L), 3L to content(3L)) // 2번 카드 콘텐츠 없음(orphan)
                     every { studyApi.getStudySessionCardQueue(userId = userId, sessionId = 100L, now = now) } returns cardQueue
                     every { cardApi.getCardsByIds(userId = userId, cardIds = listOf(1L, 2L, 3L)) } returns cardContentsById
 
                     val result = service.startOrResumeDailyStudy(now, userId, deckId, tz)
 
                     val dto = result.shouldBeInstanceOf<DailyStudyView.InProgressDto>()
-                    dto.cards.map { it.cardId } shouldContainExactly listOf(1L, 3L)  // 큐 순서를 유지하고 orphan 2L 카드는 제거
+                    dto.cards.map { it.cardId } shouldContainExactly listOf(1L, 3L) // 큐 순서를 유지하고 orphan 2L 카드는 제거
                     dto.studiedCardCount shouldBe 13
                     dto.totalCardCount shouldBe 20
                 }

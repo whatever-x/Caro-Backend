@@ -43,7 +43,7 @@ class StudyBFFService(
     private fun resolveInProgress(
         sessionState: TodayStudySessionState.InProgress,
         userId: Long,
-        now: Instant
+        now: Instant,
     ): DailyStudyView {
         val sessionId = sessionState.session.sessionId
         val cardQueue = studyApi.getStudySessionCardQueue(
@@ -76,13 +76,14 @@ class StudyBFFService(
             sessionId = sessionId,
             totalCardCount = sessionState.session.estimatedTotal,
             studiedCardCount = sessionState.session.newCardsStudied + sessionState.session.reviewCardsStudied,
-            cards = cards
+            cards = cards,
         )
     }
 }
 
-private fun StudySessionDto.toCompletedView() = DailyStudyView.CompletedDto(
-    sessionId = sessionId,
-    totalCardCount = estimatedTotal,
-    studiedCardCount = newCardsStudied + reviewCardsStudied,
-)
+private fun StudySessionDto.toCompletedView() =
+    DailyStudyView.CompletedDto(
+        sessionId = sessionId,
+        totalCardCount = estimatedTotal,
+        studiedCardCount = newCardsStudied + reviewCardsStudied,
+    )

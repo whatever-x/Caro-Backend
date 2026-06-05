@@ -14,7 +14,7 @@ import io.swagger.v3.oas.annotations.media.Schema
         DiscriminatorMapping(value = "IN_PROGRESS", schema = DailyStudyResponse.InProgress::class),
         DiscriminatorMapping(value = "COMPLETED", schema = DailyStudyResponse.Completed::class),
         DiscriminatorMapping(value = "REST_DAY", schema = DailyStudyResponse.RestDay::class),
-    ]
+    ],
 )
 @JsonTypeInfo(
     use = JsonTypeInfo.Id.NAME,
@@ -35,7 +35,7 @@ sealed interface DailyStudyResponse {
         val sessionId: Long,
         val studiedCardCount: Int,
         val totalCardCount: Int,
-        val cards: List<StudyCardItem>
+        val cards: List<StudyCardItem>,
     ) : DailyStudyResponse {
         override val type: DailyStudyType
             get() = DailyStudyType.IN_PROGRESS

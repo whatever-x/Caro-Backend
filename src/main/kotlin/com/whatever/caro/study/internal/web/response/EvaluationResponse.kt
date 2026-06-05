@@ -9,7 +9,9 @@ data class EvaluationResponse(
     val sessionStatus: StudySessionStatus,
 ) {
     companion object {
-        fun from(result: EvaluationResult) = EvaluationResponse(
+        fun from(
+            result: EvaluationResult,
+        ) = EvaluationResponse(
             evaluatedCardIds = result.evaluatedItems.map { it.item.cardId },
             failedCardIds = result.failedItems.map { it.item.cardId },
             sessionStatus = result.sessionStatus,

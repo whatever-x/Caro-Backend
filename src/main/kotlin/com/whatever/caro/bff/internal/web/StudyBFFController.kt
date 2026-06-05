@@ -57,17 +57,20 @@ class StudyBFFController(
     }
 }
 
-private fun DailyStudyView.toResponse(): DailyStudyResponse = when (this) {
-    is DailyStudyView.InProgressDto -> DailyStudyResponse.InProgress(
-        sessionId = sessionId,
-        studiedCardCount = studiedCardCount,
-        totalCardCount = totalCardCount,
-        cards = cards,
-    )
-    is DailyStudyView.CompletedDto -> DailyStudyResponse.Completed(
-        sessionId = sessionId,
-        studiedCardCount = studiedCardCount,
-        totalCardCount = totalCardCount,
-    )
-    is DailyStudyView.RestDayDto   -> DailyStudyResponse.RestDay
-}
+private fun DailyStudyView.toResponse(): DailyStudyResponse =
+    when (this) {
+        is DailyStudyView.InProgressDto -> DailyStudyResponse.InProgress(
+            sessionId = sessionId,
+            studiedCardCount = studiedCardCount,
+            totalCardCount = totalCardCount,
+            cards = cards,
+        )
+
+        is DailyStudyView.CompletedDto -> DailyStudyResponse.Completed(
+            sessionId = sessionId,
+            studiedCardCount = studiedCardCount,
+            totalCardCount = totalCardCount,
+        )
+
+        is DailyStudyView.RestDayDto -> DailyStudyResponse.RestDay
+    }

@@ -40,9 +40,8 @@ class StudyController(
     }
 }
 
-
-private fun TodayStudySessionState.toResponse(): DailyStudySummaryResponse {
-    return when (this) {
+private fun TodayStudySessionState.toResponse(): DailyStudySummaryResponse =
+    when (this) {
         is TodayStudySessionState.NotStarted -> DailyStudySummaryResponse.NotStarted(
             studiedCardCount = 0,
             totalCardCount = this.pool.newCount + this.pool.reviewCount,
@@ -62,4 +61,3 @@ private fun TodayStudySessionState.toResponse(): DailyStudySummaryResponse {
 
         is TodayStudySessionState.RestDay -> DailyStudySummaryResponse.RestDay
     }
-}

@@ -52,17 +52,16 @@ class EvaluationController(
             now = now,
             userId = SecurityUtil.currentUser().userId,
             sessionId = sessionId,
-            items = items.map { it.toDto() }
+            items = items.map { it.toDto() },
         )
 
         return ResponseEntity.ok(EvaluationResponse.from(result))
     }
 }
 
-private fun EvaluatedCardRequest.toDto(): EvaluatedCardDto {
-    return EvaluatedCardDto(
+private fun EvaluatedCardRequest.toDto(): EvaluatedCardDto =
+    EvaluatedCardDto(
         cardId = cardId,
         rating = rating,
         timeMs = timeMs.takeIf { it > 600_000 } ?: 600_000,
     )
-}

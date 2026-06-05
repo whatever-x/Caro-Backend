@@ -15,7 +15,7 @@ import io.swagger.v3.oas.annotations.media.Schema
         DiscriminatorMapping(value = "IN_PROGRESS", schema = DailyStudySummaryResponse.InProgress::class),
         DiscriminatorMapping(value = "COMPLETED", schema = DailyStudySummaryResponse.Completed::class),
         DiscriminatorMapping(value = "REST_DAY", schema = DailyStudySummaryResponse.RestDay::class),
-    ]
+    ],
 )
 @JsonTypeInfo(
     use = JsonTypeInfo.Id.NAME,
