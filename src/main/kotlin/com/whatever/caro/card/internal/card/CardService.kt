@@ -204,7 +204,11 @@ class CardService(
         }
 
         eventPublisher.publishEvent(
-            CardsDeletedEvent(deckId = card.deck.id, deletedCount = 1, userId = userId),
+            CardsDeletedEvent(
+                deckId = card.deck.id,
+                deletedCount = 1,
+                userId = userId,
+                deletedCardIds = setOf(card.id)),
         )
 
         return DeleteCardResponseDto(cardId = card.id)

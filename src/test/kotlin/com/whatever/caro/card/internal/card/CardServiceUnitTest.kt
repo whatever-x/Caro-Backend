@@ -492,7 +492,7 @@ class CardServiceUnitTest :
                 deck.cardCount shouldBe 2
                 verify {
                     eventPublisher.publishEvent(
-                        CardsDeletedEvent(deckId = 10L, deletedCount = 1, userId = userId),
+                        CardsDeletedEvent(deckId = 10L, deletedCount = 1, userId = userId, deletedCardIds = setOf(card.id)),
                     )
                 }
             }
