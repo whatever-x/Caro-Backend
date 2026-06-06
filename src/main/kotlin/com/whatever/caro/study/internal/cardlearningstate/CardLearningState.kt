@@ -1,6 +1,7 @@
 package com.whatever.caro.study.internal.cardlearningstate
 
 import com.whatever.caro.common.entity.BaseTimeEntity
+import com.whatever.caro.common.entity.SoftDeletableEntity
 import com.whatever.caro.study.CardLearningStatus
 import com.whatever.caro.study.internal.SchedulingState
 import com.whatever.caro.study.internal.SchedulingState.New
@@ -59,7 +60,7 @@ class CardLearningState(
 
     @Column(name = "total_reviews", nullable = false)
     var totalReviews: Int = 0,
-) : BaseTimeEntity() {
+) : SoftDeletableEntity() {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0L

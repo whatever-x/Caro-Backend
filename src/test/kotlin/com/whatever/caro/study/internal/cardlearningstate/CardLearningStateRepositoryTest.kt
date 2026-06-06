@@ -200,7 +200,7 @@ class CardLearningStateRepositoryTest(
             )
             val cardIds = clsList.map { it.cardId }
 
-            val result = cardLearningStateRepository.findAllByUserIdAndCardIdIn(
+            val result = cardLearningStateRepository.findAllByUserIdAndCardIdInAndDeletedAtIsNull(
                 userId = clsList.first().userId,
                 cardIds = cardIds,
             )
@@ -215,7 +215,7 @@ class CardLearningStateRepositoryTest(
                 nextReviewAt = beforeCutoff,
             )
 
-            val result = cardLearningStateRepository.findAllByUserIdAndCardIdIn(
+            val result = cardLearningStateRepository.findAllByUserIdAndCardIdInAndDeletedAtIsNull(
                 userId = 1L,
                 cardIds = listOf(cls.cardId),
             )
@@ -229,7 +229,7 @@ class CardLearningStateRepositoryTest(
                 nextReviewAt = beforeCutoff,
             )
 
-            val result = cardLearningStateRepository.findAllByUserIdAndCardIdIn(
+            val result = cardLearningStateRepository.findAllByUserIdAndCardIdInAndDeletedAtIsNull(
                 userId = cls.userId,
                 cardIds = emptyList(),
             )
@@ -243,7 +243,7 @@ class CardLearningStateRepositoryTest(
                 nextReviewAt = beforeCutoff,
             )
 
-            val result = cardLearningStateRepository.findAllByUserIdAndCardIdIn(
+            val result = cardLearningStateRepository.findAllByUserIdAndCardIdInAndDeletedAtIsNull(
                 userId = cls.userId,
                 cardIds = listOf(cls.cardId, 2L),
             )

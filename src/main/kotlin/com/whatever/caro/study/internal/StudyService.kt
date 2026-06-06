@@ -196,7 +196,7 @@ class StudyService(
         userId: Long,
         cardIds: Collection<Long>,
     ): Map<Long, CardLearningStateDto> {
-        val learningStates = cardLearningStateRepository.findAllByUserIdAndCardIdIn(userId, cardIds)
+        val learningStates = cardLearningStateRepository.findAllByUserIdAndCardIdInAndDeletedAtIsNull(userId, cardIds)
         return learningStates.associate { it.cardId to it.toDto() }
     }
 }

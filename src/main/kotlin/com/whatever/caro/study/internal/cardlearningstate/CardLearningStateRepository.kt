@@ -6,7 +6,7 @@ import org.springframework.data.jpa.repository.Query
 import java.time.Instant
 
 interface CardLearningStateRepository : JpaRepository<CardLearningState, Long> {
-    fun findAllByUserIdAndCardIdIn(
+    fun findAllByUserIdAndCardIdInAndDeletedAtIsNull(
         userId: Long,
         cardIds: Collection<Long>,
     ): List<CardLearningState>
@@ -18,6 +18,7 @@ interface CardLearningStateRepository : JpaRepository<CardLearningState, Long> {
             and cls.deckId = :deckId
             and cls.nextReviewAt < :nextSessionStart
             and cls.status = CardLearningStatus.REVIEW
+            and cls.deletedAt is null
     """,
     )
     fun countTodayReviewCards(
@@ -32,6 +33,7 @@ interface CardLearningStateRepository : JpaRepository<CardLearningState, Long> {
         where cls.userId = :userId
             and cls.deckId = :deckId
             and cls.status = CardLearningStatus.NEW
+            and cls.deletedAt is null
     """,
     )
     fun countNewCards(
@@ -47,6 +49,7 @@ interface CardLearningStateRepository : JpaRepository<CardLearningState, Long> {
             and cls.status = CardLearningStatus.REVIEW
             and cls.nextReviewAt < :nextSessionStart
             and (cls.lastReviewedAt is null or cls.lastReviewedAt < :sessionStart)
+            and cls.deletedAt is null
         order by cls.nextReviewAt asc, cls.id asc
     """,
     )
@@ -65,6 +68,7 @@ interface CardLearningStateRepository : JpaRepository<CardLearningState, Long> {
             and cls.deckId = :deckId
             and cls.status = CardLearningStatus.NEW
             and (cls.lastReviewedAt is null or cls.lastReviewedAt < :sessionStart)
+            and cls.deletedAt is null
         order by cls.id asc
     """,
     )
