@@ -78,4 +78,24 @@ interface CardLearningStateRepository : JpaRepository<CardLearningState, Long> {
         pageable: Pageable,
         sessionStart: Instant,
     ): List<CardLearningState>
+
+    /**
+     * 오늘 학습하지 않은, NEW 상태인 LearningState를 반환
+     */
+    @Query(
+        """
+        select cls from CardLearningState cls
+        where cls.userId = :userId
+            and cls.deckId = :deckId
+            and cls.status = CardLearningStatus.NEW
+            and (cls.lastReviewedAt is null or cls.lastReviewedAt < :sessionStart)
+            and cls.deletedAt is null
+        order by cls.id asc
+        """,
+    )
+    fun countRemainingNewCards(
+        userId: Long,
+        deckId: Long,
+        sessionStart: Instant,
+    ): Int
 }

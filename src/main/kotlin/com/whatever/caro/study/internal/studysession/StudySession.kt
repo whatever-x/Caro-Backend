@@ -1,7 +1,6 @@
 package com.whatever.caro.study.internal.studysession
 
 import com.whatever.caro.common.entity.BaseTimeEntity
-import com.whatever.caro.study.CardLearningStatus
 import com.whatever.caro.study.ReviewType
 import com.whatever.caro.study.StudySessionStatus
 import com.whatever.caro.study.StudyType
@@ -102,5 +101,21 @@ class StudySession(
     ) {
         status = StudySessionStatus.COMPLETED
         endedAt = now
+    }
+
+    fun recalculateGoals(
+        availableNewGoal: Int,
+        availableReviewGoal: Int,
+    ) {
+        newCardsGoal = minOf(newCardsGoal, (newCardsStudied + availableNewGoal))
+        reviewCardsGoal = minOf(reviewCardsGoal, (reviewCardsStudied + availableReviewGoal))
+    }
+
+    fun completeIfGoalAchieved(
+        now: Instant,
+    ) {
+        if ((newCardsStudied >= newCardsGoal) && (reviewCardsStudied >= reviewCardsGoal)) {
+            complete(now)
+        }
     }
 }

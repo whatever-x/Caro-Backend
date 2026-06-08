@@ -32,7 +32,8 @@ class StudyService(
 ) : StudyApi {
 
     @Transactional
-    override fun startOrResumeDailyStudySession( // TODO 동시성 고려
+    override fun startOrResumeDailyStudySession(
+        // TODO 동시성 고려
         now: Instant,
         userId: Long,
         deckId: Long,
@@ -130,6 +131,33 @@ class StudyService(
             userId = userId,
             deckId = deckId,
         )
+
+    @Transactional
+    fun adjustGoalsOnCardDeletion(
+        now: Instant,
+        userId: Long,
+        deckId: Long,
+    ) {
+        val session = findTodaySession(now = now, userId = userId, deckId = deckId)
+            ?.takeIf { it.status == StudySessionStatus.ACTIVE }
+            ?: return
+
+        val availableNewCount = cardLearningStateRepository.countRemainingNewCards(
+            userId = userId,
+            deckId = deckId,
+            sessionStart = session.sessionStart,
+        )
+        val availableReviewCount = cardLearningStateRepository.countTodayReviewCards(
+            userId = userId,
+            deckId = deckId,
+            nextSessionStart = session.nextSessionStart,
+        )
+        session.recalculateGoals(
+            availableNewGoal = availableNewCount,
+            availableReviewGoal = availableReviewCount,
+        )
+        session.completeIfGoalAchieved(now)
+    }
 
     private fun resolveTodayStudy(
         now: Instant,
