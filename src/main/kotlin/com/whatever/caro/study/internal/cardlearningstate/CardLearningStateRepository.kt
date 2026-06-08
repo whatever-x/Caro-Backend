@@ -13,7 +13,7 @@ interface CardLearningStateRepository : JpaRepository<CardLearningState, Long> {
 
     @Query(
         """
-        select count(*) from CardLearningState cls
+        select count(cls) from CardLearningState cls
         where cls.userId = :userId
             and cls.deckId = :deckId
             and cls.nextReviewAt < :nextSessionStart
@@ -29,7 +29,7 @@ interface CardLearningStateRepository : JpaRepository<CardLearningState, Long> {
 
     @Query(
         """
-        select count(*) from CardLearningState cls
+        select count(cls) from CardLearningState cls
         where cls.userId = :userId
             and cls.deckId = :deckId
             and cls.status = CardLearningStatus.NEW
@@ -84,7 +84,7 @@ interface CardLearningStateRepository : JpaRepository<CardLearningState, Long> {
      */
     @Query(
         """
-        select cls from CardLearningState cls
+        select count(cls) from CardLearningState cls
         where cls.userId = :userId
             and cls.deckId = :deckId
             and cls.status = CardLearningStatus.NEW
