@@ -4,6 +4,7 @@ import com.whatever.caro.common.entity.BaseTimeEntity
 import com.whatever.caro.study.ReviewType
 import com.whatever.caro.study.StudySessionStatus
 import com.whatever.caro.study.StudyType
+import io.github.oshai.kotlinlogging.KotlinLogging
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.EnumType
@@ -16,6 +17,8 @@ import org.springframework.data.annotation.Transient
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
+
+private val logger = KotlinLogging.logger {}
 
 @Entity
 @Table(name = "study_sessions")
@@ -116,6 +119,9 @@ class StudySession(
     ) {
         if ((newCardsStudied >= newCardsGoal) && (reviewCardsStudied >= reviewCardsGoal)) {
             complete(now)
+        }
+        if (newCardsGoal == 0 && reviewCardsGoal == 0) {
+            logger.debug { "All cards deleted. Session status updated: $status. sessionId: $id" }
         }
     }
 }
