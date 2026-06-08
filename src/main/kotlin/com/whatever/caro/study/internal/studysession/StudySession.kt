@@ -96,7 +96,7 @@ class StudySession(
         }
     }
 
-    fun complete(
+    private fun complete(
         now: Instant,
     ) {
         status = StudySessionStatus.COMPLETED

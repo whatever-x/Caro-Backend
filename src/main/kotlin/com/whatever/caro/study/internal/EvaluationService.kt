@@ -90,9 +90,7 @@ class EvaluationService(
             session.updateStudiedCard(reviewLog.reviewType)
             reviewLog
         }
-        if (session.newCardsStudied + session.reviewCardsStudied >= session.estimatedTotal) {
-            session.complete(now)
-        }
+        session.completeIfGoalAchieved(now)
 
         reviewLogRepository.saveAll(newReviewLogs)
 
