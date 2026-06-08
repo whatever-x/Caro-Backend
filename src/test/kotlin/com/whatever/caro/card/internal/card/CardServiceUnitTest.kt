@@ -33,6 +33,9 @@ import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import java.time.Clock
+import java.time.Instant
+import java.time.ZoneId
 
 class CardServiceUnitTest :
     DescribeSpec({
@@ -43,6 +46,8 @@ class CardServiceUnitTest :
         val noteTypeRepository = mockk<NoteTypeRepository>()
         val cardTemplateRepository = mockk<CardTemplateRepository>()
         val eventPublisher = mockk<org.springframework.context.ApplicationEventPublisher>(relaxed = true)
+        val fixedNow = Instant.parse("2026-06-08T00:00:00.00Z")
+        val clock = Clock.fixed(fixedNow, ZoneId.of("UTC"))
         val cardService = CardService(
             cardRepository = cardRepository,
             noteRepository = noteRepository,
@@ -50,6 +55,7 @@ class CardServiceUnitTest :
             noteTypeRepository = noteTypeRepository,
             cardTemplateRepository = cardTemplateRepository,
             eventPublisher = eventPublisher,
+            clock = clock,
         )
 
         beforeEach {
@@ -484,7 +490,10 @@ class CardServiceUnitTest :
                 every { cardRepository.findByIdAndDeletedAtIsNullWithNoteAndTemplate(300L) } returns card
                 every { cardRepository.countByNoteIdAndDeletedAtIsNullAndIdNot(200L, 300L) } returns 1L
 
-                val result = cardService.deleteCard(userId, DeleteCardDto(cardId = 300L))
+                val result = cardService.deleteCard(
+                    userId = userId,
+                    dto = DeleteCardDto(cardId = 300L),
+                )
 
                 result.cardId shouldBe 300L
                 card.isDeleted.shouldBeTrue()
@@ -492,7 +501,13 @@ class CardServiceUnitTest :
                 deck.cardCount shouldBe 2
                 verify {
                     eventPublisher.publishEvent(
-                        CardsDeletedEvent(deckId = 10L, deletedCount = 1, userId = userId, deletedCardIds = setOf(card.id)),
+                        CardsDeletedEvent(
+                            deckId = 10L,
+                            deletedCount = 1,
+                            userId = userId,
+                            deletedCardIds = setOf(card.id),
+                            deletedAt = fixedNow,
+                        ),
                     )
                 }
             }

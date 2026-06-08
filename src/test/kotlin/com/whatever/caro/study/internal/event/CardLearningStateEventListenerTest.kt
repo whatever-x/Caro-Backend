@@ -15,6 +15,7 @@ import org.springframework.context.annotation.Import
 import org.springframework.modulith.test.ApplicationModuleTest
 import org.springframework.transaction.support.TransactionTemplate
 import java.math.BigDecimal
+import java.time.Clock
 import java.time.Instant
 import java.util.concurrent.TimeUnit
 
@@ -24,6 +25,7 @@ class CardLearningStateEventListenerTest(
     private val transactionTemplate: TransactionTemplate,
     private val publisher: ApplicationEventPublisher,
     private val cardLearningStateRepository: CardLearningStateRepository,
+    private val clock: Clock,
 ) : DescribeSpec({
 
     fun createCls(
@@ -66,6 +68,7 @@ class CardLearningStateEventListenerTest(
                         deletedCount = 1,
                         userId = 1L,
                         deletedCardIds = cardIds,
+                        deletedAt = Instant.now(clock),
                     ),
                 )
             }

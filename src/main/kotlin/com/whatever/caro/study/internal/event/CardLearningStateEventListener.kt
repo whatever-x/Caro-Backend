@@ -6,12 +6,9 @@ import com.whatever.caro.study.internal.cardlearningstate.CardLearningState
 import com.whatever.caro.study.internal.cardlearningstate.CardLearningStateRepository
 import org.springframework.modulith.events.ApplicationModuleListener
 import org.springframework.stereotype.Component
-import java.time.Clock
-import java.time.Instant
 
 @Component
 internal class CardLearningStateEventListener(
-    private val clock: Clock,
     private val cardLearningStateRepository: CardLearningStateRepository,
 ) {
     @ApplicationModuleListener
@@ -28,11 +25,10 @@ internal class CardLearningStateEventListener(
     fun onCardDeleted(
         event: CardsDeletedEvent,
     ) {
-        val now = Instant.now(clock)
         val orphans = cardLearningStateRepository.findAllByUserIdAndCardIdInAndDeletedAtIsNull(
             userId = event.userId,
             cardIds = event.deletedCardIds,
         )
-        orphans.forEach { it.softDelete(now) }
+        orphans.forEach { it.softDelete(event.deletedAt) }
     }
 }
