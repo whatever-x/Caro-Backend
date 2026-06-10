@@ -119,7 +119,7 @@ class StudyService(
     }
 
     @Transactional(readOnly = true)
-    override fun getTodaySummary(
+    fun getTodaySummary(
         now: Instant,
         timezone: ZoneId,
         userId: Long,
