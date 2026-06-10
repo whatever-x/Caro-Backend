@@ -32,7 +32,7 @@ internal class CardLearningStateEventListener(
             cardIds = event.deletedCardIds,
         ).takeIf { it.isNotEmpty() } ?: return
         orphans.forEach { it.softDelete(event.deletedAt) }
-        cardLearningStateRepository.saveAll(orphans)  // flush orphans
+        cardLearningStateRepository.saveAll(orphans) // flush orphans
 
         studyService.adjustGoalsOnCardDeletion(
             now = event.deletedAt,
