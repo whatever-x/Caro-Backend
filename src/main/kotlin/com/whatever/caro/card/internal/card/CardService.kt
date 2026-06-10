@@ -159,6 +159,18 @@ class CardService(
             }
     }
 
+    @Transactional(readOnly = true)
+    override fun getCardContentsByDeck(
+        userId: Long,
+        deckId: Long,
+    ): List<CardContentDto> {
+        val cardResponseDtos = getCardsByDeck(userId, deckId)
+        return cardResponseDtos.map { CardContentDto(
+            cardId = it.cardId,
+            fields = it.fields,
+        ) }
+    }
+
     @Transactional
     fun updateCard(
         userId: Long,
