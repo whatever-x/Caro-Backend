@@ -18,8 +18,7 @@ interface StudyApi {
     ): TodayStudySessionState
 
     /**
-     * 카드별 학습 상태를 cardId 기준 맵으로 반환한다.
-     * 평가 이력이 없는 카드는 맵에 포함되지 않으므로, 호출 측에서 부재를 처리한다.
+     * 카드별 LearningStates를 cardId 기준 맵으로 반환한다.
      */
     fun getLearningStates(
         userId: Long,
