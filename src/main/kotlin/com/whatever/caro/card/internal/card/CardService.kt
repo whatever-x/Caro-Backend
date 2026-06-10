@@ -165,10 +165,12 @@ class CardService(
         deckId: Long,
     ): List<CardContentDto> {
         val cardResponseDtos = getCardsByDeck(userId, deckId)
-        return cardResponseDtos.map { CardContentDto(
-            cardId = it.cardId,
-            fields = it.fields,
-        ) }
+        return cardResponseDtos.map {
+            CardContentDto(
+                cardId = it.cardId,
+                fields = it.fields,
+            )
+        }
     }
 
     @Transactional
