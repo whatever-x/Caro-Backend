@@ -27,4 +27,11 @@ interface StudyApi {
         sessionId: Long,
         now: Instant,
     ): List<CardLearningStateDto>
+
+    fun getTodaySummaries(
+        now: Instant,
+        timezone: ZoneId,
+        userId: Long,
+        deckIds: Set<Long>,
+    ): Map<Long, TodayStudySessionState>
 }

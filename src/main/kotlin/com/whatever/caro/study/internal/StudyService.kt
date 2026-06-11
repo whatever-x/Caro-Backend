@@ -227,6 +227,62 @@ class StudyService(
         val learningStates = cardLearningStateRepository.findAllByUserIdAndCardIdInAndDeletedAtIsNull(userId, cardIds)
         return learningStates.associate { it.cardId to it.toDto() }
     }
+
+    @Transactional(readOnly = true)
+    override fun getTodaySummaries(
+        now: Instant,
+        timezone: ZoneId,
+        userId: Long,
+        deckIds: Set<Long>,
+    ): Map<Long, TodayStudySessionState> {
+        if (deckIds.isEmpty()) {
+            return emptyMap()
+        }
+
+        val todaySessionByDeckId = studySessionRepository.findLatestByUserIdAndDeckIdIn(
+            userId,
+            deckIds,
+        ).filter { session ->
+            when (session.status) {
+                StudySessionStatus.ACTIVE, StudySessionStatus.COMPLETED -> session.isTodaySession(now)
+                StudySessionStatus.STOPPED -> false
+            }
+        }.associateBy { it.deckId }
+
+        val noSessionDeckIds = deckIds - todaySessionByDeckId.keys
+        val presetByDeckId = if (noSessionDeckIds.isNotEmpty()) {
+            deckPresetApi.getLatestDeckPresetsByDeckId(
+                userId = userId,
+                deckIds = noSessionDeckIds,
+            )
+        } else {
+            emptyMap()
+        }
+        val todayPoolByDeckId = studyTargetPoolCalculator.getTodayPools(
+            now = now,
+            timezone = timezone,
+            presetByDeckId = presetByDeckId,
+            dayCutoffHour = 0,
+        )
+
+        return deckIds.associateWith { deckId ->
+            todaySessionByDeckId[deckId]?.let { session ->
+                if (session.status == StudySessionStatus.ACTIVE) {
+                    TodayStudySessionState.InProgress(session.toDto())
+                } else {
+                    TodayStudySessionState.Completed(session.toDto())
+                }
+            } ?: run {
+                val preset = checkNotNull(presetByDeckId[deckId]) { "deck에 연결된 preset이 없습니다. deckId=$deckId" }
+                val pool = todayPoolByDeckId.getValue(deckId)
+                if (pool.newCount == 0 && pool.reviewCount == 0) {
+                    TodayStudySessionState.RestDay
+                } else {
+                    TodayStudySessionState.NotStarted(pool, preset.id)
+                }
+            }
+        }
+    }
 }
 
 private fun CardLearningState.toDto(): CardLearningStateDto =

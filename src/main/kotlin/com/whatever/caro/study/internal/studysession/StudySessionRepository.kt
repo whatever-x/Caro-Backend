@@ -37,4 +37,23 @@ interface StudySessionRepository : JpaRepository<StudySession, Long> {
         id: Long,
         userId: Long,
     ): StudySession?
+
+    @Query(
+        """
+        select ss from StudySession ss
+        where ss.userId = :userId
+            and ss.deckId in :deckIds
+            and not exists (
+                select 1 from StudySession ss2
+                where ss2.userId = :userId
+                    and ss2.deckId = ss.deckId
+                    and (ss2.startedAt > ss.startedAt
+                            or (ss2.startedAt = ss.startedAt and ss2.id > ss.id))
+            )
+        """,
+    )
+    fun findLatestByUserIdAndDeckIdIn(
+        userId: Long,
+        deckIds: Set<Long>,
+    ): List<StudySession>
 }
