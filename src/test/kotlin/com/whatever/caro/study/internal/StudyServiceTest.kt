@@ -301,6 +301,259 @@ class StudyServiceTest(
         }
     }
 
+    describe("getTodaySummaries") {
+
+        it("ACTIVE 상태인 오늘 세션이 있는 덱은 InProgress로 반환된다") {
+            val session = createSession(
+                status = StudySessionStatus.ACTIVE,
+                newStudied = 3,
+                reviewStudied = 5,
+            )
+
+            val result = studyService.getTodaySummaries(
+                now = baseNow,
+                timezone = kstZoneId,
+                userId = USER_ID,
+                deckIds = setOf(DECK_ID),
+            )
+
+            val inProgress = result[DECK_ID].shouldBeInstanceOf<TodayStudySessionState.InProgress>()
+            inProgress.session.sessionId shouldBe session.id
+            inProgress.session.newCardsStudied shouldBe 3
+            inProgress.session.reviewCardsStudied shouldBe 5
+            inProgress.session.estimatedTotal shouldBe (session.newCardsGoal + session.reviewCardsGoal)
+        }
+
+        it("COMPLETED 상태인 오늘 세션이 있는 덱은 Completed로 반환된다") {
+            val session = createSession(
+                status = StudySessionStatus.COMPLETED,
+                newStudied = 10,
+                reviewStudied = 10,
+            )
+
+            val result = studyService.getTodaySummaries(
+                now = baseNow,
+                timezone = kstZoneId,
+                userId = USER_ID,
+                deckIds = setOf(DECK_ID),
+            )
+
+            val completed = result[DECK_ID].shouldBeInstanceOf<TodayStudySessionState.Completed>()
+            completed.session.sessionId shouldBe session.id
+        }
+
+        it("어제의 ACTIVE 세션은 무시하고 pool 경로로 판정한다") {
+            every { deckPresetApi.getLatestDeckPresetsByDeckId(any(), any()) } returns
+                mapOf(DECK_ID to Sm2ParamsFixture.DECK_PRESET_DTO_FIXTURE.copy(newPerDay = 5, reviewPerDay = 0))
+            createSession(status = StudySessionStatus.ACTIVE, startedAt = yesterday)
+            repeat(2) { i ->
+                createCls(cardId = (i + 1).toLong(), status = CardLearningStatus.NEW)
+            }
+
+            val result = studyService.getTodaySummaries(
+                now = baseNow,
+                timezone = kstZoneId,
+                userId = USER_ID,
+                deckIds = setOf(DECK_ID),
+            )
+
+            val notStarted = result[DECK_ID].shouldBeInstanceOf<TodayStudySessionState.NotStarted>()
+            notStarted.pool.newCount shouldBe 2
+        }
+
+        it("오늘 세션이라도 STOPPED 상태면 세션 없음으로 취급한다") {
+            every { deckPresetApi.getLatestDeckPresetsByDeckId(any(), any()) } returns
+                mapOf(DECK_ID to Sm2ParamsFixture.DECK_PRESET_DTO_FIXTURE.copy(newPerDay = 0, reviewPerDay = 0))
+            createSession(status = StudySessionStatus.STOPPED, startedAt = baseNow)
+
+            val result = studyService.getTodaySummaries(
+                now = baseNow,
+                timezone = kstZoneId,
+                userId = USER_ID,
+                deckIds = setOf(DECK_ID),
+            )
+
+            result[DECK_ID] shouldBe TodayStudySessionState.RestDay
+        }
+
+        it("세션이 없고 학습 대상 카드가 있으면 정확한 pool 값의 NotStarted를 반환한다") {
+            every { deckPresetApi.getLatestDeckPresetsByDeckId(any(), any()) } returns
+                mapOf(DECK_ID to Sm2ParamsFixture.DECK_PRESET_DTO_FIXTURE.copy(newPerDay = 10, reviewPerDay = 10))
+            repeat(3) { i ->
+                createCls(cardId = (i + 1).toLong(), status = CardLearningStatus.NEW)
+            }
+            repeat(2) { i ->
+                createCls(
+                    cardId = (100 + i).toLong(),
+                    status = CardLearningStatus.REVIEW,
+                    nextReviewAt = baseNow,
+                )
+            }
+
+            val result = studyService.getTodaySummaries(
+                now = baseNow,
+                timezone = kstZoneId,
+                userId = USER_ID,
+                deckIds = setOf(DECK_ID),
+            )
+
+            val notStarted = result[DECK_ID].shouldBeInstanceOf<TodayStudySessionState.NotStarted>()
+            notStarted.pool.newCount shouldBe 3
+            notStarted.pool.reviewCount shouldBe 2
+            notStarted.presetId shouldBe Sm2ParamsFixture.DECK_PRESET_DTO_FIXTURE.id
+        }
+
+        it("세션이 없고 학습 대상 카드도 없으면 RestDay를 반환한다") {
+            every { deckPresetApi.getLatestDeckPresetsByDeckId(any(), any()) } returns
+                mapOf(DECK_ID to Sm2ParamsFixture.DECK_PRESET_DTO_FIXTURE.copy(newPerDay = 10, reviewPerDay = 10))
+
+            val result = studyService.getTodaySummaries(
+                now = baseNow,
+                timezone = kstZoneId,
+                userId = USER_ID,
+                deckIds = setOf(DECK_ID),
+            )
+
+            result[DECK_ID] shouldBe TodayStudySessionState.RestDay
+        }
+
+        it("학습 대상 카드 수가 preset의 perDay를 넘으면 perDay까지만 pool에 담긴다") {
+            every { deckPresetApi.getLatestDeckPresetsByDeckId(any(), any()) } returns
+                mapOf(DECK_ID to Sm2ParamsFixture.DECK_PRESET_DTO_FIXTURE.copy(newPerDay = 2, reviewPerDay = 1))
+            repeat(5) { i ->
+                createCls(cardId = (i + 1).toLong(), status = CardLearningStatus.NEW)
+            }
+            repeat(3) { i ->
+                createCls(
+                    cardId = (100 + i).toLong(),
+                    status = CardLearningStatus.REVIEW,
+                    nextReviewAt = baseNow,
+                )
+            }
+
+            val result = studyService.getTodaySummaries(
+                now = baseNow,
+                timezone = kstZoneId,
+                userId = USER_ID,
+                deckIds = setOf(DECK_ID),
+            )
+
+            val notStarted = result[DECK_ID].shouldBeInstanceOf<TodayStudySessionState.NotStarted>()
+            notStarted.pool.newCount shouldBe 2
+            notStarted.pool.reviewCount shouldBe 1
+        }
+
+        it("여러 덱의 상태가 혼합되어도 입력한 모든 deckId가 결과 키로 반환된다") {
+            every { deckPresetApi.getLatestDeckPresetsByDeckId(any(), any()) } returns
+                mapOf(
+                    3L to Sm2ParamsFixture.DECK_PRESET_DTO_FIXTURE.copy(newPerDay = 10, reviewPerDay = 10),
+                    4L to Sm2ParamsFixture.DECK_PRESET_DTO_FIXTURE.copy(newPerDay = 10, reviewPerDay = 10),
+                )
+            createSession(deckId = 1L, status = StudySessionStatus.ACTIVE)
+            createSession(deckId = 2L, status = StudySessionStatus.COMPLETED)
+            repeat(3) { i ->
+                createCls(cardId = (i + 1).toLong(), deckId = 3L, status = CardLearningStatus.NEW)
+            }
+            // deckId=4L는 세션도 카드도 없음
+
+            val result = studyService.getTodaySummaries(
+                now = baseNow,
+                timezone = kstZoneId,
+                userId = USER_ID,
+                deckIds = setOf(1L, 2L, 3L, 4L),
+            )
+
+            result.keys shouldBe setOf(1L, 2L, 3L, 4L)
+            result[1L].shouldBeInstanceOf<TodayStudySessionState.InProgress>()
+            result[2L].shouldBeInstanceOf<TodayStudySessionState.Completed>()
+            result[3L].shouldBeInstanceOf<TodayStudySessionState.NotStarted>()
+            result[4L] shouldBe TodayStudySessionState.RestDay
+        }
+
+        it("모든 덱에 오늘 세션이 있으면 preset 배치 조회를 호출하지 않는다") {
+            createSession(deckId = 1L, status = StudySessionStatus.ACTIVE)
+            createSession(deckId = 2L, status = StudySessionStatus.COMPLETED)
+
+            studyService.getTodaySummaries(
+                now = baseNow,
+                timezone = kstZoneId,
+                userId = USER_ID,
+                deckIds = setOf(1L, 2L),
+            )
+
+            verify(exactly = 0) { deckPresetApi.getLatestDeckPresetsByDeckId(any(), any()) }
+        }
+
+        it("세션이 없는 덱이 있어도 단건 preset 조회는 호출하지 않는다") {
+            every { deckPresetApi.getLatestDeckPresetsByDeckId(any(), any()) } returns
+                mapOf(2L to Sm2ParamsFixture.DECK_PRESET_DTO_FIXTURE.copy(newPerDay = 0, reviewPerDay = 0))
+            createSession(deckId = 1L, status = StudySessionStatus.ACTIVE)
+
+            studyService.getTodaySummaries(
+                now = baseNow,
+                timezone = kstZoneId,
+                userId = USER_ID,
+                deckIds = setOf(1L, 2L),
+            )
+
+            verify(exactly = 0) { deckPresetApi.getLatestDeckPresetByUser(any(), any()) }
+        }
+
+        it("같은 데이터에 대해 단건 getTodaySummary와 동일한 결과를 반환한다") {
+            val preset = Sm2ParamsFixture.DECK_PRESET_DTO_FIXTURE.copy(newPerDay = 10, reviewPerDay = 10)
+            every { deckPresetApi.getLatestDeckPresetByUser(any(), any()) } returns preset
+            every { deckPresetApi.getLatestDeckPresetsByDeckId(any(), any()) } returns
+                mapOf(2L to preset, 3L to preset)
+            createSession(deckId = 1L, status = StudySessionStatus.ACTIVE, newStudied = 3) // InProgress
+            repeat(3) { i ->
+                createCls(cardId = (i + 1).toLong(), deckId = 2L, status = CardLearningStatus.NEW) // NotStarted
+            }
+            // deckId=3L는 세션도 카드도 없음 → RestDay
+
+            val batchResult = studyService.getTodaySummaries(
+                now = baseNow,
+                timezone = kstZoneId,
+                userId = USER_ID,
+                deckIds = setOf(1L, 2L, 3L),
+            )
+
+            listOf(1L, 2L, 3L).forEach { deckId ->
+                batchResult[deckId] shouldBe studyService.getTodaySummary(
+                    now = baseNow,
+                    timezone = kstZoneId,
+                    userId = USER_ID,
+                    deckId = deckId,
+                )
+            }
+        }
+
+        it("세션이 없는 덱에 preset이 연결되어 있지 않으면 IllegalStateException을 던진다") {
+            every { deckPresetApi.getLatestDeckPresetsByDeckId(any(), any()) } returns emptyMap()
+
+            shouldThrow<IllegalStateException> {
+                studyService.getTodaySummaries(
+                    now = baseNow,
+                    timezone = kstZoneId,
+                    userId = USER_ID,
+                    deckIds = setOf(DECK_ID),
+                )
+            }
+        }
+
+        it("deckIds가 비어있으면 외부 호출 없이 빈 맵을 반환한다") {
+            val result = studyService.getTodaySummaries(
+                now = baseNow,
+                timezone = kstZoneId,
+                userId = USER_ID,
+                deckIds = emptySet(),
+            )
+
+            result.shouldBeEmpty()
+            verify(exactly = 0) { deckPresetApi.getLatestDeckPresetsByDeckId(any(), any()) }
+            verify(exactly = 0) { deckPresetApi.getLatestDeckPresetByUser(any(), any()) }
+        }
+    }
+
     describe("getLearningStates") {
 
         it("매칭되는 카드는 cardId 기준 맵으로 매핑되고, 매칭되지 않는 요소는 무시한다") {
