@@ -2,6 +2,7 @@ package com.whatever.caro.bff.internal
 
 import com.whatever.caro.card.api.card.CardApi
 import com.whatever.caro.card.api.card.CardContentDto
+import com.whatever.caro.card.api.deck.DeckApi
 import com.whatever.caro.card.api.deck.DeckPresetApi
 import com.whatever.caro.card.api.deck.DeckPresetDto
 import com.whatever.caro.study.CardLearningStateDto
@@ -10,7 +11,6 @@ import com.whatever.caro.study.StudyApi
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.DescribeSpec
 import io.kotest.datatest.withData
-import io.kotest.engine.test.logging.error
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.shouldBe
@@ -26,10 +26,11 @@ class DeckBFFServiceUnitTest :
         val cardApi = mockk<CardApi>()
         val studyApi = mockk<StudyApi>()
         val deckPresetApi = mockk<DeckPresetApi>()
-        val service = DeckBFFService(cardApi = cardApi, studyApi = studyApi, deckPresetApi = deckPresetApi)
+        val deckApi = mockk<DeckApi>()
+        val service = DeckBFFService(cardApi = cardApi, studyApi = studyApi, deckPresetApi = deckPresetApi, deckApi = deckApi)
 
         val userId = 1L
-        val deckId = 7L
+        val deckId = 1L
 
         fun createCardContent(
             cardId: Long,
