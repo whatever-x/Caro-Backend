@@ -1,5 +1,6 @@
 package com.whatever.caro.study.internal.cardlearningstate
 
+import com.whatever.caro.study.internal.DeckCardCount
 import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
@@ -98,4 +99,32 @@ interface CardLearningStateRepository : JpaRepository<CardLearningState, Long> {
         deckId: Long,
         sessionStart: Instant,
     ): Int
+
+    @Query(
+        """
+        select new com.whatever.caro.study.internal.DeckCardCount(cls.deckId, count(cls)) from CardLearningState cls
+        where cls.deckId in :deckIds
+            and cls.status = CardLearningStatus.NEW
+            and cls.deletedAt is null
+        group by cls.deckId
+        """,
+    )
+    fun countNewCardsByDeckIds(
+        deckIds: Collection<Long>,
+    ): List<DeckCardCount>
+
+    @Query(
+        """
+        select new com.whatever.caro.study.internal.DeckCardCount(cls.deckId, count(cls)) from CardLearningState cls
+        where cls.deckId in :deckIds
+            and cls.status = CardLearningStatus.REVIEW
+            and cls.deletedAt is null
+            and cls.nextReviewAt < :nextSessionStart
+        group by cls.deckId
+        """,
+    )
+    fun countReviewCardsByDeckIds(
+        deckIds: Collection<Long>,
+        nextSessionStart: Instant,
+    ): List<DeckCardCount>
 }
