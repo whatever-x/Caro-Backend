@@ -33,6 +33,9 @@ import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import java.time.Clock
+import java.time.Instant
+import java.time.ZoneId
 
 class CardServiceUnitTest :
     DescribeSpec({
@@ -43,6 +46,8 @@ class CardServiceUnitTest :
         val noteTypeRepository = mockk<NoteTypeRepository>()
         val cardTemplateRepository = mockk<CardTemplateRepository>()
         val eventPublisher = mockk<org.springframework.context.ApplicationEventPublisher>(relaxed = true)
+        val fixedNow = Instant.parse("2026-06-08T00:00:00.00Z")
+        val clock = Clock.fixed(fixedNow, ZoneId.of("UTC"))
         val cardService = CardService(
             cardRepository = cardRepository,
             noteRepository = noteRepository,
@@ -50,6 +55,7 @@ class CardServiceUnitTest :
             noteTypeRepository = noteTypeRepository,
             cardTemplateRepository = cardTemplateRepository,
             eventPublisher = eventPublisher,
+            clock = clock,
         )
 
         beforeEach {
@@ -171,7 +177,7 @@ class CardServiceUnitTest :
                 deck.cardCount shouldBe 7
                 verify {
                     eventPublisher.publishEvent(
-                        CardsCreatedEvent(cardIds = listOf(300L, 301L), userId = userId),
+                        CardsCreatedEvent(cardIds = listOf(300L, 301L), deckId = deckId, userId = userId),
                     )
                 }
             }
@@ -484,7 +490,10 @@ class CardServiceUnitTest :
                 every { cardRepository.findByIdAndDeletedAtIsNullWithNoteAndTemplate(300L) } returns card
                 every { cardRepository.countByNoteIdAndDeletedAtIsNullAndIdNot(200L, 300L) } returns 1L
 
-                val result = cardService.deleteCard(userId, DeleteCardDto(cardId = 300L))
+                val result = cardService.deleteCard(
+                    userId = userId,
+                    dto = DeleteCardDto(cardId = 300L),
+                )
 
                 result.cardId shouldBe 300L
                 card.isDeleted.shouldBeTrue()
@@ -492,7 +501,13 @@ class CardServiceUnitTest :
                 deck.cardCount shouldBe 2
                 verify {
                     eventPublisher.publishEvent(
-                        CardsDeletedEvent(deckId = 10L, deletedCount = 1, userId = userId),
+                        CardsDeletedEvent(
+                            deckId = 10L,
+                            deletedCount = 1,
+                            userId = userId,
+                            deletedCardIds = setOf(card.id),
+                            deletedAt = fixedNow,
+                        ),
                     )
                 }
             }
@@ -549,6 +564,77 @@ class CardServiceUnitTest :
 
                 shouldThrow<CardForbiddenException> {
                     cardService.deleteCard(userId = 1L, dto = DeleteCardDto(cardId = 300L))
+                }
+            }
+        }
+
+        describe("getCardsByIds") {
+            it("userId가 소유한 cardId들을 cardId 기준 맵으로 반환하고 템플릿 필드로 콘텐츠를 채운다") {
+                val userId = 1L
+                val noteType = newNoteType(id = 1L)
+                val tpl = newTemplate(id = 100L, noteType = noteType, requiredFields = listOf("front"))
+                val deck = newDeck(id = 10L, userId = userId)
+                val note1 = newNote(id = 200L, userId = userId, fields = mapOf("front" to "a"))
+                val note2 = newNote(id = 201L, userId = userId, fields = mapOf("front" to "b"))
+                val cards = listOf(
+                    newCard(id = 300L, template = tpl, note = note1, deck = deck, userId = userId),
+                    newCard(id = 301L, template = tpl, note = note2, deck = deck, userId = userId),
+                )
+
+                every {
+                    cardRepository.findAllByIdInAndUserIdAndDeletedAtIsNullWithNoteAndTemplate(listOf(300L, 301L), userId)
+                } returns cards
+
+                val result = cardService.getCardsByIds(userId = userId, cardIds = listOf(300L, 301L))
+
+                result.keys shouldContainExactlyInAnyOrder listOf(300L, 301L)
+                result[300L]!!.cardId shouldBe 300L
+                result[300L]!!.fields shouldBe mapOf("front" to "a")
+                result[301L]!!.fields shouldBe mapOf("front" to "b")
+            }
+
+            it("소유권/존재 조회를 userId로 필터링하므로 타인 소유·미존재 카드는 맵에 포함되지 않는다") {
+                val userId = 1L
+                val noteType = newNoteType(id = 1L)
+                val tpl = newTemplate(id = 100L, noteType = noteType, requiredFields = listOf("front"))
+                val deck = newDeck(id = 10L, userId = userId)
+                val note = newNote(id = 200L, userId = userId, fields = mapOf("front" to "a"))
+                val card = newCard(id = 300L, template = tpl, note = note, deck = deck, userId = userId)
+
+                // 999L은 타인 소유(또는 미존재)라 userId 필터 쿼리 결과에 포함되지 않음
+                every {
+                    cardRepository.findAllByIdInAndUserIdAndDeletedAtIsNullWithNoteAndTemplate(listOf(300L, 999L), userId)
+                } returns listOf(card)
+
+                val result = cardService.getCardsByIds(userId = userId, cardIds = listOf(300L, 999L))
+
+                result.keys shouldContainExactlyInAnyOrder listOf(300L)
+                result.containsKey(999L) shouldBe false
+            }
+
+            it("템플릿 필드가 노트에 없으면 빈 문자열로 채운다") {
+                val userId = 1L
+                val noteType = newNoteType(id = 1L)
+                val tpl = newTemplate(id = 100L, noteType = noteType, requiredFields = listOf("front", "back"))
+                val deck = newDeck(id = 10L, userId = userId)
+                val note = newNote(id = 200L, userId = userId, fields = mapOf("front" to "a"))
+                val card = newCard(id = 300L, template = tpl, note = note, deck = deck, userId = userId)
+
+                every {
+                    cardRepository.findAllByIdInAndUserIdAndDeletedAtIsNullWithNoteAndTemplate(listOf(300L), userId)
+                } returns listOf(card)
+
+                val result = cardService.getCardsByIds(userId = userId, cardIds = listOf(300L))
+
+                result[300L]!!.fields shouldBe mapOf("front" to "a", "back" to "")
+            }
+
+            it("빈 입력이면 레포지토리를 호출하지 않고 빈 맵을 반환한다") {
+                val result = cardService.getCardsByIds(userId = 1L, cardIds = emptyList())
+
+                result shouldBe emptyMap()
+                verify(exactly = 0) {
+                    cardRepository.findAllByIdInAndUserIdAndDeletedAtIsNullWithNoteAndTemplate(any(), any())
                 }
             }
         }

@@ -25,6 +25,21 @@ interface CardRepository : JpaRepository<Card, Long> {
         deckId: Long,
     ): List<Card>
 
+    @Query(
+        """
+        SELECT c FROM Card c
+            JOIN FETCH c.note
+            JOIN FETCH c.cardTemplate
+        WHERE c.id IN :ids
+            AND c.userId = :userId
+            AND c.deletedAt IS NULL
+    """,
+    )
+    fun findAllByIdInAndUserIdAndDeletedAtIsNullWithNoteAndTemplate(
+        ids: Collection<Long>,
+        userId: Long,
+    ): List<Card>
+
     fun countByNoteIdAndDeletedAtIsNullAndIdNot(
         noteId: Long,
         id: Long,

@@ -5,6 +5,8 @@ import com.whatever.caro.auth.internal.filter.JwtAuthenticationFilter
 import com.whatever.caro.auth.internal.filter.JwtExceptionFilter
 import com.whatever.caro.auth.internal.filter.RequestResponseLoggingFilter
 import com.whatever.caro.card.internal.deck.service.DeckService
+import com.whatever.caro.common.web.idempotency.IdempotencyProperties
+import com.whatever.caro.common.web.idempotency.IdempotencyRepository
 import io.kotest.core.spec.style.DescribeSpec
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.security.autoconfigure.SecurityAutoConfiguration
@@ -45,6 +47,12 @@ class DeckControllerWebMvcTest : DescribeSpec() {
 
     @MockitoBean
     lateinit var requestResponseLoggingFilter: RequestResponseLoggingFilter
+
+    @MockitoBean
+    lateinit var idempotencyRepository: IdempotencyRepository
+
+    @MockitoBean
+    lateinit var idempotencyProperties: IdempotencyProperties
 
     init {
         beforeEach {
