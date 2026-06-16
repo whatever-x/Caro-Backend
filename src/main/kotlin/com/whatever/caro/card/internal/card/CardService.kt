@@ -218,7 +218,7 @@ class CardService(
         if (cardRepository.countByNoteIdAndDeletedAtIsNullAndIdNot(card.note.id, card.id) == 0L) {
             card.note.softDelete(deletedAt = now)
         }
-
+// TODO 배치삭제로 수정 필요
         eventPublisher.publishEvent(
             CardsDeletedEvent(
                 deckId = card.deck.id,
