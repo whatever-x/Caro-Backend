@@ -110,8 +110,8 @@ class StudySession(
         availableNewGoal: Int,
         availableReviewGoal: Int,
     ) {
-        newCardsGoal = minOf(newCardsGoal, (newCardsStudied + availableNewGoal))
-        reviewCardsGoal = minOf(reviewCardsGoal, (reviewCardsStudied + availableReviewGoal))
+        newCardsGoal = (newCardsStudied + availableNewGoal).coerceAtMost(newCardsGoal)
+        reviewCardsGoal = (reviewCardsStudied + availableReviewGoal).coerceAtMost(reviewCardsGoal)
     }
 
     fun completeIfGoalAchieved(
