@@ -1,7 +1,11 @@
 package com.whatever.caro.study.internal.cardlearningstate
 
 import com.whatever.caro.common.entity.BaseTimeEntity
+import com.whatever.caro.common.entity.SoftDeletableEntity
 import com.whatever.caro.study.CardLearningStatus
+import com.whatever.caro.study.internal.SchedulingState
+import com.whatever.caro.study.internal.SchedulingState.New
+import com.whatever.caro.study.internal.SchedulingState.Review
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.EnumType
@@ -18,6 +22,9 @@ import java.time.Instant
 class CardLearningState(
     @Column(name = "card_id", nullable = false, unique = true)
     val cardId: Long,
+
+    @Column(name = "deck_id", nullable = false)
+    val deckId: Long,
 
     @Column(name = "user_id", nullable = false)
     val userId: Long,
@@ -53,8 +60,55 @@ class CardLearningState(
 
     @Column(name = "total_reviews", nullable = false)
     var totalReviews: Int = 0,
-) : BaseTimeEntity() {
+) : SoftDeletableEntity() {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0L
+
+    fun toSchedulingState(): SchedulingState =
+        when (status) {
+            CardLearningStatus.NEW -> New(
+                easeFactor = easeFactor,
+                consecutiveAgainCount = consecutiveAgainCount,
+            )
+
+            CardLearningStatus.REVIEW -> Review(
+                easeFactor = easeFactor,
+                intervalDays = intervalDays,
+                repetitions = repetitions,
+                lapses = lapses,
+                lastReviewedAt = lastReviewedAt,
+                nextReviewAt = nextReviewAt,
+                consecutiveAgainCount = consecutiveAgainCount,
+            )
+
+            CardLearningStatus.SUSPENDED -> error("SUSPENDED card must not enter scheduling")
+        }
+
+    fun applyScheduling(
+        now: Instant,
+        nextState: SchedulingState,
+    ) {
+        this.previousStatus = this.status
+        when (nextState) {
+            is New -> {
+                this.status = CardLearningStatus.NEW
+                this.easeFactor = nextState.easeFactor
+                this.consecutiveAgainCount = nextState.consecutiveAgainCount
+            }
+
+            is Review -> {
+                this.status = CardLearningStatus.REVIEW
+                this.easeFactor = nextState.easeFactor
+                this.intervalDays = nextState.intervalDays
+                this.repetitions = nextState.repetitions
+                this.lapses = nextState.lapses
+                this.nextReviewAt = nextState.nextReviewAt
+                this.consecutiveAgainCount = nextState.consecutiveAgainCount
+            }
+        }
+
+        this.lastReviewedAt = now
+        this.totalReviews++
+    }
 }

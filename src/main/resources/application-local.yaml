@@ -30,6 +30,7 @@ logging:
     com.whatever.caro: debug
     org.flywaydb: debug
     org.springframework.modulith: debug
+    org.hibernate.sql: debug
 
 server:
   port: 8081

@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.http.converter.HttpMessageNotReadableException
 import org.springframework.web.HttpRequestMethodNotSupportedException
 import org.springframework.web.bind.MethodArgumentNotValidException
+import org.springframework.web.bind.MissingRequestHeaderException
 import org.springframework.web.bind.MissingServletRequestParameterException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
@@ -62,6 +63,22 @@ class GlobalExceptionHandler(
                 ApiResponse.fail(
                     CommonErrorCode.INVALID_REQUEST,
                     resolveMessage(CommonErrorCode.INVALID_REQUEST, null, locale),
+                ),
+            )
+    }
+
+    @ExceptionHandler(MissingRequestHeaderException::class)
+    fun handleMissingHeader(
+        e: MissingRequestHeaderException,
+        locale: Locale,
+    ): ResponseEntity<ApiResponse<Nothing>> {
+        logger.warn { "Missing header: ${e.headerName}" }
+        return ResponseEntity
+            .badRequest()
+            .body(
+                ApiResponse.fail(
+                    CommonErrorCode.MISSING_HEADER,
+                    resolveMessage(CommonErrorCode.MISSING_HEADER, arrayOf(e.headerName), locale),
                 ),
             )
     }
