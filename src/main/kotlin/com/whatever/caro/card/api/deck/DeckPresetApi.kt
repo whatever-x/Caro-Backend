@@ -11,6 +11,11 @@ interface DeckPresetApi {
     fun getDeckPresetById(
         deckPresetIdSnapshot: Long,
     ): DeckPresetDto
+
+    fun getLatestDeckPresetsByDeckId(
+        userId: Long,
+        deckIds: Collection<Long>,
+    ): Map<Long, DeckPresetDto>
 }
 
 data class DeckPresetDto(

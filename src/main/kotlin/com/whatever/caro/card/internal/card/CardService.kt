@@ -27,6 +27,7 @@ import com.whatever.caro.card.internal.notetype.exception.NoteTypeNotFoundExcept
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.Clock
 import java.time.Instant
 
 @Service
@@ -37,6 +38,7 @@ class CardService(
     private val noteTypeRepository: NoteTypeRepository,
     private val cardTemplateRepository: CardTemplateRepository,
     private val eventPublisher: ApplicationEventPublisher,
+    private val clock: Clock,
 ) : CardApi {
     override fun getCardsByIds(
         userId: Long,
@@ -157,6 +159,20 @@ class CardService(
             }
     }
 
+    @Transactional(readOnly = true)
+    override fun getCardContentsByDeck(
+        userId: Long,
+        deckId: Long,
+    ): List<CardContentDto> {
+        val cardResponseDtos = getCardsByDeck(userId, deckId)
+        return cardResponseDtos.map {
+            CardContentDto(
+                cardId = it.cardId,
+                fields = it.fields,
+            )
+        }
+    }
+
     @Transactional
     fun updateCard(
         userId: Long,
@@ -195,7 +211,7 @@ class CardService(
             throw CardForbiddenException("cardId=${dto.cardId} 에 대한 접근 권한이 없습니다")
         }
 
-        val now = Instant.now()
+        val now = Instant.now(clock)
         card.softDelete(deletedAt = now)
         card.deck.cardCount = maxOf(0, card.deck.cardCount - 1)
 
@@ -204,7 +220,13 @@ class CardService(
         }
 
         eventPublisher.publishEvent(
-            CardsDeletedEvent(deckId = card.deck.id, deletedCount = 1, userId = userId),
+            CardsDeletedEvent(
+                deckId = card.deck.id,
+                deletedCount = 1,
+                userId = userId,
+                deletedCardIds = setOf(card.id),
+                deletedAt = now,
+            ),
         )
 
         return DeleteCardResponseDto(cardId = card.id)

@@ -10,6 +10,7 @@ import com.whatever.caro.card.internal.deck.exception.DeckNotFoundException
 import com.whatever.caro.card.internal.deck.exception.DeckPresetNotFoundException
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.DescribeSpec
+import io.kotest.matchers.maps.shouldBeEmpty
 import io.kotest.matchers.shouldBe
 import org.springframework.context.annotation.Import
 import org.springframework.modulith.test.ApplicationModuleTest
@@ -86,6 +87,96 @@ class DeckPresetServiceTest(
             shouldThrow<DeckPresetNotFoundException> {
                 deckPresetService.getLatestDeckPresetByUser(deck.id, userId)
             }
+        }
+    }
+
+    describe("getLatestDeckPresetsByDeckId") {
+        it("덱별로 연결된 프리셋이 deckId 기준 맵으로 반환된다") {
+            val userId = 1L
+            val preset1 = savePreset(userId = userId, name = "프리셋1")
+            val preset2 = savePreset(userId = userId, name = "프리셋2")
+            val deck1 = saveDeck(userId = userId, preset = preset1)
+            val deck2 = saveDeck(userId = userId, preset = preset2)
+
+            val result = deckPresetService.getLatestDeckPresetsByDeckId(
+                userId = userId,
+                deckIds = setOf(deck1.id, deck2.id),
+            )
+
+            result.keys shouldBe setOf(deck1.id, deck2.id)
+            result[deck1.id]?.id shouldBe preset1.id
+            result[deck2.id]?.id shouldBe preset2.id
+        }
+
+        it("여러 덱이 같은 프리셋을 공유하면 모든 deckId 키가 같은 프리셋을 가리킨다") {
+            val userId = 1L
+            val sharedPreset = savePreset(userId = userId, name = "공유 프리셋")
+            val deck1 = saveDeck(userId = userId, preset = sharedPreset)
+            val deck2 = saveDeck(userId = userId, preset = sharedPreset)
+
+            val result = deckPresetService.getLatestDeckPresetsByDeckId(
+                userId = userId,
+                deckIds = setOf(deck1.id, deck2.id),
+            )
+
+            result[deck1.id]?.id shouldBe sharedPreset.id
+            result[deck2.id]?.id shouldBe sharedPreset.id
+        }
+
+        it("프리셋이 연결되지 않은 덱은 결과 키에서 제외된다") {
+            val userId = 1L
+            val preset = savePreset(userId = userId)
+            val deckWithPreset = saveDeck(userId = userId, preset = preset)
+            val deckWithoutPreset = saveDeck(userId = userId, preset = null)
+
+            val result = deckPresetService.getLatestDeckPresetsByDeckId(
+                userId = userId,
+                deckIds = setOf(deckWithPreset.id, deckWithoutPreset.id),
+            )
+
+            result.keys shouldBe setOf(deckWithPreset.id)
+        }
+
+        it("다른 유저의 덱은 결과 키에서 제외된다") {
+            val myPreset = savePreset(userId = 1L)
+            val otherPreset = savePreset(userId = 2L)
+            val myDeck = saveDeck(userId = 1L, preset = myPreset)
+            val otherDeck = saveDeck(userId = 2L, preset = otherPreset)
+
+            val result = deckPresetService.getLatestDeckPresetsByDeckId(
+                userId = 1L,
+                deckIds = setOf(myDeck.id, otherDeck.id),
+            )
+
+            result.keys shouldBe setOf(myDeck.id)
+        }
+
+        it("soft delete된 덱은 결과 키에서 제외된다") {
+            val userId = 1L
+            val preset = savePreset(userId = userId)
+            val deck = saveDeck(userId = userId, preset = preset)
+            deck.softDelete(deletedAt = Instant.now())
+            deckRepository.save(deck)
+
+            val result = deckPresetService.getLatestDeckPresetsByDeckId(
+                userId = userId,
+                deckIds = setOf(deck.id),
+            )
+
+            result.shouldBeEmpty()
+        }
+
+        it("빈 deckIds면 빈 맵을 반환한다") {
+            val userId = 1L
+            val preset = savePreset(userId = userId)
+            saveDeck(userId = userId, preset = preset)
+
+            val result = deckPresetService.getLatestDeckPresetsByDeckId(
+                userId = userId,
+                deckIds = emptySet(),
+            )
+
+            result.shouldBeEmpty()
         }
     }
 

@@ -32,7 +32,8 @@ class StudyService(
 ) : StudyApi {
 
     @Transactional
-    override fun startOrResumeDailyStudySession( // TODO 동시성 고려
+    override fun startOrResumeDailyStudySession(
+        // TODO 동시성 고려
         now: Instant,
         userId: Long,
         deckId: Long,
@@ -118,7 +119,7 @@ class StudyService(
     }
 
     @Transactional(readOnly = true)
-    override fun getTodaySummary(
+    fun getTodaySummary(
         now: Instant,
         timezone: ZoneId,
         userId: Long,
@@ -130,6 +131,33 @@ class StudyService(
             userId = userId,
             deckId = deckId,
         )
+
+    @Transactional
+    fun adjustGoalsOnCardDeletion(
+        now: Instant,
+        userId: Long,
+        deckId: Long,
+    ) {
+        val session = findTodaySession(now = now, userId = userId, deckId = deckId)
+            ?.takeIf { it.status == StudySessionStatus.ACTIVE }
+            ?: return
+
+        val availableNewCount = cardLearningStateRepository.countRemainingNewCards(
+            userId = userId,
+            deckId = deckId,
+            sessionStart = session.sessionStart,
+        )
+        val availableReviewCount = cardLearningStateRepository.countTodayReviewCards(
+            userId = userId,
+            deckId = deckId,
+            nextSessionStart = session.nextSessionStart,
+        )
+        session.recalculateGoals(
+            availableNewGoal = availableNewCount,
+            availableReviewGoal = availableReviewCount,
+        )
+        session.completeIfGoalAchieved(now)
+    }
 
     private fun resolveTodayStudy(
         now: Instant,
@@ -196,8 +224,64 @@ class StudyService(
         userId: Long,
         cardIds: Collection<Long>,
     ): Map<Long, CardLearningStateDto> {
-        val learningStates = cardLearningStateRepository.findAllByUserIdAndCardIdIn(userId, cardIds)
+        val learningStates = cardLearningStateRepository.findAllByUserIdAndCardIdInAndDeletedAtIsNull(userId, cardIds)
         return learningStates.associate { it.cardId to it.toDto() }
+    }
+
+    @Transactional(readOnly = true)
+    override fun getTodaySummaries(
+        now: Instant,
+        timezone: ZoneId,
+        userId: Long,
+        deckIds: Set<Long>,
+    ): Map<Long, TodayStudySessionState> {
+        if (deckIds.isEmpty()) {
+            return emptyMap()
+        }
+
+        val todaySessionByDeckId = studySessionRepository.findLatestByUserIdAndDeckIdIn(
+            userId,
+            deckIds,
+        ).filter { session ->
+            when (session.status) {
+                StudySessionStatus.ACTIVE, StudySessionStatus.COMPLETED -> session.isTodaySession(now)
+                StudySessionStatus.STOPPED -> false
+            }
+        }.associateBy { it.deckId }
+
+        val noSessionDeckIds = deckIds - todaySessionByDeckId.keys
+        val presetByDeckId = if (noSessionDeckIds.isNotEmpty()) {
+            deckPresetApi.getLatestDeckPresetsByDeckId(
+                userId = userId,
+                deckIds = noSessionDeckIds,
+            )
+        } else {
+            emptyMap()
+        }
+        val todayPoolByDeckId = studyTargetPoolCalculator.getTodayPools(
+            now = now,
+            timezone = timezone,
+            presetByDeckId = presetByDeckId,
+            dayCutoffHour = 0,
+        )
+
+        return deckIds.associateWith { deckId ->
+            todaySessionByDeckId[deckId]?.let { session ->
+                if (session.status == StudySessionStatus.ACTIVE) {
+                    TodayStudySessionState.InProgress(session.toDto())
+                } else {
+                    TodayStudySessionState.Completed(session.toDto())
+                }
+            } ?: run {
+                val preset = checkNotNull(presetByDeckId[deckId]) { "deck에 연결된 preset이 없습니다. deckId=$deckId" }
+                val pool = todayPoolByDeckId.getValue(deckId)
+                if (pool.newCount == 0 && pool.reviewCount == 0) {
+                    TodayStudySessionState.RestDay
+                } else {
+                    TodayStudySessionState.NotStarted(pool, preset.id)
+                }
+            }
+        }
     }
 }
 

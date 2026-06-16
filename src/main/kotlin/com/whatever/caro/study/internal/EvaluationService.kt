@@ -45,7 +45,7 @@ class EvaluationService(
 
         // 평가 아이템 검증
         val dedupedItems = items.asReversed().distinctBy { it.cardId }.asReversed()
-        val clsByCardId = cardLearningStateRepository.findAllByUserIdAndCardIdIn(
+        val clsByCardId = cardLearningStateRepository.findAllByUserIdAndCardIdInAndDeletedAtIsNull(
             userId = userId,
             cardIds = dedupedItems.map { it.cardId },
         ).associateBy { it.cardId }
@@ -90,9 +90,7 @@ class EvaluationService(
             session.updateStudiedCard(reviewLog.reviewType)
             reviewLog
         }
-        if (session.newCardsStudied + session.reviewCardsStudied >= session.estimatedTotal) {
-            session.complete(now)
-        }
+        session.completeIfGoalAchieved(now)
 
         reviewLogRepository.saveAll(newReviewLogs)
 

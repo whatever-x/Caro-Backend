@@ -5,4 +5,9 @@ interface CardApi {
         userId: Long,
         cardIds: Collection<Long>,
     ): Map<Long, CardContentDto>
+
+    fun getCardContentsByDeck(
+        userId: Long,
+        deckId: Long,
+    ): List<CardContentDto>
 }

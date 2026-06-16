@@ -44,6 +44,7 @@ class CardController(
         return ResponseEntity.ok(ApiResponse.ok(result))
     }
 
+    @Deprecated(message = "v2 메서드로 변경 필요")
     @GetMapping("/v1/decks/{deckId}/cards")
     fun getCardsByDeck(
         @Parameter(description = "덱 ID", required = true)

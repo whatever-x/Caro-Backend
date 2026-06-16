@@ -246,7 +246,7 @@ class EvaluationServiceTest(
                 log.easeFactor shouldBeGreaterThan cls.easeFactor
             }
 
-            it("마지막 카드 평가 시 estimatedTotal에 도달하면 세션이 COMPLETED 상태가 된다") {
+            it("마지막 카드 평가 시 목표치에 도달하면 세션이 COMPLETED 상태가 된다") {
                 stubPreset()
                 val session = createSession(newCardsGoal = 1, reviewCardsGoal = 0)
                 val cls = createCls(cardId = 1L, status = CardLearningStatus.NEW)
@@ -266,7 +266,7 @@ class EvaluationServiceTest(
                 reviewLogRepository.findAllByStudySessionId(session.id).size shouldBe 1
             }
 
-            it("estimatedTotal 미달 시 세션은 ACTIVE로 유지된다") {
+            it("목표치 미달 시 세션은 ACTIVE로 유지된다") {
                 stubPreset()
                 val session = createSession(newCardsGoal = 2, reviewCardsGoal = 0)
                 val cls = createCls(cardId = 1L, status = CardLearningStatus.NEW)

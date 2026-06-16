@@ -19,6 +19,18 @@ class DeckPresetService(
 ) : DeckPresetApi {
 
     @Transactional(readOnly = true)
+    override fun getLatestDeckPresetsByDeckId(
+        userId: Long,
+        deckIds: Collection<Long>,
+    ): Map<Long, DeckPresetDto> =
+        deckRepository.findAllByIdInWithPreset(
+            userId = userId,
+            deckIds = deckIds,
+        ).mapNotNull { deck ->
+            deck.deckPreset?.let { deck.id to it.toDto() }
+        }.toMap()
+
+    @Transactional(readOnly = true)
     override fun getLatestDeckPresetByUser(
         deckId: Long,
         userId: Long,

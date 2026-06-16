@@ -200,7 +200,7 @@ class CardLearningStateRepositoryTest(
             )
             val cardIds = clsList.map { it.cardId }
 
-            val result = cardLearningStateRepository.findAllByUserIdAndCardIdIn(
+            val result = cardLearningStateRepository.findAllByUserIdAndCardIdInAndDeletedAtIsNull(
                 userId = clsList.first().userId,
                 cardIds = cardIds,
             )
@@ -215,7 +215,7 @@ class CardLearningStateRepositoryTest(
                 nextReviewAt = beforeCutoff,
             )
 
-            val result = cardLearningStateRepository.findAllByUserIdAndCardIdIn(
+            val result = cardLearningStateRepository.findAllByUserIdAndCardIdInAndDeletedAtIsNull(
                 userId = 1L,
                 cardIds = listOf(cls.cardId),
             )
@@ -229,7 +229,7 @@ class CardLearningStateRepositoryTest(
                 nextReviewAt = beforeCutoff,
             )
 
-            val result = cardLearningStateRepository.findAllByUserIdAndCardIdIn(
+            val result = cardLearningStateRepository.findAllByUserIdAndCardIdInAndDeletedAtIsNull(
                 userId = cls.userId,
                 cardIds = emptyList(),
             )
@@ -243,7 +243,7 @@ class CardLearningStateRepositoryTest(
                 nextReviewAt = beforeCutoff,
             )
 
-            val result = cardLearningStateRepository.findAllByUserIdAndCardIdIn(
+            val result = cardLearningStateRepository.findAllByUserIdAndCardIdInAndDeletedAtIsNull(
                 userId = cls.userId,
                 cardIds = listOf(cls.cardId, 2L),
             )
@@ -369,6 +369,78 @@ class CardLearningStateRepositoryTest(
             )
 
             count shouldBe 1
+        }
+    }
+
+    // TODO userId 필터 추가 시 격리 케이스 추가
+    describe("countNewCardsByDeckIds") {
+        it("덱별 NEW 카드 수가 deckId 기준으로 집계된다") {
+            repeat(3) { i ->
+                createCls(cardId = (i + 1).toLong(), deckId = 1L, status = CardLearningStatus.NEW)
+            }
+            repeat(5) { i ->
+                createCls(cardId = (10 + i + 1).toLong(), deckId = 2L, status = CardLearningStatus.NEW)
+            }
+
+            val result = cardLearningStateRepository.countNewCardsByDeckIds(
+                deckIds = setOf(1L, 2L),
+            )
+
+            result.associate { it.deckId to it.count } shouldBe mapOf(1L to 3L, 2L to 5L)
+        }
+
+        it("NEW 카드가 없는 덱은 결과에 행 자체가 없다") {
+            createCls(cardId = 1L, deckId = 1L, status = CardLearningStatus.NEW)
+
+            val result = cardLearningStateRepository.countNewCardsByDeckIds(
+                deckIds = setOf(1L, 2L),
+            )
+
+            result.map { it.deckId } shouldBe listOf(1L)
+        }
+
+        it("REVIEW 상태 카드와 soft delete된 NEW 카드는 집계되지 않는다") {
+            createCls(cardId = 1L, deckId = 1L, status = CardLearningStatus.NEW)
+            createCls(cardId = 2L, deckId = 1L, status = CardLearningStatus.REVIEW, nextReviewAt = beforeCutoff)
+            val deleted = createCls(cardId = 3L, deckId = 1L, status = CardLearningStatus.NEW)
+            deleted.softDelete(deletedAt = beforeCutoff)
+            cardLearningStateRepository.save(deleted)
+
+            val result = cardLearningStateRepository.countNewCardsByDeckIds(
+                deckIds = setOf(1L),
+            )
+
+            result.associate { it.deckId to it.count } shouldBe mapOf(1L to 1L)
+        }
+    }
+
+    // TODO userId 필터 추가 시 격리 케이스 추가
+    describe("countReviewCardsByDeckIds") {
+        it("nextReviewAt이 nextSessionStart 직전(1초 전)인 카드는 포함되고, 동일한 카드는 제외된다") {
+            createCls(cardId = 1L, deckId = 1L, nextReviewAt = nextSessionStart.minusSeconds(1))
+            createCls(cardId = 2L, deckId = 2L, nextReviewAt = nextSessionStart)
+
+            val result = cardLearningStateRepository.countReviewCardsByDeckIds(
+                deckIds = setOf(1L, 2L),
+                nextSessionStart = nextSessionStart,
+            )
+
+            result.associate { it.deckId to it.count } shouldBe mapOf(1L to 1L)
+        }
+
+        it("NEW 상태 카드와 soft delete된 REVIEW 카드는 집계되지 않는다") {
+            createCls(cardId = 1L, deckId = 1L, nextReviewAt = beforeCutoff)
+            createCls(cardId = 2L, deckId = 1L, status = CardLearningStatus.NEW, nextReviewAt = beforeCutoff)
+            val deleted = createCls(cardId = 3L, deckId = 1L, nextReviewAt = beforeCutoff)
+            deleted.softDelete(deletedAt = beforeCutoff)
+            cardLearningStateRepository.save(deleted)
+
+            val result = cardLearningStateRepository.countReviewCardsByDeckIds(
+                deckIds = setOf(1L),
+                nextSessionStart = nextSessionStart,
+            )
+
+            result.associate { it.deckId to it.count } shouldBe mapOf(1L to 1L)
         }
     }
 })
