@@ -1,5 +1,6 @@
 package com.whatever.caro.study.internal.cardlearningstate
 
+import com.whatever.caro.study.CardLearningStatus
 import com.whatever.caro.study.internal.DeckCardCount
 import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository
@@ -127,4 +128,46 @@ interface CardLearningStateRepository : JpaRepository<CardLearningState, Long> {
         deckIds: Collection<Long>,
         nextSessionStart: Instant,
     ): List<DeckCardCount>
+
+    /**
+     * 사용자에게 학습 대상 NEW 카드 존재 여부.
+     */
+    fun existsNewCardByUser(
+        userId: Long,
+    ): Boolean =
+        existsByUserIdAndStatusAndDeletedAtIsNull(
+            userId = userId,
+            status = CardLearningStatus.NEW,
+        )
+
+    /**
+     * 사용자에게 오늘 복습 대상(REVIEW, next_review_at < nextSessionStart) 카드 존재 여부
+     */
+    fun existsTodayReviewCardByUser(
+        userId: Long,
+        nextSessionStart: Instant,
+    ): Boolean =
+        existsByUserIdAndStatusAndNextReviewAtLessThanAndDeletedAtIsNull(
+            userId = userId,
+            status = CardLearningStatus.REVIEW,
+            nextReviewAt = nextSessionStart,
+        )
+
+    /**
+     * 사용자에게 카드가 하나라도 존재하는지 여부.
+     */
+    fun existsByUserIdAndDeletedAtIsNull(
+        userId: Long,
+    ): Boolean
+
+    fun existsByUserIdAndStatusAndDeletedAtIsNull(
+        userId: Long,
+        status: CardLearningStatus,
+    ): Boolean
+
+    fun existsByUserIdAndStatusAndNextReviewAtLessThanAndDeletedAtIsNull(
+        userId: Long,
+        status: CardLearningStatus,
+        nextReviewAt: Instant,
+    ): Boolean
 }
