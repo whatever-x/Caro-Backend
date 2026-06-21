@@ -6,6 +6,9 @@ import com.whatever.caro.study.internal.MockDeckPresetApiConfig
 import io.kotest.core.spec.style.DescribeSpec
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.shouldBe
+import io.mockk.clearMocks
+import io.mockk.every
+import io.mockk.verify
 import org.springframework.context.annotation.Import
 import org.springframework.modulith.test.ApplicationModuleTest
 import java.time.Instant
@@ -19,6 +22,7 @@ class StreakServiceTest(
     private val streakService: StreakService,
     private val streakStateRepository: StreakStateRepository,
     private val studyDayRepository: StudyDayRepository,
+    private val restDayCheckService: RestDayCheckService,
 ) : DescribeSpec({
 
     val d15 = LocalDate.of(2026, 6, 15)
@@ -34,6 +38,7 @@ class StreakServiceTest(
     ): Instant = date.atTime(hour, 0).atZone(kst).toInstant()
 
     afterTest {
+        clearMocks(restDayCheckService)
         streakStateRepository.deleteAllInBatch()
         studyDayRepository.deleteAllInBatch()
     }
@@ -408,6 +413,56 @@ class StreakServiceTest(
                 dayCutoffHour = 0,
             )
             result2 shouldBe 0 // 클라이언트 날짜는 18일이므로 streak이 끊김
+        }
+    }
+
+    describe("syncWithRestDayCheck") {
+        it("휴식일이고 오늘 기록이 없으면 REST_DAY를 기록하고 streak을 이어준다") {
+            streakService.recordStudied(userId = USER_ID, studyDate = d15)
+            every { restDayCheckService.isRestDay(any(), any(), any(), any()) } returns true
+
+            streakService.syncWithRestDayCheck(
+                userId = USER_ID,
+                now = instantOn(d16),
+                timezone = kst,
+                dayCutoffHour = 0,
+            )
+
+            val studyDays = studyDayRepository.findAllByUserIdOrderByStudyDateDesc(userId = USER_ID)
+            studyDays shouldHaveSize 2
+            studyDays.first().streakType shouldBe StreakType.REST_DAY
+            studyDays.first().studyDate shouldBe d16
+            streakStateRepository.findByUserId(userId = USER_ID)!!.currentStreak shouldBe 1
+        }
+
+        it("오늘 이미 학습 기록이 있으면 휴식일 판정을 건너뛴다") {
+            streakService.recordStudied(userId = USER_ID, studyDate = d16)
+
+            streakService.syncWithRestDayCheck(
+                userId = USER_ID,
+                now = instantOn(d16),
+                timezone = kst,
+                dayCutoffHour = 0,
+            )
+
+            verify(exactly = 0) { restDayCheckService.isRestDay(any(), any(), any(), any()) }
+            studyDayRepository.findAllByUserIdOrderByStudyDateDesc(userId = USER_ID) shouldHaveSize 1
+        }
+
+        it("휴식일이 아니면 REST_DAY를 기록하지 않는다") {
+            streakService.recordStudied(userId = USER_ID, studyDate = d15)
+            every { restDayCheckService.isRestDay(any(), any(), any(), any()) } returns false
+
+            streakService.syncWithRestDayCheck(
+                userId = USER_ID,
+                now = instantOn(d16),
+                timezone = kst,
+                dayCutoffHour = 0,
+            )
+
+            val studyDays = studyDayRepository.findAllByUserIdOrderByStudyDateDesc(userId = USER_ID)
+            studyDays shouldHaveSize 1
+            studyDays.none { it.streakType == StreakType.REST_DAY } shouldBe true
         }
     }
 }) {

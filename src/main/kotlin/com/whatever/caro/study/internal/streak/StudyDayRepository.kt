@@ -46,4 +46,9 @@ interface StudyDayRepository : JpaRepository<StudyDay, Long> {
     fun findAllByUserIdOrderByStudyDateDesc(
         userId: Long,
     ): List<StudyDay>
+
+    fun existsByUserIdAndStudyDate(
+        userId: Long,
+        studyDate: LocalDate,
+    ): Boolean
 }

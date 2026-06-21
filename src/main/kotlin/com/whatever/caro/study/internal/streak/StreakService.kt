@@ -15,7 +15,42 @@ private val logger = KotlinLogging.logger {}
 class StreakService(
     private val streakStateRepository: StreakStateRepository,
     private val studyDayRepository: StudyDayRepository,
+    private val restDayCheckService: RestDayCheckService,
 ) {
+    @Transactional
+    fun syncWithRestDayCheck(
+        userId: Long,
+        now: Instant,
+        timezone: ZoneId,
+        dayCutoffHour: Int,
+    ) {
+        val today = toStreakDate(now, timezone, dayCutoffHour)
+        val alreadyRecorded = studyDayRepository.existsByUserIdAndStudyDate(
+            userId = userId,
+            studyDate = today,
+        )
+
+        val isRestDay = !alreadyRecorded && restDayCheckService.isRestDay(
+            userId = userId,
+            now = now,
+            timezone = timezone,
+            dayCutoffHour = dayCutoffHour,
+        )
+
+        if (isRestDay) {
+            recordRest(
+                userId = userId,
+                restDate = today,
+            )
+        }
+        sync(
+            userId = userId,
+            now = now,
+            timezone = timezone,
+            dayCutoffHour = dayCutoffHour,
+        )
+    }
+
     /**
      * "오늘 기준" streak을 반환한다.
      *

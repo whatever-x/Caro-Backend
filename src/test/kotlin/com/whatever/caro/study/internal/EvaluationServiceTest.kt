@@ -12,6 +12,9 @@ import com.whatever.caro.study.exception.SessionNotActiveException
 import com.whatever.caro.study.exception.SessionNotFoundException
 import com.whatever.caro.study.internal.cardlearningstate.CardLearningState
 import com.whatever.caro.study.internal.cardlearningstate.CardLearningStateRepository
+import com.whatever.caro.study.internal.streak.RestDayCheckService
+import com.whatever.caro.study.internal.streak.StreakStateRepository
+import com.whatever.caro.study.internal.streak.StudyDayRepository
 import com.whatever.caro.study.internal.studysession.ReviewLogRepository
 import com.whatever.caro.study.internal.studysession.StudySession
 import com.whatever.caro.study.internal.studysession.StudySessionRepository
@@ -38,12 +41,16 @@ import java.time.ZoneId
 import java.time.temporal.ChronoUnit
 
 // Kotest DescribeSpec의 생성자 주입에서는 @MockitoBean/@TestBean 사용이 제한적이라 @TestConfiguration + @Primary로 Bean 교체
-// card 모듈의 DeckPresetApi 만 mock 으로 대체하고 나머지 레포지토리는 실제 JPA 를 사용
+// card 모듈의 DeckPresetApi와 study의 RestDayCheckService를 mock 으로 대체하고 나머지 레포지토리는 실제 JPA 를 사용
 @TestConfiguration
 class MockDeckPresetApiConfig {
     @Bean
     @Primary
     fun deckPresetApi(): DeckPresetApi = mockk(relaxed = true)
+
+    @Bean
+    @Primary
+    fun restDayCheckService(): RestDayCheckService = mockk(relaxed = true)
 }
 
 @ApplicationModuleTest(extraIncludes = ["common"])
@@ -54,6 +61,8 @@ class EvaluationServiceTest(
     private val studySessionRepository: StudySessionRepository,
     private val cardLearningStateRepository: CardLearningStateRepository,
     private val reviewLogRepository: ReviewLogRepository,
+    private val studyDayRepository: StudyDayRepository,
+    private val streakStateRepository: StreakStateRepository,
 ) : DescribeSpec({
 
     val kstZoneId = ZoneId.of("Asia/Seoul")
@@ -65,6 +74,8 @@ class EvaluationServiceTest(
         reviewLogRepository.deleteAllInBatch()
         studySessionRepository.deleteAllInBatch()
         cardLearningStateRepository.deleteAllInBatch()
+        studyDayRepository.deleteAllInBatch()
+        streakStateRepository.deleteAllInBatch()
         clearMocks(deckPresetApi)
     }
 
