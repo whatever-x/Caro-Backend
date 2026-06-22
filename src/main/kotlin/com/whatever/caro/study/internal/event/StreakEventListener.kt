@@ -1,6 +1,6 @@
 package com.whatever.caro.study.internal.event
 
-import com.whatever.caro.study.DailyStudyCompletedEvnet
+import com.whatever.caro.study.DailyStudyCompletedEvent
 import com.whatever.caro.study.internal.streak.StreakService
 import org.springframework.modulith.events.ApplicationModuleListener
 import org.springframework.stereotype.Component
@@ -11,7 +11,7 @@ class StreakEventListener(
 ) {
     @ApplicationModuleListener
     fun onDailyStudyCompleted(
-        event: DailyStudyCompletedEvnet,
+        event: DailyStudyCompletedEvent,
     ) {
         streakService.recordStudied(
             userId = event.userId,

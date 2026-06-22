@@ -3,7 +3,7 @@ package com.whatever.caro.study.internal
 import com.whatever.caro.card.api.deck.DeckPresetApi
 import com.whatever.caro.card.api.deck.DeckPresetDto
 import com.whatever.caro.study.CardLearningStatus
-import com.whatever.caro.study.DailyStudyCompletedEvnet
+import com.whatever.caro.study.DailyStudyCompletedEvent
 import com.whatever.caro.study.ReviewType
 import com.whatever.caro.study.StudySessionStatus
 import com.whatever.caro.study.exception.SessionExpiredException
@@ -95,7 +95,7 @@ class EvaluationService(
         }
         if (session.completeIfGoalAchieved(now)) {
             applicationEventPublisher.publishEvent(
-                DailyStudyCompletedEvnet(
+                DailyStudyCompletedEvent(
                     userId = userId,
                     studyDate = session.sessionDate,
                 ),
