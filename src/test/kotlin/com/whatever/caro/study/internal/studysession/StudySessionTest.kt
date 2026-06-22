@@ -162,7 +162,7 @@ class StudySessionTest :
             context("세션 상태에 따라 complete 시 반환값이 달라진다") {
                 withData(
                     nameFn = { "세션 상태가 $it 라면 ${it == StudySessionStatus.ACTIVE}를 반환한다" },
-                    listOf(StudySessionStatus.ACTIVE, StudySessionStatus.STOPPED, StudySessionStatus.COMPLETED,)
+                    listOf(StudySessionStatus.ACTIVE, StudySessionStatus.STOPPED, StudySessionStatus.COMPLETED),
                 ) { status ->
                     val now = Instant.now()
                     val s = createSession(status = status)

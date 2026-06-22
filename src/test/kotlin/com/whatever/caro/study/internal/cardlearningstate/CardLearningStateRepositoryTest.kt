@@ -501,7 +501,7 @@ class CardLearningStateRepositoryTest(
                 cardId = 1L,
                 userId = 1L,
                 status = CardLearningStatus.REVIEW,
-                nextReviewAt = nextSessionStart.minusSeconds(1),  // nextReviewAt이 nextSessionStart 직전(1초 전)
+                nextReviewAt = nextSessionStart.minusSeconds(1), // nextReviewAt이 nextSessionStart 직전(1초 전)
             )
 
             val result = cardLearningStateRepository.existsTodayReviewCardByUser(
@@ -527,7 +527,6 @@ class CardLearningStateRepositoryTest(
 
             result shouldBe false
         }
-
 
         it("soft delete된 REVIEW 카드는 제외된다") {
             val deleted = createCls(cardId = 1L, userId = 1L, status = CardLearningStatus.REVIEW, nextReviewAt = beforeCutoff)
