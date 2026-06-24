@@ -82,13 +82,16 @@ class StudySession(
     val sessionStart: Instant
         get() = sessionDate.atTime(dayCutoffHour, 0).atZone(timezone).toInstant()
 
+    // TODO 제거예정
+    @Deprecated("절대 시간이 아닌 상대시간 사용 예정으로, 제거되어야함")
     @get:Transient
     val nextSessionStart: Instant
         get() = sessionDate.plusDays(1).atTime(dayCutoffHour, 0).atZone(timezone).toInstant()
 
     fun isTodaySession(
         now: Instant,
-    ): Boolean = sessionDate == now.atZone(timezone).minusHours(dayCutoffHour.toLong()).toLocalDate()
+        clientTimezone: ZoneId,
+    ): Boolean = sessionDate == now.atZone(clientTimezone).minusHours(dayCutoffHour.toLong()).toLocalDate()
 
     fun updateStudiedCard(
         status: ReviewType,

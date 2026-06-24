@@ -43,6 +43,7 @@ class StudyService(
     ): TodayStudySessionState {
         cleanupStaleSession(
             now = now,
+            timezone = timezone,
             userId = userId,
             deckId = deckId,
         )
@@ -80,13 +81,14 @@ class StudyService(
         userId: Long,
         sessionId: Long,
         now: Instant,
+        timezone: ZoneId,
     ): List<CardLearningStateDto> {
         val todaySession = studySessionRepository.findByIdAndUserId(
             id = sessionId,
             userId = userId,
         ) ?: throw SessionNotFoundException()
 
-        if (!todaySession.isTodaySession(now)) {
+        if (!todaySession.isTodaySession(now, timezone)) {
             throw SessionExpiredException()
         }
 
@@ -135,10 +137,16 @@ class StudyService(
     @Transactional
     fun adjustGoalsOnCardDeletion(
         now: Instant,
+        timezone: ZoneId,
         userId: Long,
         deckId: Long,
     ) {
-        val session = findTodaySession(now = now, userId = userId, deckId = deckId)
+        val session = findTodaySession(
+            now = now,
+            timezone = timezone,
+            userId = userId,
+            deckId = deckId,
+        )
             ?.takeIf { it.status == StudySessionStatus.ACTIVE }
             ?: return
 
@@ -167,6 +175,7 @@ class StudyService(
     ): TodayStudySessionState {
         findTodaySession(
             now = now,
+            timezone = timezone,
             userId = userId,
             deckId = deckId,
         )?.let {
@@ -195,24 +204,26 @@ class StudyService(
 
     private fun findTodaySession(
         now: Instant,
+        timezone: ZoneId,
         userId: Long,
         deckId: Long,
     ): StudySession? {
         val latest = studySessionRepository.findByUserAndDeckOrderByStartedAtDesc(userId, deckId) ?: return null
         return when (latest.status) {
-            StudySessionStatus.ACTIVE -> if (latest.isTodaySession(now)) latest else null
-            StudySessionStatus.COMPLETED -> if (latest.isTodaySession(now)) latest else null
+            StudySessionStatus.ACTIVE -> if (latest.isTodaySession(now, timezone)) latest else null
+            StudySessionStatus.COMPLETED -> if (latest.isTodaySession(now, timezone)) latest else null
             StudySessionStatus.STOPPED -> null
         }
     }
 
     private fun cleanupStaleSession(
         now: Instant,
+        timezone: ZoneId,
         userId: Long,
         deckId: Long,
     ) {
         val latestSession = studySessionRepository.findByUserAndDeckOrderByStartedAtDesc(userId, deckId) ?: return
-        if (latestSession.status == StudySessionStatus.ACTIVE && !latestSession.isTodaySession(now)) {
+        if (latestSession.status == StudySessionStatus.ACTIVE && !latestSession.isTodaySession(now, timezone)) {
             val effectedRow = studySessionRepository.setStoppedIfActive(latestSession.id)
             logger.warn {
                 "Stale active study session detected. sessionId=${latestSession.id} effected row: $effectedRow"
@@ -244,7 +255,7 @@ class StudyService(
             deckIds,
         ).filter { session ->
             when (session.status) {
-                StudySessionStatus.ACTIVE, StudySessionStatus.COMPLETED -> session.isTodaySession(now)
+                StudySessionStatus.ACTIVE, StudySessionStatus.COMPLETED -> session.isTodaySession(now, timezone)
                 StudySessionStatus.STOPPED -> false
             }
         }.associateBy { it.deckId }

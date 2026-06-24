@@ -33,7 +33,7 @@ class StudyBFFService(
         )
 
         return when (sessionState) {
-            is TodayStudySessionState.InProgress -> resolveInProgress(sessionState, userId, now)
+            is TodayStudySessionState.InProgress -> resolveInProgress(sessionState, userId, now, timezone)
             is TodayStudySessionState.Completed -> sessionState.session.toCompletedView()
             is TodayStudySessionState.RestDay -> DailyStudyView.RestDayDto
             is TodayStudySessionState.NotStarted -> error("`NotStarted` status session is not allowed")
@@ -44,12 +44,14 @@ class StudyBFFService(
         sessionState: TodayStudySessionState.InProgress,
         userId: Long,
         now: Instant,
+        timezone: ZoneId,
     ): DailyStudyView {
         val sessionId = sessionState.session.sessionId
         val cardQueue = studyApi.getStudySessionCardQueue(
             userId = userId,
             sessionId = sessionId,
             now = now,
+            timezone = timezone,
         )
         if (cardQueue.isEmpty()) {
             logger.warn { "empty card queue on IN_PROGRESS study session. sessionId: $sessionId" }

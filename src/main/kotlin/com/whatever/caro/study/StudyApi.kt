@@ -26,6 +26,7 @@ interface StudyApi {
         userId: Long,
         sessionId: Long,
         now: Instant,
+        timezone: ZoneId,
     ): List<CardLearningStateDto>
 
     fun getTodaySummaries(

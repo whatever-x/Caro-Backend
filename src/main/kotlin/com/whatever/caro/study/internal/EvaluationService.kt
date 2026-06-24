@@ -15,6 +15,7 @@ import com.whatever.caro.study.internal.studysession.StudySessionRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
+import java.time.ZoneId
 
 @Service
 class EvaluationService(
@@ -26,6 +27,7 @@ class EvaluationService(
     @Transactional
     fun evaluate(
         now: Instant,
+        timezone: ZoneId,
         userId: Long,
         sessionId: Long,
         items: List<EvaluatedCardDto>,
@@ -37,7 +39,7 @@ class EvaluationService(
         if (session.status != StudySessionStatus.ACTIVE) {
             throw SessionNotActiveException()
         }
-        if (session.isTodaySession(now).not()) {
+        if (session.isTodaySession(now, timezone).not()) {
             throw SessionExpiredException()
         }
 
