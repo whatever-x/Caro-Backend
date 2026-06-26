@@ -100,7 +100,7 @@ class StudyService(
                 userId = userId,
                 deckId = todaySession.deckId,
                 pageable = PageRequest.ofSize(newPoolSize),
-                sessionStart = todaySession.sessionStart,
+                sessionDate = todaySession.sessionDate,
             )
         } else {
             emptyList()
@@ -109,8 +109,7 @@ class StudyService(
             cardLearningStateRepository.findAllReviewCard(
                 userId = userId,
                 deckId = todaySession.deckId,
-                sessionStart = todaySession.sessionStart,
-                nextSessionStart = todaySession.nextSessionStart,
+                sessionDate = todaySession.sessionDate,
                 pageable = PageRequest.ofSize(reviewPoolSize),
             )
         } else {
@@ -153,12 +152,12 @@ class StudyService(
         val availableNewCount = cardLearningStateRepository.countRemainingNewCards(
             userId = userId,
             deckId = deckId,
-            sessionStart = session.sessionStart,
+            today = session.sessionDate,
         )
         val availableReviewCount = cardLearningStateRepository.countTodayReviewCards(
             userId = userId,
             deckId = deckId,
-            nextSessionStart = session.nextSessionStart,
+            today = session.sessionDate,
         )
         session.recalculateGoals(
             availableNewGoal = availableNewCount,

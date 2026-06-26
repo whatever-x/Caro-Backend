@@ -4,7 +4,7 @@ import com.whatever.caro.study.internal.DeckCardCount
 import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
-import java.time.Instant
+import java.time.LocalDate
 
 interface CardLearningStateRepository : JpaRepository<CardLearningState, Long> {
     fun findAllByUserIdAndCardIdInAndDeletedAtIsNull(
@@ -17,7 +17,7 @@ interface CardLearningStateRepository : JpaRepository<CardLearningState, Long> {
         select count(cls) from CardLearningState cls
         where cls.userId = :userId
             and cls.deckId = :deckId
-            and cls.nextReviewAt < :nextSessionStart
+            and cls.nextReviewDate <= :today
             and cls.status = CardLearningStatus.REVIEW
             and cls.deletedAt is null
     """,
@@ -25,7 +25,7 @@ interface CardLearningStateRepository : JpaRepository<CardLearningState, Long> {
     fun countTodayReviewCards(
         userId: Long,
         deckId: Long,
-        nextSessionStart: Instant,
+        today: LocalDate,
     ): Int
 
     @Query(
@@ -48,17 +48,16 @@ interface CardLearningStateRepository : JpaRepository<CardLearningState, Long> {
         where cls.userId = :userId
             and cls.deckId = :deckId
             and cls.status = CardLearningStatus.REVIEW
-            and cls.nextReviewAt < :nextSessionStart
-            and (cls.lastReviewedAt is null or cls.lastReviewedAt < :sessionStart)
+            and cls.nextReviewDate <= :sessionDate
+            and (cls.lastReviewedDate is null or cls.lastReviewedDate < :sessionDate)
             and cls.deletedAt is null
-        order by cls.nextReviewAt asc, cls.id asc
+        order by cls.nextReviewDate asc, cls.id asc
     """,
     )
     fun findAllReviewCard(
         userId: Long,
         deckId: Long,
-        sessionStart: Instant,
-        nextSessionStart: Instant,
+        sessionDate: LocalDate,
         pageable: Pageable,
     ): List<CardLearningState>
 
@@ -68,7 +67,7 @@ interface CardLearningStateRepository : JpaRepository<CardLearningState, Long> {
         where cls.userId = :userId
             and cls.deckId = :deckId
             and cls.status = CardLearningStatus.NEW
-            and (cls.lastReviewedAt is null or cls.lastReviewedAt < :sessionStart)
+            and (cls.lastReviewedDate is null or cls.lastReviewedDate < :sessionDate)
             and cls.deletedAt is null
         order by cls.id asc
     """,
@@ -77,7 +76,7 @@ interface CardLearningStateRepository : JpaRepository<CardLearningState, Long> {
         userId: Long,
         deckId: Long,
         pageable: Pageable,
-        sessionStart: Instant,
+        sessionDate: LocalDate,
     ): List<CardLearningState>
 
     /**
@@ -89,7 +88,7 @@ interface CardLearningStateRepository : JpaRepository<CardLearningState, Long> {
         where cls.userId = :userId
             and cls.deckId = :deckId
             and cls.status = CardLearningStatus.NEW
-            and (cls.lastReviewedAt is null or cls.lastReviewedAt < :sessionStart)
+            and (cls.lastReviewedDate is null or cls.lastReviewedDate < :today)
             and cls.deletedAt is null
         order by cls.id asc
         """,
@@ -97,7 +96,7 @@ interface CardLearningStateRepository : JpaRepository<CardLearningState, Long> {
     fun countRemainingNewCards(
         userId: Long,
         deckId: Long,
-        sessionStart: Instant,
+        today: LocalDate,
     ): Int
 
     @Query(
@@ -119,12 +118,12 @@ interface CardLearningStateRepository : JpaRepository<CardLearningState, Long> {
         where cls.deckId in :deckIds
             and cls.status = CardLearningStatus.REVIEW
             and cls.deletedAt is null
-            and cls.nextReviewAt < :nextSessionStart
+            and cls.nextReviewDate <= :today
         group by cls.deckId
         """,
     )
     fun countReviewCardsByDeckIds(
         deckIds: Collection<Long>,
-        nextSessionStart: Instant,
+        today: LocalDate,
     ): List<DeckCardCount>
 }

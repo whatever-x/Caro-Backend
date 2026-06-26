@@ -3,8 +3,7 @@ package com.whatever.caro.study.internal
 import com.whatever.caro.study.Rating
 import java.math.BigDecimal
 import java.math.RoundingMode
-import java.time.Instant
-import java.time.temporal.ChronoUnit
+import java.time.LocalDate
 
 sealed interface SchedulingState {
     val easeFactor: BigDecimal
@@ -42,8 +41,8 @@ sealed interface SchedulingState {
                 intervalDays = context.params.newEasyInterval,
                 repetitions = 1,
                 lapses = 0,
-                lastReviewedAt = context.now,
-                nextReviewAt = context.now.plusDays(context.params.newEasyInterval),
+                lastReviewedDate = context.studyDate,
+                nextReviewDate = context.studyDate.plusDays(context.params.newEasyInterval.toLong()),
                 consecutiveAgainCount = 0,
             )
         }
@@ -57,8 +56,8 @@ sealed interface SchedulingState {
                 intervalDays = context.params.newFairInterval,
                 repetitions = 1,
                 lapses = 0,
-                lastReviewedAt = context.now,
-                nextReviewAt = context.now.plusDays(context.params.newFairInterval),
+                lastReviewedDate = context.studyDate,
+                nextReviewDate = context.studyDate.plusDays(context.params.newFairInterval.toLong()),
                 consecutiveAgainCount = 0,
             )
         }
@@ -77,8 +76,8 @@ sealed interface SchedulingState {
         override val intervalDays: Int,
         val repetitions: Int,
         val lapses: Int,
-        val lastReviewedAt: Instant?,
-        val nextReviewAt: Instant?,
+        val lastReviewedDate: LocalDate?,
+        val nextReviewDate: LocalDate?,
         override val consecutiveAgainCount: Int,
     ) : SchedulingState {
         override fun nextStates(
@@ -104,8 +103,8 @@ sealed interface SchedulingState {
                 intervalDays = newIntervalDays,
                 repetitions = repetitions + 1,
                 lapses = lapses,
-                lastReviewedAt = context.now,
-                nextReviewAt = context.now.plusDays(newIntervalDays),
+                lastReviewedDate = context.studyDate,
+                nextReviewDate = context.studyDate.plusDays(newIntervalDays.toLong()),
                 consecutiveAgainCount = 0,
             )
         }
@@ -123,8 +122,8 @@ sealed interface SchedulingState {
                 intervalDays = newIntervalDays,
                 repetitions = repetitions + 1,
                 lapses = lapses,
-                lastReviewedAt = context.now,
-                nextReviewAt = context.now.plusDays(newIntervalDays),
+                lastReviewedDate = context.studyDate,
+                nextReviewDate = context.studyDate.plusDays(newIntervalDays.toLong()),
                 consecutiveAgainCount = 0,
             )
         }
@@ -143,8 +142,8 @@ sealed interface SchedulingState {
                 intervalDays = newIntervalDays,
                 repetitions = 0,
                 lapses = lapses + 1,
-                lastReviewedAt = context.now,
-                nextReviewAt = context.now.plusDays(newIntervalDays),
+                lastReviewedDate = context.studyDate,
+                nextReviewDate = context.studyDate.plusDays(newIntervalDays.toLong()),
                 consecutiveAgainCount = consecutiveAgainCount + 1,
             )
         }
@@ -174,10 +173,6 @@ data class SchedulingStates(
 }
 
 data class SchedulingContext(
-    val now: Instant,
+    val studyDate: LocalDate,
     val params: Sm2Params,
 )
-
-private fun Instant.plusDays(
-    days: Int,
-): Instant = this.plus(days.toLong(), ChronoUnit.DAYS)

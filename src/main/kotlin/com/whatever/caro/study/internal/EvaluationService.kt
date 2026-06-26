@@ -67,7 +67,7 @@ class EvaluationService(
             val cls = clsByCardId[it.item.cardId]
                 ?: error("CardLearningState not exist for cardId=${it.item.cardId}")
 
-            val context = SchedulingContext(now, params)
+            val context = SchedulingContext(studyDate = session.sessionDate, params = params)
             val nextState = cls.toSchedulingState().nextStates(context).pick(it.item.rating)
 
             val reviewLog = ReviewLog(
@@ -85,7 +85,7 @@ class EvaluationService(
             )
 
             cls.applyScheduling(
-                now = now,
+                studyDate = session.sessionDate,
                 nextState = nextState,
             )
 

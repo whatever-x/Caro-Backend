@@ -24,7 +24,7 @@ class StudyTargetPoolCalculator(
         reviewCardPerDay: Int,
         dayCutoffHour: Int,
     ): StudyTargetPoolCount {
-        val nextSessionStart = getNextSessionStart(now, timezone, dayCutoffHour)
+        val today = getToday(now = now, timezone = timezone, dayCutoffHour = dayCutoffHour)
 
         val newTargetCount = cardLearningStateRepository.countNewCards(
             userId = userId,
@@ -33,7 +33,7 @@ class StudyTargetPoolCalculator(
         val reviewTargetCount = cardLearningStateRepository.countTodayReviewCards(
             userId = userId,
             deckId = deckId,
-            nextSessionStart = nextSessionStart,
+            today = today,
         )
 
         val newPool = min(newCardPerDay, newTargetCount)
@@ -56,7 +56,7 @@ class StudyTargetPoolCalculator(
             return emptyMap()
         }
 
-        val nextSessionStart = getNextSessionStart(now, timezone, dayCutoffHour)
+        val today = getToday(now = now, timezone = timezone, dayCutoffHour = dayCutoffHour)
 
         val deckIds = presetByDeckId.keys
         val newCardCountByDeckId = cardLearningStateRepository.countNewCardsByDeckIds(
@@ -64,7 +64,7 @@ class StudyTargetPoolCalculator(
         ).associate { it.deckId to it.count.toInt() }
         val reviewCardCountByDeckId = cardLearningStateRepository.countReviewCardsByDeckIds(
             deckIds = deckIds,
-            nextSessionStart = nextSessionStart,
+            today = today,
         ).associate { it.deckId to it.count.toInt() }
 
         return presetByDeckId.mapValues { (deckId, preset) ->
@@ -83,17 +83,6 @@ class StudyTargetPoolCalculator(
         timezone: ZoneId,
         dayCutoffHour: Int,
     ): LocalDate = now.atZone(timezone).minusHours(dayCutoffHour.toLong()).toLocalDate()
-
-    private fun getNextSessionStart(
-        now: Instant,
-        timezone: ZoneId,
-        dayCutoffHour: Int,
-    ): Instant =
-        getToday(now, timezone, dayCutoffHour)
-            .plusDays(1)
-            .atTime(dayCutoffHour, 0)
-            .atZone(timezone)
-            .toInstant()
 }
 
 data class StudyTargetPoolCount(
