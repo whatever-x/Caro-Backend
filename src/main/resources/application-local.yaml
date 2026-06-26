@@ -24,6 +24,9 @@ app:
       client-ids:
         - local-apple-client-id-1
         - local-apple-client-id-2
+  email:
+    encryption-key: ${EMAIL_ENCRYPTION_KEY}
+    blind-index-key: ${EMAIL_BLIND_INDEX_KEY}
 
 logging:
   level:

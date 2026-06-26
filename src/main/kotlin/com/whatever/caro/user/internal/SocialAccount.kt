@@ -2,7 +2,9 @@ package com.whatever.caro.user.internal
 
 import com.whatever.caro.common.entity.BaseTimeEntity
 import com.whatever.caro.user.SocialProvider
+import com.whatever.caro.user.internal.encrypt.EmailCryptoConverter
 import jakarta.persistence.Column
+import jakarta.persistence.Convert
 import jakarta.persistence.Entity
 import jakarta.persistence.EnumType
 import jakarta.persistence.Enumerated
@@ -29,6 +31,7 @@ class SocialAccount(
     val providerUserId: String,
 
     @Column
+    @Convert(converter = EmailCryptoConverter::class)
     var email: String? = null,
 ) : BaseTimeEntity() {
     @Id
