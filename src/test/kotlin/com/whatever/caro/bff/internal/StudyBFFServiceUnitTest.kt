@@ -12,7 +12,6 @@ import com.whatever.caro.study.StudyType
 import com.whatever.caro.study.TodayStudySessionState
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.DescribeSpec
-import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
@@ -107,7 +106,7 @@ class StudyBFFServiceUnitTest :
                     val cardContentsById = mapOf(1L to content(1L), 2L to content(2L), 3L to content(3L))
 
                     stubStartOrResumeDailyStudySession(TodayStudySessionState.InProgress(session))
-                    every { studyApi.getStudySessionCardQueue(userId = userId, sessionId = 100L, now = now) } returns cardQueue
+                    every { studyApi.getStudySessionCardQueue(userId = userId, sessionId = 100L, now = now, timezone = tz) } returns cardQueue
                     every { cardApi.getCardsByIds(userId = userId, cardIds = cardQueue.map { it.cardId }) } returns cardContentsById
 
                     val result = service.startOrResumeDailyStudy(now, userId, deckId, tz)
@@ -129,7 +128,7 @@ class StudyBFFServiceUnitTest :
                     dto.sessionId shouldBe session.sessionId
                     dto.studiedCardCount shouldBe session.newCardsStudied + session.reviewCardsStudied
                     dto.totalCardCount shouldBe session.estimatedTotal
-                    verify(exactly = 0) { studyApi.getStudySessionCardQueue(any(), any(), any()) }
+                    verify(exactly = 0) { studyApi.getStudySessionCardQueue(any(), any(), any(), any()) }
                     verify(exactly = 0) { cardApi.getCardsByIds(any(), any()) }
                 }
 
@@ -139,7 +138,7 @@ class StudyBFFServiceUnitTest :
                     val result = service.startOrResumeDailyStudy(now, userId, deckId, tz)
 
                     result shouldBe DailyStudyView.RestDayDto
-                    verify(exactly = 0) { studyApi.getStudySessionCardQueue(any(), any(), any()) }
+                    verify(exactly = 0) { studyApi.getStudySessionCardQueue(any(), any(), any(), any()) }
                     verify(exactly = 0) { cardApi.getCardsByIds(any(), any()) }
                 }
 
@@ -164,7 +163,7 @@ class StudyBFFServiceUnitTest :
 
                     val cardQueue = listOf(cls(3L), cls(1L), cls(2L))
                     val cardContentsById = mapOf(1L to content(1L), 2L to content(2L), 3L to content(3L))
-                    every { studyApi.getStudySessionCardQueue(userId = userId, sessionId = 100L, now = now) } returns cardQueue
+                    every { studyApi.getStudySessionCardQueue(userId = userId, sessionId = 100L, now = now, timezone = tz) } returns cardQueue
                     // map의 key가 구성된 순서는 queue와 다를 수 있으며, 순서에 영향을 미치지 않아야함
                     every { cardApi.getCardsByIds(userId = userId, cardIds = listOf(3L, 1L, 2L)) } returns cardContentsById
 
@@ -177,7 +176,7 @@ class StudyBFFServiceUnitTest :
                 it("큐가 비어 있으면 CompletedDto를 early return한다") {
                     val session = session(estimatedTotal = 20)
                     stubStartOrResumeDailyStudySession(TodayStudySessionState.InProgress(session))
-                    every { studyApi.getStudySessionCardQueue(userId = userId, sessionId = 100L, now = now) } returns emptyList()
+                    every { studyApi.getStudySessionCardQueue(userId = userId, sessionId = 100L, now = now, timezone = tz) } returns emptyList()
                     every { cardApi.getCardsByIds(userId = userId, cardIds = emptyList()) } returns emptyMap()
 
                     val result = service.startOrResumeDailyStudy(now, userId, deckId, tz)
@@ -196,7 +195,7 @@ class StudyBFFServiceUnitTest :
 
                     val cardQueue = listOf(cls(1L), cls(2L), cls(3L))
                     val cardContentsById = mapOf(1L to content(1L), 3L to content(3L)) // 2번 카드 콘텐츠 없음(orphan)
-                    every { studyApi.getStudySessionCardQueue(userId = userId, sessionId = 100L, now = now) } returns cardQueue
+                    every { studyApi.getStudySessionCardQueue(userId = userId, sessionId = 100L, now = now, timezone = tz) } returns cardQueue
                     every { cardApi.getCardsByIds(userId = userId, cardIds = listOf(1L, 2L, 3L)) } returns cardContentsById
 
                     val result = service.startOrResumeDailyStudy(now, userId, deckId, tz)

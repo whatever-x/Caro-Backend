@@ -809,6 +809,7 @@ class StudyServiceTest(
                 userId = USER_ID,
                 sessionId = session.id,
                 now = baseNow,
+                timezone = kstZoneId,
             )
 
             result.filter { it.status == CardLearningStatus.NEW }.size shouldBe (session.newCardsGoal - session.newCardsStudied)
@@ -821,6 +822,7 @@ class StudyServiceTest(
                     userId = USER_ID,
                     sessionId = 999L,
                     now = baseNow,
+                    timezone = kstZoneId,
                 )
             }
         }
@@ -833,6 +835,7 @@ class StudyServiceTest(
                     userId = USER_ID,
                     sessionId = session.id,
                     now = baseNow,
+                    timezone = kstZoneId,
                 )
             }
         }
@@ -850,6 +853,7 @@ class StudyServiceTest(
                     userId = USER_ID,
                     sessionId = session.id,
                     now = baseNow,
+                    timezone = kstZoneId,
                 )
             }
         }
@@ -861,6 +865,7 @@ class StudyServiceTest(
                 userId = USER_ID,
                 sessionId = session.id,
                 now = baseNow,
+                timezone = kstZoneId,
             )
 
             result.filter { it.status == CardLearningStatus.NEW }.size shouldBe 0
@@ -873,6 +878,7 @@ class StudyServiceTest(
                 userId = USER_ID,
                 sessionId = session.id,
                 now = baseNow,
+                timezone = kstZoneId,
             )
 
             result.filter { it.status == CardLearningStatus.REVIEW }.size shouldBe 0
@@ -897,6 +903,7 @@ class StudyServiceTest(
                 userId = USER_ID,
                 sessionId = session.id,
                 now = baseNow,
+                timezone = kstZoneId,
             )
 
             result.filter { it.status == CardLearningStatus.NEW }.size shouldBe 0
@@ -929,6 +936,7 @@ class StudyServiceTest(
                 userId = USER_ID,
                 sessionId = session.id,
                 now = baseNow,
+                timezone = kstZoneId,
             )
 
             val orderedCardId = listOf(
@@ -939,6 +947,34 @@ class StudyServiceTest(
             result
                 .filter { it.status == CardLearningStatus.REVIEW }
                 .map { it.cardId } shouldContainExactly orderedCardId
+        }
+
+        context("세션을 시작한 tz과 클라이언트의 tz가 다를 경우 클라이언트 기준으로 판단한다") {
+            val southZoneId = ZoneId.of("America/Los_Angeles") // 서쪽 (UTC-7)
+            val eastZoneId = ZoneId.of("Pacific/Auckland") // 동쪽 (UTC+12)
+
+            it("시작한 tz 기준으로는 만료지만 클라이언트 tz는 만료가 아니라면 큐를 반환한다") {
+                val session = createSession()
+                val result = studyService.getStudySessionCardQueue(
+                    userId = USER_ID,
+                    sessionId = session.id,
+                    now = Instant.parse("2026-05-20T00:00:00Z"), // 시작한 kst 기준으로는 만료, 서쪽에 있는 시간대 기준으로는 05-19으로 만료가 아님
+                    timezone = southZoneId,
+                )
+                result shouldBe emptyList()
+            }
+
+            it("시작한 tz 기준으로는 만료가 아니지만, 클라이언트 tz는 만료라면 SessionExpiredException을 던진다") {
+                val session = createSession()
+                shouldThrow<SessionExpiredException> {
+                    studyService.getStudySessionCardQueue(
+                        userId = USER_ID,
+                        sessionId = session.id,
+                        now = Instant.parse("2026-05-19T17:00:00Z"), // 시작한 kst 기준으로는 만료가 아니지만, 더 동쪽에 있는 시간대 기준으로는 50-20으로 만료
+                        timezone = eastZoneId,
+                    )
+                }
+            }
         }
     }
 }) {

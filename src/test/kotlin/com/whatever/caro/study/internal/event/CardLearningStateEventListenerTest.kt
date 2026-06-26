@@ -111,6 +111,7 @@ class CardLearningStateEventListenerTest(
                         userId = 1L,
                         deletedCardIds = cardIds,
                         deletedAt = deletedAt,
+                        clientTimezone = kstZoneId,
                     ),
                 )
             }
@@ -149,6 +150,7 @@ class CardLearningStateEventListenerTest(
                         userId = 1L,
                         deletedCardIds = clsList.map { it.cardId }.toSet(), // 모든 cls 삭제
                         deletedAt = now,
+                        clientTimezone = kstZoneId,
                     ),
                 )
             }
@@ -183,6 +185,7 @@ class CardLearningStateEventListenerTest(
                         userId = 1L,
                         deletedCardIds = setOf(999L),
                         deletedAt = now,
+                        clientTimezone = kstZoneId,
                     ),
                 )
             }
@@ -204,6 +207,7 @@ class CardLearningStateEventListenerTest(
                 userId = 1L,
                 deletedCardIds = setOf(cls.cardId),
                 deletedAt = firstDeletedAt,
+                clientTimezone = kstZoneId,
             )
 
             transactionTemplate.execute {
@@ -236,6 +240,7 @@ class CardLearningStateEventListenerTest(
                         userId = 1L,
                         deletedCardIds = setOf(cls.cardId),
                         deletedAt = now,
+                        clientTimezone = kstZoneId,
                     ),
                 )
                 status.setRollbackOnly()

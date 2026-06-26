@@ -108,7 +108,7 @@ class StudyServiceOnCardDeletionTest(
                 // CLS 0장 → ACTIVE였다면 recalculateGoals(0,0)로 goal이 5,5 → 0,0까지 떨어질 조건
                 // 하지만 COMPLETED이므로 early-return되어 5,5 그대로여야 한다
 
-                studyService.adjustGoalsOnCardDeletion(now = baseNow, userId = USER_ID, deckId = DECK_ID)
+                studyService.adjustGoalsOnCardDeletion(now = baseNow, timezone = kstZoneId, userId = USER_ID, deckId = DECK_ID)
 
                 val persisted = studySessionRepository.findByIdOrNull(session.id)!!
                 persisted.newCardsGoal shouldBe 5
@@ -127,7 +127,7 @@ class StudyServiceOnCardDeletionTest(
                 // CLS 0장 → ACTIVE였다면 recalculateGoals(0,0)로 goal이 5,5 → 0,0까지 떨어질 조건
                 // 하지만 STOPPED이므로 early-return되어 5,5 그대로여야 한다
 
-                studyService.adjustGoalsOnCardDeletion(now = baseNow, userId = USER_ID, deckId = DECK_ID)
+                studyService.adjustGoalsOnCardDeletion(now = baseNow, timezone = kstZoneId, userId = USER_ID, deckId = DECK_ID)
 
                 val persisted = studySessionRepository.findByIdOrNull(session.id)!!
                 persisted.status shouldBe StudySessionStatus.STOPPED
@@ -143,7 +143,7 @@ class StudyServiceOnCardDeletionTest(
                     reviewCardsGoal = 5,
                 )
 
-                studyService.adjustGoalsOnCardDeletion(now = baseNow, userId = USER_ID, deckId = DECK_ID)
+                studyService.adjustGoalsOnCardDeletion(now = baseNow, timezone = kstZoneId, userId = USER_ID, deckId = DECK_ID)
 
                 val persisted = studySessionRepository.findByIdOrNull(session.id)!!
                 persisted.newCardsGoal shouldBe 5
@@ -152,7 +152,7 @@ class StudyServiceOnCardDeletionTest(
             }
 
             it("세션이 없으면 아무 일도 발생하지 않는다") {
-                studyService.adjustGoalsOnCardDeletion(now = baseNow, userId = USER_ID, deckId = DECK_ID)
+                studyService.adjustGoalsOnCardDeletion(now = baseNow, timezone = kstZoneId, userId = USER_ID, deckId = DECK_ID)
 
                 studySessionRepository.findAll() shouldBe emptyList()
             }
@@ -176,7 +176,7 @@ class StudyServiceOnCardDeletionTest(
                     lastReviewedAt = session.sessionStart.plus(1, ChronoUnit.MINUTES),
                 )
 
-                studyService.adjustGoalsOnCardDeletion(now = baseNow, userId = USER_ID, deckId = DECK_ID)
+                studyService.adjustGoalsOnCardDeletion(now = baseNow, timezone = kstZoneId, userId = USER_ID, deckId = DECK_ID)
 
                 val persisted = studySessionRepository.findByIdOrNull(session.id)!!
                 // newGoal = min(5, 2+2) = 4
@@ -203,7 +203,7 @@ class StudyServiceOnCardDeletionTest(
                 }
                 cardLearningStateRepository.saveAll(reviewCards)
 
-                studyService.adjustGoalsOnCardDeletion(now = baseNow, userId = USER_ID, deckId = DECK_ID)
+                studyService.adjustGoalsOnCardDeletion(now = baseNow, timezone = kstZoneId, userId = USER_ID, deckId = DECK_ID)
 
                 val persisted = studySessionRepository.findByIdOrNull(session.id)!!
                 // reviewGoal = min(5, 2+1) = 3
@@ -224,7 +224,7 @@ class StudyServiceOnCardDeletionTest(
                     cardLearningStateRepository.save(this)
                 }
 
-                studyService.adjustGoalsOnCardDeletion(now = baseNow, userId = USER_ID, deckId = DECK_ID)
+                studyService.adjustGoalsOnCardDeletion(now = baseNow, timezone = kstZoneId, userId = USER_ID, deckId = DECK_ID)
 
                 val persisted = studySessionRepository.findByIdOrNull(session.id)!!
                 // newGoal = min(5, 2+2) = 4
@@ -251,7 +251,7 @@ class StudyServiceOnCardDeletionTest(
                     nextReviewAt = s.nextSessionStart,
                 )
 
-                studyService.adjustGoalsOnCardDeletion(now = baseNow, userId = USER_ID, deckId = DECK_ID)
+                studyService.adjustGoalsOnCardDeletion(now = baseNow, timezone = kstZoneId, userId = USER_ID, deckId = DECK_ID)
 
                 val persisted = studySessionRepository.findByIdOrNull(s.id)!!
                 // reviewGoal = min(5, 0+1) = 1
@@ -278,7 +278,7 @@ class StudyServiceOnCardDeletionTest(
                     lastReviewedAt = session.sessionStart,
                 )
 
-                studyService.adjustGoalsOnCardDeletion(now = baseNow, userId = USER_ID, deckId = DECK_ID)
+                studyService.adjustGoalsOnCardDeletion(now = baseNow, timezone = kstZoneId, userId = USER_ID, deckId = DECK_ID)
 
                 val persisted = studySessionRepository.findByIdOrNull(session.id)!!
                 // newGoal = min(5, 0+1) = 1
@@ -317,13 +317,29 @@ class StudyServiceOnCardDeletionTest(
                     nextReviewAt = session.nextSessionStart.minusSeconds(1),
                 )
 
-                studyService.adjustGoalsOnCardDeletion(now = baseNow, userId = USER_ID, deckId = DECK_ID)
+                studyService.adjustGoalsOnCardDeletion(now = baseNow, timezone = kstZoneId, userId = USER_ID, deckId = DECK_ID)
 
                 val persisted = studySessionRepository.findByIdOrNull(session.id)!!
                 // 내 deck 카드만 계산되므로
                 persisted.newCardsGoal shouldBe 1 // newGoal = min(5, 0+1) = 1
                 persisted.reviewCardsGoal shouldBe 1 // reviewGoal = min(5, 0+1) = 1
                 persisted.status shouldBe StudySessionStatus.ACTIVE
+            }
+        }
+
+        context("세션 저장 tz와 클라이언트 tz이 다른 경우") {
+
+            it("세션 tz 기준 만료지만 클라이언트 tz 기준 만료가 아니라면 goal 보정이 수행된다") {
+                val southZoneId = ZoneId.of("America/Los_Angeles")
+                val session = createSession(newCardsGoal = 5, reviewCardsGoal = 5)
+                val travelNow = Instant.parse("2026-06-03T20:00:00Z") // la 기준으로는 유효, kst 기준으로는 만료
+
+                studyService.adjustGoalsOnCardDeletion(now = travelNow, timezone = southZoneId, userId = USER_ID, deckId = DECK_ID)
+
+                val adjustedSession = studySessionRepository.findByIdOrNull(session.id)!!
+                adjustedSession.status shouldBe StudySessionStatus.COMPLETED
+                adjustedSession.newCardsGoal shouldBe 0
+                adjustedSession.reviewCardsGoal shouldBe 0
             }
         }
 
@@ -343,7 +359,7 @@ class StudyServiceOnCardDeletionTest(
                     )
                 }
 
-                studyService.adjustGoalsOnCardDeletion(now = baseNow, userId = USER_ID, deckId = DECK_ID)
+                studyService.adjustGoalsOnCardDeletion(now = baseNow, timezone = kstZoneId, userId = USER_ID, deckId = DECK_ID)
 
                 val persisted = studySessionRepository.findByIdOrNull(session.id)!!
                 // reviewGoal = min(10, 5+4) = 9
@@ -360,7 +376,7 @@ class StudyServiceOnCardDeletionTest(
                 )
                 // 학습 가능한 카드 0장
 
-                studyService.adjustGoalsOnCardDeletion(now = baseNow, userId = USER_ID, deckId = DECK_ID)
+                studyService.adjustGoalsOnCardDeletion(now = baseNow, timezone = kstZoneId, userId = USER_ID, deckId = DECK_ID)
 
                 val persisted = studySessionRepository.findByIdOrNull(session.id)!!
                 persisted.status shouldBe StudySessionStatus.COMPLETED
@@ -378,7 +394,7 @@ class StudyServiceOnCardDeletionTest(
                 )
                 // 학습 가능한 카드 0장
 
-                studyService.adjustGoalsOnCardDeletion(now = baseNow, userId = USER_ID, deckId = DECK_ID)
+                studyService.adjustGoalsOnCardDeletion(now = baseNow, timezone = kstZoneId, userId = USER_ID, deckId = DECK_ID)
 
                 val persisted = studySessionRepository.findByIdOrNull(session.id)!!
                 persisted.status shouldBe StudySessionStatus.COMPLETED
