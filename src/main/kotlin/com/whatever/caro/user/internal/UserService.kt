@@ -56,7 +56,7 @@ class UserService(
                 user = user,
                 provider = provider,
                 providerUserId = providerUserId,
-                email = email,
+                encryptedEmail = email,
             )
             socialAccountRepository.save(socialAccount)
 
