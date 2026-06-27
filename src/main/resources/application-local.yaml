@@ -25,8 +25,9 @@ app:
         - local-apple-client-id-1
         - local-apple-client-id-2
   email:
-    encryption-key: ${EMAIL_ENCRYPTION_KEY}
-    blind-index-key: ${EMAIL_BLIND_INDEX_KEY}
+    # 로컬은 Infisical 주입 키 사용. 미주입(테스트 등) 시 더미 키로 폴백 (prod 프로필엔 기본값 두지 말 것)
+    encryption-key: ${EMAIL_ENCRYPTION_KEY:dGVzdC1lbmNyeXB0aW9uLWtleS0wMTIzNDU2Nzg5YWI=}
+    blind-index-key: ${EMAIL_BLIND_INDEX_KEY:dGVzdC1ibGluZGluZGV4LWtleS0wMTIzNDU2Nzg5YWI=}
 
 logging:
   level:
