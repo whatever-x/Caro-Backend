@@ -26,6 +26,9 @@ class User(
     @Column(name = "encrypted_primary_email", nullable = true)
     var encryptedPrimaryEmail: String? = null,
 
+    @Column(name = "hashed_primary_email", nullable = true)
+    var hashedPrimaryEmail: String? = null,
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     var status: UserStatus = UserStatus.SUSPENDED,

@@ -36,6 +36,9 @@ class SocialAccount(
     @Column(name = "encrypted_email", nullable = true)
     @Convert(converter = EmailCryptoConverter::class)
     var encryptedEmail: String? = null,
+
+    @Column(name = "hashed_email", nullable = true)
+    var hashedEmail: String? = null,
 ) : BaseTimeEntity() {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
