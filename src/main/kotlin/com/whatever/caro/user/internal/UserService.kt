@@ -7,6 +7,7 @@ import com.whatever.caro.user.UserStatus
 import com.whatever.caro.user.exception.AlreadyCompletedException
 import com.whatever.caro.user.exception.NicknameDuplicatedException
 import com.whatever.caro.user.exception.UserNotFoundException
+import com.whatever.caro.user.internal.encrypt.EmailHasher
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.data.repository.findByIdOrNull
@@ -18,6 +19,7 @@ private val logger = KotlinLogging.logger {}
 
 @Service
 class UserService(
+    private val emailHasher: EmailHasher,
     private val userRepository: UserRepository,
     private val socialAccountRepository: SocialAccountRepository,
 ) : UserApi {
@@ -46,9 +48,12 @@ class UserService(
     ): UserInfo {
         try {
             val tempNickname = "temp_${UUID.randomUUID().toString().take(8)}"
+            val hashedSocialEmail = emailHasher.hash(email)
             val user = User(
                 nickname = tempNickname,
                 isTermsAgreed = false,
+                encryptedPrimaryEmail = email,
+                hashedPrimaryEmail = hashedSocialEmail,
             )
             userRepository.save(user)
 
@@ -57,6 +62,7 @@ class UserService(
                 provider = provider,
                 providerUserId = providerUserId,
                 encryptedEmail = email,
+                hashedEmail = hashedSocialEmail,
             )
             socialAccountRepository.save(socialAccount)
 
