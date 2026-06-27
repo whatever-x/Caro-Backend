@@ -37,6 +37,8 @@ private fun basicAuthHeader(
         "REDIS_PASSWORD=dummy",
         "SWAGGER_USERNAME=test-user",
         "SWAGGER_PASSWORD=test-pass",
+        "EMAIL_ENCRYPTION_KEY=dGVzdC1lbmNyeXB0aW9uLWtleS0wMTIzNDU2Nzg5YWI=",
+        "EMAIL_BLIND_INDEX_KEY=dGVzdC1ibGluZGluZGV4LWtleS0wMTIzNDU2Nzg5YWI=",
         "management.server.port=8080",
     ],
 )

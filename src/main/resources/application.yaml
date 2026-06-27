@@ -46,6 +46,9 @@ app:
     secret: ${JWT_SECRET}
     access-token-expires-in: 30m
     refresh-token-expires-in: 14d
+  email:
+    encryption-key: ${EMAIL_ENCRYPTION_KEY}
+    blind-index-key: ${EMAIL_BLIND_INDEX_KEY}
   idempotency:
     response-ttl: 24h
     processing-ttl: 30s
