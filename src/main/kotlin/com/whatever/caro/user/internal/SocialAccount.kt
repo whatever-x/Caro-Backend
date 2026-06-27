@@ -31,8 +31,11 @@ class SocialAccount(
     val providerUserId: String,
 
     @Column
-    @Convert(converter = EmailCryptoConverter::class)
     var email: String? = null,
+
+    @Column(name = "encrypted_email", nullable = true)
+    @Convert(converter = EmailCryptoConverter::class)
+    var encryptedEmail: String? = null,
 ) : BaseTimeEntity() {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
