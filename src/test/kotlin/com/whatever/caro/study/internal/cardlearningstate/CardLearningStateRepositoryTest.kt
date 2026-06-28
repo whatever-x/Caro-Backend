@@ -9,8 +9,7 @@ import io.kotest.matchers.shouldBe
 import org.springframework.context.annotation.Import
 import org.springframework.modulith.test.ApplicationModuleTest
 import java.time.Instant
-import java.time.LocalDateTime
-import java.time.ZoneId
+import java.time.LocalDate
 
 @ApplicationModuleTest(extraIncludes = ["common"])
 @Import(TestcontainersConfiguration::class, MockDeckPresetApiConfig::class)
@@ -18,12 +17,8 @@ class CardLearningStateRepositoryTest(
     private val cardLearningStateRepository: CardLearningStateRepository,
 ) : DescribeSpec({
 
-    val kstZoneId = ZoneId.of("Asia/Seoul")
-
-    // 기준: nextSessionStart = KST 2026-05-19 04:00:00 = UTC 2026-05-18 19:00:00
-    val nextSessionStart = LocalDateTime.parse("2026-05-19T04:00:00").atZone(kstZoneId).toInstant()
-    val beforeCutoff = LocalDateTime.parse("2026-05-19T03:59:59").atZone(kstZoneId).toInstant()
-    val afterCutoff = LocalDateTime.parse("2026-05-19T04:00:01").atZone(kstZoneId).toInstant()
+    val sessionDate: LocalDate = LocalDate.parse("2026-05-18")
+    val deletedAt: Instant = Instant.parse("2026-05-18T19:00:00Z")
 
     afterEach {
         cardLearningStateRepository.deleteAllInBatch()
@@ -34,7 +29,7 @@ class CardLearningStateRepositoryTest(
         deckId: Long = 1L,
         userId: Long = 1L,
         status: CardLearningStatus = CardLearningStatus.REVIEW,
-        nextReviewAt: Instant? = null,
+        nextReviewDate: LocalDate? = null,
     ): CardLearningState =
         cardLearningStateRepository.save(
             CardLearningState(
@@ -42,52 +37,52 @@ class CardLearningStateRepositoryTest(
                 deckId = deckId,
                 userId = userId,
                 status = status,
-                nextReviewAt = nextReviewAt,
+                nextReviewDate = nextReviewDate,
             ),
         )
 
     describe("countTodayReviewCards") {
-        it("다음 리뷰일이 오늘 세션이 끝나기 직전(nextSessionStart -1초)인 카드는 포함된다") {
+        it("다음 복습일이 sessionDate와 같은(경계 포함) 카드는 포함된다") {
             val cls = createCls(
                 cardId = 1L,
-                nextReviewAt = nextSessionStart.minusSeconds(1),
+                nextReviewDate = sessionDate,
             )
 
             val count = cardLearningStateRepository.countTodayReviewCards(
                 userId = cls.userId,
                 deckId = cls.deckId,
-                nextSessionStart = nextSessionStart,
+                today = sessionDate,
             )
 
             count shouldBe 1
         }
 
-        it("다음 리뷰일이 오늘 세션에 포함되지 않은(nextSessionStart와 동일한) 카드는 제외된다") {
+        it("다음 복습일이 sessionDate 다음날인 카드는 제외된다") {
             val cls = createCls(
                 cardId = 1L,
-                nextReviewAt = nextSessionStart,
+                nextReviewDate = sessionDate.plusDays(1),
             )
 
             val count = cardLearningStateRepository.countTodayReviewCards(
                 userId = cls.userId,
                 deckId = cls.deckId,
-                nextSessionStart = nextSessionStart,
+                today = sessionDate,
             )
 
             count shouldBe 0
         }
 
         it("다음 리뷰일이 없는 카드는 제외된다") {
-            // status가 REVIEW이며, nextReviewAt이 null인 카드는 존재할 수 없지만 테스트를 위해 임의 생성
+            // status가 REVIEW이며, nextReviewDate이 null인 카드는 존재할 수 없지만 테스트를 위해 임의 생성
             val cls = createCls(
                 cardId = 1L,
-                nextReviewAt = null,
+                nextReviewDate = null,
             )
 
             val count = cardLearningStateRepository.countTodayReviewCards(
                 userId = cls.userId,
                 deckId = cls.deckId,
-                nextSessionStart = nextSessionStart,
+                today = sessionDate,
             )
 
             count shouldBe 0
@@ -97,13 +92,13 @@ class CardLearningStateRepositoryTest(
             val cls = createCls(
                 cardId = 1L,
                 userId = 1L,
-                nextReviewAt = beforeCutoff,
+                nextReviewDate = sessionDate,
             )
 
             val count = cardLearningStateRepository.countTodayReviewCards(
                 userId = 2L, // other user
                 deckId = cls.deckId,
-                nextSessionStart = nextSessionStart,
+                today = sessionDate,
             )
 
             count shouldBe 0
@@ -113,13 +108,13 @@ class CardLearningStateRepositoryTest(
             val cls = createCls(
                 cardId = 1L,
                 deckId = 1L,
-                nextReviewAt = beforeCutoff,
+                nextReviewDate = sessionDate,
             )
 
             val count = cardLearningStateRepository.countTodayReviewCards(
                 userId = cls.userId,
                 deckId = 2L, // other deck
-                nextSessionStart = nextSessionStart,
+                today = sessionDate,
             )
 
             count shouldBe 0
@@ -128,21 +123,21 @@ class CardLearningStateRepositoryTest(
         it("매칭 조건을 만족하는 여러 카드는 합산된 카운트로 반환된다") {
             createCls(
                 cardId = 1L,
-                nextReviewAt = beforeCutoff,
+                nextReviewDate = sessionDate,
             )
             createCls(
                 cardId = 2L,
-                nextReviewAt = beforeCutoff,
+                nextReviewDate = sessionDate,
             )
             val cls = createCls(
                 cardId = 3L,
-                nextReviewAt = beforeCutoff,
+                nextReviewDate = sessionDate,
             )
 
             val count = cardLearningStateRepository.countTodayReviewCards(
                 userId = cls.userId,
                 deckId = cls.deckId,
-                nextSessionStart = nextSessionStart,
+                today = sessionDate,
             )
 
             count shouldBe 3
@@ -152,7 +147,7 @@ class CardLearningStateRepositoryTest(
             val count = cardLearningStateRepository.countTodayReviewCards(
                 userId = 1L,
                 deckId = 1L,
-                nextSessionStart = nextSessionStart,
+                today = sessionDate,
             )
 
             count shouldBe 0
@@ -162,13 +157,13 @@ class CardLearningStateRepositoryTest(
             val cls = createCls(
                 cardId = 1L,
                 status = CardLearningStatus.SUSPENDED,
-                nextReviewAt = beforeCutoff,
+                nextReviewDate = sessionDate,
             )
 
             val count = cardLearningStateRepository.countTodayReviewCards(
                 userId = cls.userId,
                 deckId = cls.deckId,
-                nextSessionStart = nextSessionStart,
+                today = sessionDate,
             )
 
             count shouldBe 0
@@ -178,13 +173,13 @@ class CardLearningStateRepositoryTest(
             val cls = createCls(
                 cardId = 1L,
                 status = CardLearningStatus.NEW,
-                nextReviewAt = beforeCutoff,
+                nextReviewDate = sessionDate,
             )
 
             val count = cardLearningStateRepository.countTodayReviewCards(
                 userId = cls.userId,
                 deckId = cls.deckId,
-                nextSessionStart = nextSessionStart,
+                today = sessionDate,
             )
 
             count shouldBe 0
@@ -194,9 +189,9 @@ class CardLearningStateRepositoryTest(
     describe("findAllByUserIdAndCardIdIn") {
         it("요청한 cardIds 전부가 존재할 때 모든 매칭 카드를 반환한다") {
             val clsList = listOf(
-                createCls(cardId = 1L, nextReviewAt = beforeCutoff),
-                createCls(cardId = 2L, nextReviewAt = beforeCutoff),
-                createCls(cardId = 3L, nextReviewAt = beforeCutoff),
+                createCls(cardId = 1L, nextReviewDate = sessionDate),
+                createCls(cardId = 2L, nextReviewDate = sessionDate),
+                createCls(cardId = 3L, nextReviewDate = sessionDate),
             )
             val cardIds = clsList.map { it.cardId }
 
@@ -212,7 +207,7 @@ class CardLearningStateRepositoryTest(
             val cls = createCls(
                 cardId = 1L,
                 userId = 2L,
-                nextReviewAt = beforeCutoff,
+                nextReviewDate = sessionDate,
             )
 
             val result = cardLearningStateRepository.findAllByUserIdAndCardIdInAndDeletedAtIsNull(
@@ -226,7 +221,7 @@ class CardLearningStateRepositoryTest(
         it("빈 cardIds 컬렉션은 빈 결과를 반환한다") {
             val cls = createCls(
                 cardId = 1L,
-                nextReviewAt = beforeCutoff,
+                nextReviewDate = sessionDate,
             )
 
             val result = cardLearningStateRepository.findAllByUserIdAndCardIdInAndDeletedAtIsNull(
@@ -240,7 +235,7 @@ class CardLearningStateRepositoryTest(
         it("요청한 cardIds 중 존재하는 카드만 부분 매칭으로 반환된다 (derived query IN 절 가드)") {
             val cls = createCls(
                 cardId = 1L,
-                nextReviewAt = beforeCutoff,
+                nextReviewDate = sessionDate,
             )
 
             val result = cardLearningStateRepository.findAllByUserIdAndCardIdInAndDeletedAtIsNull(
@@ -257,7 +252,7 @@ class CardLearningStateRepositoryTest(
             val cls = createCls(
                 cardId = 1L,
                 status = CardLearningStatus.NEW,
-                nextReviewAt = null,
+                nextReviewDate = null,
             )
 
             val count = cardLearningStateRepository.countNewCards(
@@ -272,7 +267,7 @@ class CardLearningStateRepositoryTest(
             val cls = createCls(
                 cardId = 1L,
                 status = CardLearningStatus.REVIEW,
-                nextReviewAt = beforeCutoff,
+                nextReviewDate = sessionDate,
             )
 
             val count = cardLearningStateRepository.countNewCards(
@@ -287,7 +282,7 @@ class CardLearningStateRepositoryTest(
             val cls = createCls(
                 cardId = 1L,
                 status = CardLearningStatus.SUSPENDED,
-                nextReviewAt = null,
+                nextReviewDate = null,
             )
 
             val count = cardLearningStateRepository.countNewCards(
@@ -303,7 +298,7 @@ class CardLearningStateRepositoryTest(
                 cardId = 1L,
                 userId = 1L,
                 status = CardLearningStatus.NEW,
-                nextReviewAt = null,
+                nextReviewDate = null,
             )
 
             val count = cardLearningStateRepository.countNewCards(
@@ -319,7 +314,7 @@ class CardLearningStateRepositoryTest(
                 cardId = 1L,
                 deckId = 1L,
                 status = CardLearningStatus.NEW,
-                nextReviewAt = null,
+                nextReviewDate = null,
             )
 
             val count = cardLearningStateRepository.countNewCards(
@@ -334,17 +329,17 @@ class CardLearningStateRepositoryTest(
             createCls(
                 cardId = 1L,
                 status = CardLearningStatus.NEW,
-                nextReviewAt = null,
+                nextReviewDate = null,
             )
             createCls(
                 cardId = 2L,
                 status = CardLearningStatus.NEW,
-                nextReviewAt = null,
+                nextReviewDate = null,
             )
             val cls = createCls(
                 cardId = 3L,
                 status = CardLearningStatus.NEW,
-                nextReviewAt = null,
+                nextReviewDate = null,
             )
 
             val count = cardLearningStateRepository.countNewCards(
@@ -355,12 +350,12 @@ class CardLearningStateRepositoryTest(
             count shouldBe 3
         }
 
-        it("status=NEW 카드는 nextReviewAt 값과 무관하게 카운트에 포함된다") {
-            // 정상적인 데이터라면 NEW 카드는 nextReviewAt이 존재하지 않음, 그러나 존재하더라도 무시
+        it("status=NEW 카드는 nextReviewDate 값과 무관하게 카운트에 포함된다") {
+            // 정상적인 데이터라면 NEW 카드는 nextReviewDate가 존재하지 않음, 그러나 존재하더라도 무시
             val cls = createCls(
                 cardId = 1L,
                 status = CardLearningStatus.NEW,
-                nextReviewAt = beforeCutoff,
+                nextReviewDate = sessionDate,
             )
 
             val count = cardLearningStateRepository.countNewCards(
@@ -401,9 +396,9 @@ class CardLearningStateRepositoryTest(
 
         it("REVIEW 상태 카드와 soft delete된 NEW 카드는 집계되지 않는다") {
             createCls(cardId = 1L, deckId = 1L, status = CardLearningStatus.NEW)
-            createCls(cardId = 2L, deckId = 1L, status = CardLearningStatus.REVIEW, nextReviewAt = beforeCutoff)
+            createCls(cardId = 2L, deckId = 1L, status = CardLearningStatus.REVIEW, nextReviewDate = sessionDate)
             val deleted = createCls(cardId = 3L, deckId = 1L, status = CardLearningStatus.NEW)
-            deleted.softDelete(deletedAt = beforeCutoff)
+            deleted.softDelete(deletedAt = deletedAt)
             cardLearningStateRepository.save(deleted)
 
             val result = cardLearningStateRepository.countNewCardsByDeckIds(
@@ -416,28 +411,28 @@ class CardLearningStateRepositoryTest(
 
     // TODO userId 필터 추가 시 격리 케이스 추가
     describe("countReviewCardsByDeckIds") {
-        it("nextReviewAt이 nextSessionStart 직전(1초 전)인 카드는 포함되고, 동일한 카드는 제외된다") {
-            createCls(cardId = 1L, deckId = 1L, nextReviewAt = nextSessionStart.minusSeconds(1))
-            createCls(cardId = 2L, deckId = 2L, nextReviewAt = nextSessionStart)
+        it("nextReviewDate가 sessionDate인 카드는 포함되고, 다음날인 카드는 제외된다") {
+            createCls(cardId = 1L, deckId = 1L, nextReviewDate = sessionDate)
+            createCls(cardId = 2L, deckId = 2L, nextReviewDate = sessionDate.plusDays(1))
 
             val result = cardLearningStateRepository.countReviewCardsByDeckIds(
                 deckIds = setOf(1L, 2L),
-                nextSessionStart = nextSessionStart,
+                today = sessionDate,
             )
 
             result.associate { it.deckId to it.count } shouldBe mapOf(1L to 1L)
         }
 
         it("NEW 상태 카드와 soft delete된 REVIEW 카드는 집계되지 않는다") {
-            createCls(cardId = 1L, deckId = 1L, nextReviewAt = beforeCutoff)
-            createCls(cardId = 2L, deckId = 1L, status = CardLearningStatus.NEW, nextReviewAt = beforeCutoff)
-            val deleted = createCls(cardId = 3L, deckId = 1L, nextReviewAt = beforeCutoff)
-            deleted.softDelete(deletedAt = beforeCutoff)
+            createCls(cardId = 1L, deckId = 1L, nextReviewDate = sessionDate)
+            createCls(cardId = 2L, deckId = 1L, status = CardLearningStatus.NEW, nextReviewDate = sessionDate)
+            val deleted = createCls(cardId = 3L, deckId = 1L, nextReviewDate = sessionDate)
+            deleted.softDelete(deletedAt = deletedAt)
             cardLearningStateRepository.save(deleted)
 
             val result = cardLearningStateRepository.countReviewCardsByDeckIds(
                 deckIds = setOf(1L),
-                nextSessionStart = nextSessionStart,
+                today = sessionDate,
             )
 
             result.associate { it.deckId to it.count } shouldBe mapOf(1L to 1L)

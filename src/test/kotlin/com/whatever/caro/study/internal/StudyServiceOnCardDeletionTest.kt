@@ -15,6 +15,7 @@ import org.springframework.data.repository.findByIdOrNull
 import org.springframework.modulith.test.ApplicationModuleTest
 import java.math.BigDecimal
 import java.time.Instant
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.temporal.ChronoUnit
@@ -30,7 +31,7 @@ class StudyServiceOnCardDeletionTest(
     val kstZoneId = ZoneId.of("Asia/Seoul")
     val dayCutoffHour = 4
     val baseNow: Instant = LocalDateTime.parse("2026-06-03T10:00:00").atZone(kstZoneId).toInstant()
-    val yesterday: Instant = baseNow.minus(1, ChronoUnit.DAYS)
+    val yesterday: Instant = baseNow.minus(1L, ChronoUnit.DAYS)
 
     afterTest {
         studySessionRepository.deleteAllInBatch()
@@ -75,8 +76,8 @@ class StudyServiceOnCardDeletionTest(
         repetitions: Int = 0,
         lapses: Int = 0,
         consecutiveAgainCount: Int = 0,
-        lastReviewedAt: Instant? = null,
-        nextReviewAt: Instant? = null,
+        lastReviewedDate: LocalDate? = null,
+        nextReviewDate: LocalDate? = null,
     ): CardLearningState =
         cardLearningStateRepository.save(
             CardLearningState(
@@ -89,8 +90,8 @@ class StudyServiceOnCardDeletionTest(
                 repetitions = repetitions,
                 lapses = lapses,
                 consecutiveAgainCount = consecutiveAgainCount,
-                lastReviewedAt = lastReviewedAt,
-                nextReviewAt = nextReviewAt,
+                lastReviewedDate = lastReviewedDate,
+                nextReviewDate = nextReviewDate,
             ),
         )
 
@@ -160,20 +161,20 @@ class StudyServiceOnCardDeletionTest(
 
         context("adjustGoalsOnCardDeletion의 available 카드 계산") {
 
-            it("세션 중 평가된(lastReviewedAt이 sessionStart 이후) NEW 카드는 availableNew에서 제외된다") {
+            it("오늘(sessionDate) 평가된 NEW 카드는 availableNew에서 제외된다") {
                 val session = createSession(
                     newCardsGoal = 5,
                     newCardsStudied = 2,
                 )
                 // 처음 학습하는 카드와 어제 학습했던 카드이기 때문에 availableNew에 포함되는 카드 2장
-                createCls(cardId = 1L, status = CardLearningStatus.NEW, lastReviewedAt = null)
-                createCls(cardId = 2L, status = CardLearningStatus.NEW, lastReviewedAt = session.sessionStart.minus(1, ChronoUnit.DAYS))
+                createCls(cardId = 1L, status = CardLearningStatus.NEW, lastReviewedDate = null)
+                createCls(cardId = 2L, status = CardLearningStatus.NEW, lastReviewedDate = session.sessionDate.minusDays(1L))
 
-                // availableNew에서 제외되는 카드 1장 (lastReviewedAt >= sessionStart)
+                // availableNew에서 제외되는 카드 1장 (lastReviewedDate == sessionDate)
                 createCls(
                     cardId = 3L,
                     status = CardLearningStatus.NEW,
-                    lastReviewedAt = session.sessionStart.plus(1, ChronoUnit.MINUTES),
+                    lastReviewedDate = session.sessionDate,
                 )
 
                 studyService.adjustGoalsOnCardDeletion(now = baseNow, timezone = kstZoneId, userId = USER_ID, deckId = DECK_ID)
@@ -194,7 +195,7 @@ class StudyServiceOnCardDeletionTest(
                     createCls(
                         i.toLong(),
                         status = CardLearningStatus.REVIEW,
-                        nextReviewAt = session.nextSessionStart.minusSeconds(1),
+                        nextReviewDate = session.sessionDate,
                     )
                 }
                 // 3장 softDelete, availableReview에 포함될 수 있는 카드는 1장
@@ -232,8 +233,8 @@ class StudyServiceOnCardDeletionTest(
                 persisted.status shouldBe StudySessionStatus.ACTIVE
             }
 
-            it("오늘 세션에 포함되지 않는(nextReviewAt이 다음 세션의 시작 시간과 같은) 경우 REVIEW 카드는 availableReview에서 제외된다") {
-                // [sessionStart, sessionEnd] < card.nextReviewAt
+            it("다음 복습일이 미래(sessionDate 다음날)인 REVIEW 카드는 availableReview에서 제외된다") {
+                // card.nextReviewDate > sessionDate
                 val s = createSession(
                     reviewCardsGoal = 5,
                     reviewCardsStudied = 0,
@@ -242,13 +243,13 @@ class StudyServiceOnCardDeletionTest(
                 createCls(
                     30L,
                     status = CardLearningStatus.REVIEW,
-                    nextReviewAt = s.nextSessionStart.minusSeconds(1),
+                    nextReviewDate = s.sessionDate,
                 )
                 // 다음 세션에 복습 대상이므로 포함 안되는 카드
                 createCls(
                     31L,
                     status = CardLearningStatus.REVIEW,
-                    nextReviewAt = s.nextSessionStart,
+                    nextReviewDate = s.sessionDate.plus(1, ChronoUnit.DAYS),
                 )
 
                 studyService.adjustGoalsOnCardDeletion(now = baseNow, timezone = kstZoneId, userId = USER_ID, deckId = DECK_ID)
@@ -259,23 +260,23 @@ class StudyServiceOnCardDeletionTest(
                 persisted.status shouldBe StudySessionStatus.ACTIVE
             }
 
-            it("이번 세션의 경계에 학습한(lastReviewedAt이 sessionStart 정각인) NEW 카드는 availableNew에서 제외된다") {
-                // card.lastReviewedAt <= [sessionStart, sessionEnd]
+            it("오늘(sessionDate) 학습한 NEW 카드는 availableNew에서 제외된다") {
+                // card.lastReviewedDate == sessionDate
                 val session = createSession(
                     newCardsGoal = 5,
                     newCardsStudied = 0,
                 )
-                // 이번 세션 1초 전에 학습합 NEW 카드는 이전 세션에 포함되므로 availableNew에 포함
+                // 어제(sessionDate 이전) 학습한 NEW 카드는 availableNew에 포함
                 createCls(
                     cardId = 1L,
                     status = CardLearningStatus.NEW,
-                    lastReviewedAt = session.sessionStart.minusSeconds(1),
+                    lastReviewedDate = session.sessionDate.minusDays(1L),
                 )
-                // 이번 세션의 시작 경계에 학습한 카드는 같은 세션 학습이므로 제외
+                // 오늘(sessionDate) 학습한 카드는 같은 날 학습이므로 제외
                 createCls(
                     cardId = 2L,
                     status = CardLearningStatus.NEW,
-                    lastReviewedAt = session.sessionStart,
+                    lastReviewedDate = session.sessionDate,
                 )
 
                 studyService.adjustGoalsOnCardDeletion(now = baseNow, timezone = kstZoneId, userId = USER_ID, deckId = DECK_ID)
@@ -298,7 +299,7 @@ class StudyServiceOnCardDeletionTest(
                 createCls(
                     cardId = 2L,
                     status = CardLearningStatus.REVIEW,
-                    nextReviewAt = session.nextSessionStart.minusSeconds(1),
+                    nextReviewDate = session.sessionDate,
                 )
                 // 다른 deck의 카드는 제외
                 createCls(cardId = 3L, deckId = 2L, status = CardLearningStatus.NEW)
@@ -306,7 +307,7 @@ class StudyServiceOnCardDeletionTest(
                     cardId = 4L,
                     deckId = 2L,
                     status = CardLearningStatus.REVIEW,
-                    nextReviewAt = session.nextSessionStart.minusSeconds(1),
+                    nextReviewDate = session.sessionDate,
                 )
                 // 다른 user의 카드는 제외
                 createCls(cardId = 5L, userId = 2L, status = CardLearningStatus.NEW)
@@ -314,7 +315,7 @@ class StudyServiceOnCardDeletionTest(
                     cardId = 6L,
                     userId = 2L,
                     status = CardLearningStatus.REVIEW,
-                    nextReviewAt = session.nextSessionStart.minusSeconds(1),
+                    nextReviewDate = session.sessionDate,
                 )
 
                 studyService.adjustGoalsOnCardDeletion(now = baseNow, timezone = kstZoneId, userId = USER_ID, deckId = DECK_ID)
@@ -355,7 +356,7 @@ class StudyServiceOnCardDeletionTest(
                     createCls(
                         i.toLong(),
                         status = CardLearningStatus.REVIEW,
-                        nextReviewAt = session.nextSessionStart.minusSeconds(1),
+                        nextReviewDate = session.sessionDate,
                     )
                 }
 

@@ -33,6 +33,7 @@ import org.springframework.data.repository.findByIdOrNull
 import org.springframework.modulith.test.ApplicationModuleTest
 import java.math.BigDecimal
 import java.time.Instant
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.temporal.ChronoUnit
@@ -107,8 +108,8 @@ class EvaluationServiceTest(
         repetitions: Int = 0,
         lapses: Int = 0,
         consecutiveAgainCount: Int = 0,
-        lastReviewedAt: Instant? = null,
-        nextReviewAt: Instant? = null,
+        lastReviewedDate: LocalDate? = null,
+        nextReviewDate: LocalDate? = null,
     ): CardLearningState =
         cardLearningStateRepository.save(
             CardLearningState(
@@ -121,8 +122,8 @@ class EvaluationServiceTest(
                 repetitions = repetitions,
                 lapses = lapses,
                 consecutiveAgainCount = consecutiveAgainCount,
-                lastReviewedAt = lastReviewedAt,
-                nextReviewAt = nextReviewAt,
+                lastReviewedDate = lastReviewedDate,
+                nextReviewDate = nextReviewDate,
             ),
         )
 
@@ -214,7 +215,7 @@ class EvaluationServiceTest(
                 val updatedCls = cardLearningStateRepository.findByIdOrNull(cls.id)!!
                 updatedCls.easeFactor shouldBeGreaterThan cls.easeFactor
                 updatedCls.intervalDays shouldBeGreaterThan cls.intervalDays
-                updatedCls.nextReviewAt shouldBe baseNow.plus(updatedCls.intervalDays.toLong(), ChronoUnit.DAYS)
+                updatedCls.nextReviewDate shouldBe session.sessionDate.plusDays(updatedCls.intervalDays.toLong())
                 updatedCls.status shouldBe CardLearningStatus.REVIEW
 
                 val log = reviewLogRepository.findAllByStudySessionId(session.id).first()
@@ -231,8 +232,8 @@ class EvaluationServiceTest(
                     intervalDays = 10,
                     easeFactor = BigDecimal("2.50"),
                     repetitions = 2,
-                    lastReviewedAt = baseNow.minus(10, ChronoUnit.DAYS),
-                    nextReviewAt = baseNow,
+                    lastReviewedDate = session.sessionDate.minusDays(10L),
+                    nextReviewDate = session.sessionDate,
                 )
 
                 evaluationService.evaluate(

@@ -24,6 +24,7 @@ import org.springframework.transaction.support.TransactionTemplate
 import java.math.BigDecimal
 import java.time.Clock
 import java.time.Instant
+import java.time.LocalDate
 import java.time.ZoneId
 import java.util.concurrent.TimeUnit
 
@@ -49,8 +50,8 @@ class CardLearningStateEventListenerTest(
         repetitions: Int = 0,
         lapses: Int = 0,
         consecutiveAgainCount: Int = 0,
-        lastReviewedAt: Instant? = null,
-        nextReviewAt: Instant? = null,
+        lastReviewedDate: LocalDate? = null,
+        nextReviewDate: LocalDate? = null,
     ): CardLearningState =
         cardLearningStateRepository.save(
             CardLearningState(
@@ -63,8 +64,8 @@ class CardLearningStateEventListenerTest(
                 repetitions = repetitions,
                 lapses = lapses,
                 consecutiveAgainCount = consecutiveAgainCount,
-                lastReviewedAt = lastReviewedAt,
-                nextReviewAt = nextReviewAt,
+                lastReviewedDate = lastReviewedDate,
+                nextReviewDate = nextReviewDate,
             ),
         )
 
@@ -137,7 +138,7 @@ class CardLearningStateEventListenerTest(
                 createCls(
                     cardId = i,
                     status = CardLearningStatus.REVIEW,
-                    nextReviewAt = session.nextSessionStart.minusSeconds(1),
+                    nextReviewDate = session.sessionDate,
                 )
             }
             studySessionRepository.findByIdOrNull(session.id)!!.status shouldBe StudySessionStatus.ACTIVE

@@ -28,6 +28,7 @@ import org.springframework.context.annotation.Import
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.modulith.test.ApplicationModuleTest
 import java.time.Instant
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.temporal.ChronoUnit
@@ -45,6 +46,7 @@ class StudyServiceTest(
     val dayCutoffHour = 4
 
     val baseNow: Instant = LocalDateTime.parse("2026-05-19T10:00:00").atZone(kstZoneId).toInstant()
+    val baseDate: LocalDate = LocalDate.parse("2026-05-19")
     val yesterday: Instant = baseNow.minus(1, ChronoUnit.DAYS)
 
     afterTest {
@@ -87,8 +89,8 @@ class StudyServiceTest(
         status: CardLearningStatus = CardLearningStatus.REVIEW,
         totalReviews: Int = 0,
         consecutiveAgainCount: Int = 0,
-        nextReviewAt: Instant? = null,
-        lastReviewedAt: Instant? = null,
+        nextReviewDate: LocalDate? = null,
+        lastReviewedDate: LocalDate? = null,
     ): CardLearningState =
         cardLearningStateRepository.save(
             CardLearningState(
@@ -98,8 +100,8 @@ class StudyServiceTest(
                 status = status,
                 totalReviews = totalReviews,
                 consecutiveAgainCount = consecutiveAgainCount,
-                nextReviewAt = nextReviewAt,
-                lastReviewedAt = lastReviewedAt,
+                nextReviewDate = nextReviewDate,
+                lastReviewedDate = lastReviewedDate,
             ),
         )
 
@@ -386,7 +388,7 @@ class StudyServiceTest(
                 createCls(
                     cardId = (100 + i).toLong(),
                     status = CardLearningStatus.REVIEW,
-                    nextReviewAt = baseNow,
+                    nextReviewDate = baseDate,
                 )
             }
 
@@ -427,7 +429,7 @@ class StudyServiceTest(
                 createCls(
                     cardId = (100 + i).toLong(),
                     status = CardLearningStatus.REVIEW,
-                    nextReviewAt = baseNow,
+                    nextReviewDate = baseDate,
                 )
             }
 
@@ -635,7 +637,7 @@ class StudyServiceTest(
                     createCls(
                         cardId = (100 + i).toLong(),
                         status = CardLearningStatus.REVIEW,
-                        nextReviewAt = baseNow,
+                        nextReviewDate = baseDate,
                     )
                 }
 
@@ -790,18 +792,18 @@ class StudyServiceTest(
                 reviewCardsGoal = 5,
                 reviewStudied = 2,
             )
-            val beforeSessionStart = session.sessionStart.minus(1, ChronoUnit.MILLIS)
+            val beforeSessionDate = baseDate.minusDays(1L)
             repeat(10) { i ->
                 createCls(
                     cardId = (i + 1).toLong(),
                     status = CardLearningStatus.NEW,
-                    lastReviewedAt = beforeSessionStart,
+                    lastReviewedDate = beforeSessionDate,
                 )
                 createCls(
                     cardId = (10 + i + 1).toLong(),
                     status = CardLearningStatus.REVIEW,
-                    nextReviewAt = baseNow,
-                    lastReviewedAt = beforeSessionStart,
+                    nextReviewDate = baseDate,
+                    lastReviewedDate = beforeSessionDate,
                 )
             }
 
@@ -886,17 +888,16 @@ class StudyServiceTest(
 
         it("세션 진입 이후 평가된 카드는 같은 세션에서 다시 나오지 않는다") {
             val session = createSession()
-            val afterSessionStart = session.sessionStart.plus(1, ChronoUnit.MINUTES)
             createCls(
                 cardId = 1L,
                 status = CardLearningStatus.REVIEW,
-                nextReviewAt = baseNow,
-                lastReviewedAt = afterSessionStart, // 세션 시작 이후 평가
+                nextReviewDate = baseDate.plusDays(1L),
+                lastReviewedDate = baseDate, // 오늘(sessionDate)에 평가됨
             )
             createCls(
                 cardId = 2L,
                 status = CardLearningStatus.NEW,
-                lastReviewedAt = afterSessionStart, // 세션 시작 이후 평가
+                lastReviewedDate = baseDate, // 오늘(sessionDate)에 평가됨
             )
 
             val result = studyService.getStudySessionCardQueue(
@@ -910,26 +911,26 @@ class StudyServiceTest(
             result.filter { it.status == CardLearningStatus.REVIEW }.size shouldBe 0
         }
 
-        it("REVIEW queue는 nextReviewAt 기준 오름차순으로 정렬된다") {
+        it("REVIEW queue는 nextReviewDate 기준 오름차순으로 정렬된다") {
             val session = createSession()
-            val justBeforeSessionStart = session.sessionStart.minus(1, ChronoUnit.MILLIS)
+            val justBeforeSessionDate = baseDate.minusDays(1L)
             val thirdReview = createCls(
                 cardId = 1L,
                 status = CardLearningStatus.REVIEW,
-                nextReviewAt = baseNow.minus(1, ChronoUnit.HOURS),
-                lastReviewedAt = justBeforeSessionStart,
+                nextReviewDate = baseDate.minusDays(1L),
+                lastReviewedDate = justBeforeSessionDate,
             )
             val firstReview = createCls(
                 cardId = 2L,
                 status = CardLearningStatus.REVIEW,
-                nextReviewAt = baseNow.minus(3, ChronoUnit.HOURS),
-                lastReviewedAt = justBeforeSessionStart,
+                nextReviewDate = baseDate.minusDays(3L),
+                lastReviewedDate = justBeforeSessionDate,
             )
             val secondReview = createCls(
                 cardId = 3L,
                 status = CardLearningStatus.REVIEW,
-                nextReviewAt = baseNow.minus(2, ChronoUnit.HOURS),
-                lastReviewedAt = justBeforeSessionStart,
+                nextReviewDate = baseDate.minusDays(2L),
+                lastReviewedDate = justBeforeSessionDate,
             )
 
             val result = studyService.getStudySessionCardQueue(
