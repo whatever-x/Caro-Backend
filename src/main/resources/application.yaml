@@ -55,6 +55,9 @@ app:
     apple:
       client-ids: ${APPLE_CLIENT_ID}
       jwks-uri: https://appleid.apple.com/auth/keys
+  schedule:
+    cron:
+      stale-session-sweep: "0 0 4 * * *"
 
 server:
   port: 8080
