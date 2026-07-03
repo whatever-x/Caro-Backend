@@ -21,7 +21,7 @@ class StudySessionRepositoryTest(
     val kstZoneId = ZoneId.of("Asia/Seoul")
     val dayCutoffHour = 4
 
-    afterEach { studySessionRepository.deleteAllInBatch() }
+    afterTest { studySessionRepository.deleteAllInBatch() }
 
     fun saveSessionOn(
         sessionDate: LocalDate,
@@ -78,19 +78,19 @@ class StudySessionRepositoryTest(
 
     describe("findByUserIdAndDeckIdInAndSessionDateBetween") {
         it("여러 deck의 범위 내 세션을 한 번에 조회한다") {
-            val deck1 = saveSessionOn(sessionDate = LocalDate.parse("2026-05-18"), deckId = 1L)
-            val deck2 = saveSessionOn(sessionDate = LocalDate.parse("2026-05-19"), deckId = 2L)
+            val session1 = saveSessionOn(sessionDate = LocalDate.parse("2026-05-18"), deckId = 1L)
+            val session2 = saveSessionOn(sessionDate = LocalDate.parse("2026-05-19"), deckId = 2L)
             saveSessionOn(LocalDate.parse("2026-05-18"), deckId = 3L) // deckIds 밖
             saveSessionOn(LocalDate.parse("2026-05-16"), deckId = 1L) // 범위 밖
 
             val result = studySessionRepository.findByUserIdAndDeckIdInAndSessionDateBetween(
                 userId = 1L,
-                deckIds = setOf(deck1.id, deck2.id),
+                deckIds = setOf(session1.deckId, session2.deckId),
                 fromDate = LocalDate.parse("2026-05-17"),
                 toDate = LocalDate.parse("2026-05-19"),
             )
 
-            result.map { it.id }.shouldContainExactlyInAnyOrder(listOf(deck1.id, deck2.id))
+            result.map { it.id }.shouldContainExactlyInAnyOrder(listOf(session1.id, session2.id))
         }
     }
 
