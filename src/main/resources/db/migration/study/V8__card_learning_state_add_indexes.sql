@@ -6,4 +6,4 @@ CREATE INDEX idx_cls_deck_status_deleted_nextreview
 
 -- user 기준 휴식일 EXISTS
 CREATE INDEX idx_cls_user_status_deleted_nextreview
-    ON card_learning_states (user_id, status, deleted_at, next_review_at);
+    ON card_learning_states (user_id, deleted_at, status, next_review_at);
