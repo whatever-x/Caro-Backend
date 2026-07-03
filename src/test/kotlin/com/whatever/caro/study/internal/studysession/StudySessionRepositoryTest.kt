@@ -10,8 +10,8 @@ import io.kotest.matchers.shouldBe
 import org.springframework.context.annotation.Import
 import org.springframework.modulith.test.ApplicationModuleTest
 import java.time.Instant
+import java.time.LocalDate
 import java.time.ZoneId
-import java.time.temporal.ChronoUnit
 
 @ApplicationModuleTest(extraIncludes = ["common"])
 @Import(TestcontainersConfiguration::class, MockDeckPresetApiConfig::class)
@@ -19,16 +19,15 @@ class StudySessionRepositoryTest(
     private val studySessionRepository: StudySessionRepository,
 ) : DescribeSpec({
     val kstZoneId = ZoneId.of("Asia/Seoul")
-    val now: Instant = Instant.parse("2026-05-19T01:00:00Z")
+    val dayCutoffHour = 4
 
     afterEach { studySessionRepository.deleteAllInBatch() }
 
-    fun saveSession(
+    fun saveSessionOn(
+        sessionDate: LocalDate,
         status: StudySessionStatus = StudySessionStatus.ACTIVE,
         userId: Long = 1L,
         deckId: Long = 1L,
-        startedAt: Instant = now,
-        dayCutoffHour: Int = 4,
     ): StudySession =
         studySessionRepository.save(
             StudySession(
@@ -36,97 +35,91 @@ class StudySessionRepositoryTest(
                 deckId = deckId,
                 status = status,
                 studyType = StudyType.DAILY,
-                startedAt = startedAt,
+                startedAt = Instant.parse("${sessionDate}T12:00:00Z"), // cutoff 적용 후에도 sessionDate가 변경되지 않도록 보장
                 timezone = kstZoneId,
                 dayCutoffHour = dayCutoffHour,
                 deckPresetIdSnapshot = 1L,
             ),
         )
 
-    describe("setStoppedIfActive - 멱등성 가드 (통합 미커버)") {
-        it("이미 STOPPED인 row를 재호출하면 effectedRow=0이고 status는 STOPPED로 유지된다") {
-            val session = saveSession(status = StudySessionStatus.STOPPED)
+    describe("findByUserIdAndDeckIdAndSessionDateBetween") {
+        it("from~to 범위 안의 sessionDate 세션만 반환한다") {
+            val d17 = saveSessionOn(LocalDate.parse("2026-05-17"))
+            val d18 = saveSessionOn(LocalDate.parse("2026-05-18"))
+            val d19 = saveSessionOn(LocalDate.parse("2026-05-19"))
+            saveSessionOn(LocalDate.parse("2026-05-16")) // 범위 밖(과거)
+            saveSessionOn(LocalDate.parse("2026-05-20")) // 범위 밖(미래)
 
-            val affected = studySessionRepository.setStoppedIfActive(session.id)
-
-            affected shouldBe 0
-            studySessionRepository.findById(session.id).orElseThrow().status shouldBe StudySessionStatus.STOPPED
-        }
-
-        it("COMPLETED row를 호출하면 effectedRow=0이고 status는 COMPLETED로 유지된다") {
-            val session = saveSession(status = StudySessionStatus.COMPLETED)
-
-            val affected = studySessionRepository.setStoppedIfActive(session.id)
-
-            affected shouldBe 0
-            studySessionRepository.findById(session.id).orElseThrow().status shouldBe StudySessionStatus.COMPLETED
-        }
-    }
-
-    describe("findLatestByUserIdAndDeckIdIn") {
-        val yesterday = now.minus(1, ChronoUnit.DAYS)
-
-        it("덱별로 startedAt이 가장 최신인 세션 1건씩만 반환한다") {
-            saveSession(deckId = 1L, startedAt = yesterday)
-            val latestOfDeck1 = saveSession(deckId = 1L, startedAt = now)
-            saveSession(deckId = 2L, startedAt = yesterday)
-            val latestOfDeck2 = saveSession(deckId = 2L, startedAt = now)
-
-            val result = studySessionRepository.findLatestByUserIdAndDeckIdIn(
+            val result = studySessionRepository.findByUserIdAndDeckIdAndSessionDateBetween(
                 userId = 1L,
-                deckIds = setOf(1L, 2L),
+                deckId = 1L,
+                fromDate = LocalDate.parse("2026-05-17"),
+                toDate = LocalDate.parse("2026-05-19"),
             )
 
-            result.map { it.id }.shouldContainExactlyInAnyOrder(listOf(latestOfDeck1.id, latestOfDeck2.id))
+            result.map { it.id }.shouldContainExactlyInAnyOrder(listOf(d17.id, d18.id, d19.id))
         }
 
-        it("같은 덱에 startedAt이 동일한 세션이 여러 건이면 id가 큰 세션만 반환한다") {
-            // uk_session_per_day(user, deck, session_date) 때문에 같은 날짜의 동률은 존재할 수 없어,
-            // dayCutoffHour를 다르게 줘서 session_date가 갈리는 startedAt 동률을 재현한다
-            saveSession(deckId = 1L, startedAt = now, dayCutoffHour = 11)
-            val laterInserted = saveSession(deckId = 1L, startedAt = now, dayCutoffHour = 4)
+        it("다른 user나 deck의 세션은 반환하지 않는다") {
+            val mySession = saveSessionOn(LocalDate.parse("2026-05-18"), userId = 1L, deckId = 1L)
+            saveSessionOn(LocalDate.parse("2026-05-18"), userId = 2L, deckId = 1L)
+            saveSessionOn(LocalDate.parse("2026-05-18"), userId = 1L, deckId = 2L)
 
-            val result = studySessionRepository.findLatestByUserIdAndDeckIdIn(
+            val result = studySessionRepository.findByUserIdAndDeckIdAndSessionDateBetween(
                 userId = 1L,
-                deckIds = setOf(1L),
-            )
-
-            result.map { it.id } shouldBe listOf(laterInserted.id)
-        }
-
-        it("다른 userId의 같은 deckId 세션은 더 최신이어도 결과에 영향을 주지 않는다") {
-            val mySession = saveSession(userId = 1L, deckId = 1L, startedAt = yesterday)
-            saveSession(userId = 2L, deckId = 1L, startedAt = now)
-
-            val result = studySessionRepository.findLatestByUserIdAndDeckIdIn(
-                userId = 1L,
-                deckIds = setOf(1L),
+                deckId = 1L,
+                fromDate = LocalDate.parse("2026-05-17"),
+                toDate = LocalDate.parse("2026-05-19"),
             )
 
             result.map { it.id } shouldBe listOf(mySession.id)
         }
+    }
 
-        it("deckIds에 포함되지 않은 덱의 세션은 반환되지 않는다") {
-            val sessionOfDeck1 = saveSession(deckId = 1L)
-            saveSession(deckId = 2L)
+    describe("findByUserIdAndDeckIdInAndSessionDateBetween") {
+        it("여러 deck의 범위 내 세션을 한 번에 조회한다") {
+            val deck1 = saveSessionOn(sessionDate = LocalDate.parse("2026-05-18"), deckId = 1L)
+            val deck2 = saveSessionOn(sessionDate = LocalDate.parse("2026-05-19"), deckId = 2L)
+            saveSessionOn(LocalDate.parse("2026-05-18"), deckId = 3L) // deckIds 밖
+            saveSessionOn(LocalDate.parse("2026-05-16"), deckId = 1L) // 범위 밖
 
-            val result = studySessionRepository.findLatestByUserIdAndDeckIdIn(
+            val result = studySessionRepository.findByUserIdAndDeckIdInAndSessionDateBetween(
                 userId = 1L,
-                deckIds = setOf(1L),
+                deckIds = setOf(deck1.id, deck2.id),
+                fromDate = LocalDate.parse("2026-05-17"),
+                toDate = LocalDate.parse("2026-05-19"),
             )
 
-            result.map { it.id } shouldBe listOf(sessionOfDeck1.id)
+            result.map { it.id }.shouldContainExactlyInAnyOrder(listOf(deck1.id, deck2.id))
+        }
+    }
+
+    describe("stopStaledActiveBefore") {
+        it("before 이하인 sessionDate의 ACTIVE 세션만 STOPPED로 바꾼다") {
+            val before = LocalDate.parse("2026-05-16")
+
+            val staled = saveSessionOn(sessionDate = before.minusDays(1), status = StudySessionStatus.ACTIVE)
+            val boundary = saveSessionOn(sessionDate = before, status = StudySessionStatus.ACTIVE)
+            val future = saveSessionOn(sessionDate = before.plusDays(1), status = StudySessionStatus.ACTIVE)
+
+            val affectedRow = studySessionRepository.stopStaledActiveBefore(before = before)
+
+            affectedRow shouldBe 2
+            studySessionRepository.findById(staled.id).orElseThrow().status shouldBe StudySessionStatus.STOPPED
+            studySessionRepository.findById(boundary.id).orElseThrow().status shouldBe StudySessionStatus.STOPPED
+            studySessionRepository.findById(future.id).orElseThrow().status shouldBe StudySessionStatus.ACTIVE
         }
 
-        it("세션이 없는 덱은 결과에 행 자체가 없다") {
-            saveSession(deckId = 1L)
+        it("이미 종료된(COMPLETED/STOPPED) 세션은 before 이전이어도 변경하지 않는다") {
+            val before = LocalDate.parse("2026-05-16")
+            val completed = saveSessionOn(sessionDate = LocalDate.parse("2026-05-10"), status = StudySessionStatus.COMPLETED, deckId = 1L)
+            val stopped = saveSessionOn(sessionDate = LocalDate.parse("2026-05-10"), status = StudySessionStatus.STOPPED, deckId = 2L)
 
-            val result = studySessionRepository.findLatestByUserIdAndDeckIdIn(
-                userId = 1L,
-                deckIds = setOf(1L, 2L),
-            )
+            val affected = studySessionRepository.stopStaledActiveBefore(before = before)
 
-            result.map { it.deckId } shouldBe listOf(1L)
+            affected shouldBe 0
+            studySessionRepository.findById(completed.id).orElseThrow().status shouldBe StudySessionStatus.COMPLETED
+            studySessionRepository.findById(stopped.id).orElseThrow().status shouldBe StudySessionStatus.STOPPED
         }
     }
 })
