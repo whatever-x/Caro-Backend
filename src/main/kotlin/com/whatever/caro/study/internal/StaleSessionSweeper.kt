@@ -15,7 +15,7 @@ class StaleSessionSweeper(
     private val clock: Clock,
 ) {
 
-    @Scheduled(cron = $$"${app.cron.stale-session-sweep:-}")
+    @Scheduled(cron = $$"${app.schedule.cron.stale-session-sweep:-}")
     fun stopStaleSessions() {
         val before = LocalDate.now(clock).minusDays(GRACE_DAYS)
         val stoppedCount = studySessionRepository.stopStaledActiveBefore(before = before)
