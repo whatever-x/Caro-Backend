@@ -29,6 +29,7 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Clock
 import java.time.Instant
+import java.time.ZoneId
 
 @Service
 class CardService(
@@ -202,6 +203,7 @@ class CardService(
     @Transactional
     fun deleteCard(
         userId: Long,
+        timezone: ZoneId,
         dto: DeleteCardDto,
     ): DeleteCardResponseDto {
         val card = cardRepository.findByIdAndDeletedAtIsNullWithNoteAndTemplate(dto.cardId)
@@ -226,6 +228,7 @@ class CardService(
                 userId = userId,
                 deletedCardIds = setOf(card.id),
                 deletedAt = now,
+                clientTimezone = timezone,
             ),
         )
 

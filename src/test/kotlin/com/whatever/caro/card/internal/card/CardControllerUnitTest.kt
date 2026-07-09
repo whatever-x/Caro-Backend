@@ -21,6 +21,7 @@ import io.mockk.verify
 import org.springframework.http.HttpStatus
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
+import java.time.ZoneId
 
 class CardControllerUnitTest :
     DescribeSpec({
@@ -133,17 +134,19 @@ class CardControllerUnitTest :
         }
 
         describe("deleteCard") {
-            it("DeleteCardDto 로 서비스에 위임하고 200 과 삭제된 카드 id 를 반환한다") {
-                every { cardService.deleteCard(1L, DeleteCardDto(cardId = 100L)) } returns DeleteCardResponseDto(
-                    cardId = 100L,
-                )
+            val clientTimezone = ZoneId.of("Asia/Seoul")
 
-                val response = controller.deleteCard(100L)
+            it("DeleteCardDto로 서비스에 위임하고 200과 삭제된 카드 id를 반환한다") {
+                every {
+                    cardService.deleteCard(1L, clientTimezone, DeleteCardDto(cardId = 100L))
+                } returns DeleteCardResponseDto(cardId = 100L)
+
+                val response = controller.deleteCard(100L, clientTimezone)
 
                 response.statusCode shouldBe HttpStatus.OK
                 response.body!!.success shouldBe true
                 response.body!!.data!!.cardId shouldBe 100L
-                verify { cardService.deleteCard(1L, DeleteCardDto(cardId = 100L)) }
+                verify { cardService.deleteCard(1L, clientTimezone, DeleteCardDto(cardId = 100L)) }
             }
         }
     })

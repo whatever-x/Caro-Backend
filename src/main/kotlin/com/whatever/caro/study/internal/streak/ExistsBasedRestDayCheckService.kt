@@ -4,6 +4,7 @@ import com.whatever.caro.study.internal.cardlearningstate.CardLearningStateRepos
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
+import java.time.LocalDate
 import java.time.ZoneId
 
 /**
@@ -37,18 +38,17 @@ class ExistsBasedRestDayCheckService(
     }
 
     /**
-     * dayCutoff를 반영한 "오늘"의 다음 세션 시작 시각.
+     * dayCutoff를 반영한 "오늘"의 다음 세션 시작일.
+     *
+     * 오늘 학습일의 배타적 상한이므로 `오늘 + 1일`이다.
      */
     private fun getNextSessionStart(
         now: Instant,
         timezone: ZoneId,
         dayCutoffHour: Int,
-    ): Instant =
+    ): LocalDate =
         now.atZone(timezone)
             .minusHours(dayCutoffHour.toLong())
             .toLocalDate()
             .plusDays(1)
-            .atTime(dayCutoffHour, 0)
-            .atZone(timezone)
-            .toInstant()
 }

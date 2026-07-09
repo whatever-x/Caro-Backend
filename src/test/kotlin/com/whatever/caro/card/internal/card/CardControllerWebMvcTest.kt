@@ -18,6 +18,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.delete
 import org.springframework.test.web.servlet.patch
 import org.springframework.test.web.servlet.post
 
@@ -92,6 +93,15 @@ class CardControllerWebMvcTest : DescribeSpec() {
                 mockMvc.patch("/v1/cards/1") {
                     contentType = MediaType.APPLICATION_JSON
                     content = """{"fields": {}}"""
+                }.andExpect {
+                    status { isBadRequest() }
+                }
+            }
+        }
+
+        describe("DELETE /v1/cards/{id} - Client-Timezone 헤더 계약") {
+            it("Client-Timezone 헤더가 없으면 400을 반환한다") {
+                mockMvc.delete("/v1/cards/1") {
                 }.andExpect {
                     status { isBadRequest() }
                 }

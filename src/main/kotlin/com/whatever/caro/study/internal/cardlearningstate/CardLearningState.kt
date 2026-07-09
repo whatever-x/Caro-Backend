@@ -1,6 +1,5 @@
 package com.whatever.caro.study.internal.cardlearningstate
 
-import com.whatever.caro.common.entity.BaseTimeEntity
 import com.whatever.caro.common.entity.SoftDeletableEntity
 import com.whatever.caro.study.CardLearningStatus
 import com.whatever.caro.study.internal.SchedulingState
@@ -15,7 +14,7 @@ import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.Table
 import java.math.BigDecimal
-import java.time.Instant
+import java.time.LocalDate
 
 @Entity
 @Table(name = "card_learning_states")
@@ -49,11 +48,11 @@ class CardLearningState(
     @Column(nullable = false)
     var lapses: Int = 0,
 
-    @Column(name = "next_review_at")
-    var nextReviewAt: Instant? = null,
+    @Column(name = "next_review_date")
+    var nextReviewDate: LocalDate? = null,
 
-    @Column(name = "last_reviewed_at")
-    var lastReviewedAt: Instant? = null,
+    @Column(name = "last_reviewed_date")
+    var lastReviewedDate: LocalDate? = null,
 
     @Column(name = "consecutive_again_count", nullable = false)
     var consecutiveAgainCount: Int = 0,
@@ -77,8 +76,8 @@ class CardLearningState(
                 intervalDays = intervalDays,
                 repetitions = repetitions,
                 lapses = lapses,
-                lastReviewedAt = lastReviewedAt,
-                nextReviewAt = nextReviewAt,
+                lastReviewedDate = lastReviewedDate,
+                nextReviewDate = nextReviewDate,
                 consecutiveAgainCount = consecutiveAgainCount,
             )
 
@@ -86,7 +85,7 @@ class CardLearningState(
         }
 
     fun applyScheduling(
-        now: Instant,
+        studyDate: LocalDate,
         nextState: SchedulingState,
     ) {
         this.previousStatus = this.status
@@ -103,12 +102,12 @@ class CardLearningState(
                 this.intervalDays = nextState.intervalDays
                 this.repetitions = nextState.repetitions
                 this.lapses = nextState.lapses
-                this.nextReviewAt = nextState.nextReviewAt
+                this.nextReviewDate = nextState.nextReviewDate
                 this.consecutiveAgainCount = nextState.consecutiveAgainCount
             }
         }
 
-        this.lastReviewedAt = now
+        this.lastReviewedDate = studyDate
         this.totalReviews++
     }
 }

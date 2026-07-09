@@ -17,6 +17,7 @@ import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
+import java.time.ZoneId
 
 @Service
 class EvaluationService(
@@ -29,6 +30,7 @@ class EvaluationService(
     @Transactional
     fun evaluate(
         now: Instant,
+        timezone: ZoneId,
         userId: Long,
         sessionId: Long,
         items: List<EvaluatedCardDto>,
@@ -40,7 +42,7 @@ class EvaluationService(
         if (session.status != StudySessionStatus.ACTIVE) {
             throw SessionNotActiveException()
         }
-        if (session.isTodaySession(now).not()) {
+        if (session.isTodaySession(now, timezone).not()) {
             throw SessionExpiredException()
         }
 
@@ -68,7 +70,7 @@ class EvaluationService(
             val cls = clsByCardId[it.item.cardId]
                 ?: error("CardLearningState not exist for cardId=${it.item.cardId}")
 
-            val context = SchedulingContext(now, params)
+            val context = SchedulingContext(studyDate = session.sessionDate, params = params)
             val nextState = cls.toSchedulingState().nextStates(context).pick(it.item.rating)
 
             val reviewLog = ReviewLog(
@@ -86,7 +88,7 @@ class EvaluationService(
             )
 
             cls.applyScheduling(
-                now = now,
+                studyDate = session.sessionDate,
                 nextState = nextState,
             )
 

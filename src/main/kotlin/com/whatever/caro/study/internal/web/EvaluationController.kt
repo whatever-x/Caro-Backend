@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 import java.time.Clock
 import java.time.Instant
+import java.time.ZoneId
 
 @Tag(name = "StudySession", description = "일일학습 세션 / 평가")
 @RestController
@@ -44,12 +45,14 @@ class EvaluationController(
     @PostMapping("/{sessionId}/evaluations")
     fun evaluate(
         @RequestHeader("Idempotency-Key", required = true) idempotencyKey: String,
+        @RequestHeader("Client-Timezone", required = true) clientTimezone: ZoneId,
         @Positive @PathVariable(required = true) sessionId: Long,
         @Valid @RequestBody items: List<EvaluatedCardRequest>,
     ): ResponseEntity<EvaluationResponse> {
         val now = Instant.now(clock)
         val result = evaluationService.evaluate(
             now = now,
+            timezone = clientTimezone,
             userId = SecurityUtil.currentUser().userId,
             sessionId = sessionId,
             items = items.map { it.toDto() },

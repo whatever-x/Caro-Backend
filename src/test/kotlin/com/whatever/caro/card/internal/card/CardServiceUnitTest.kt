@@ -479,6 +479,8 @@ class CardServiceUnitTest :
         }
 
         describe("deleteCard") {
+            val clientTimezone = ZoneId.of("Asia/Seoul")
+
             it("같은 노트의 다른 카드가 남아있으면 카드만 soft delete 하고 cardCount 를 1 감소시킨다") {
                 val userId = 1L
                 val noteType = newNoteType(id = 1L)
@@ -492,6 +494,7 @@ class CardServiceUnitTest :
 
                 val result = cardService.deleteCard(
                     userId = userId,
+                    timezone = clientTimezone,
                     dto = DeleteCardDto(cardId = 300L),
                 )
 
@@ -507,6 +510,7 @@ class CardServiceUnitTest :
                             userId = userId,
                             deletedCardIds = setOf(card.id),
                             deletedAt = fixedNow,
+                            clientTimezone = clientTimezone,
                         ),
                     )
                 }
@@ -523,7 +527,7 @@ class CardServiceUnitTest :
                 every { cardRepository.findByIdAndDeletedAtIsNullWithNoteAndTemplate(300L) } returns card
                 every { cardRepository.countByNoteIdAndDeletedAtIsNullAndIdNot(200L, 300L) } returns 0L
 
-                cardService.deleteCard(userId, DeleteCardDto(cardId = 300L))
+                cardService.deleteCard(userId, clientTimezone, DeleteCardDto(cardId = 300L))
 
                 card.isDeleted.shouldBeTrue()
                 note.isDeleted.shouldBeTrue()
@@ -541,7 +545,7 @@ class CardServiceUnitTest :
                 every { cardRepository.findByIdAndDeletedAtIsNullWithNoteAndTemplate(300L) } returns card
                 every { cardRepository.countByNoteIdAndDeletedAtIsNullAndIdNot(200L, 300L) } returns 0L
 
-                cardService.deleteCard(userId, DeleteCardDto(cardId = 300L))
+                cardService.deleteCard(userId, clientTimezone, DeleteCardDto(cardId = 300L))
 
                 deck.cardCount shouldBe 0
             }
@@ -550,7 +554,7 @@ class CardServiceUnitTest :
                 every { cardRepository.findByIdAndDeletedAtIsNullWithNoteAndTemplate(999L) } returns null
 
                 shouldThrow<CardNotFoundException> {
-                    cardService.deleteCard(userId = 1L, dto = DeleteCardDto(cardId = 999L))
+                    cardService.deleteCard(userId = 1L, timezone = clientTimezone, dto = DeleteCardDto(cardId = 999L))
                 }
             }
 
@@ -563,7 +567,7 @@ class CardServiceUnitTest :
                 every { cardRepository.findByIdAndDeletedAtIsNullWithNoteAndTemplate(300L) } returns card
 
                 shouldThrow<CardForbiddenException> {
-                    cardService.deleteCard(userId = 1L, dto = DeleteCardDto(cardId = 300L))
+                    cardService.deleteCard(userId = 1L, timezone = clientTimezone, dto = DeleteCardDto(cardId = 300L))
                 }
             }
         }

@@ -28,6 +28,7 @@ import org.springframework.context.annotation.Import
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.modulith.test.ApplicationModuleTest
 import java.time.Instant
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.temporal.ChronoUnit
@@ -45,6 +46,7 @@ class StudyServiceTest(
     val dayCutoffHour = 4
 
     val baseNow: Instant = LocalDateTime.parse("2026-05-19T10:00:00").atZone(kstZoneId).toInstant()
+    val baseDate: LocalDate = LocalDate.parse("2026-05-19")
     val yesterday: Instant = baseNow.minus(1, ChronoUnit.DAYS)
 
     afterTest {
@@ -87,8 +89,8 @@ class StudyServiceTest(
         status: CardLearningStatus = CardLearningStatus.REVIEW,
         totalReviews: Int = 0,
         consecutiveAgainCount: Int = 0,
-        nextReviewAt: Instant? = null,
-        lastReviewedAt: Instant? = null,
+        nextReviewDate: LocalDate? = null,
+        lastReviewedDate: LocalDate? = null,
     ): CardLearningState =
         cardLearningStateRepository.save(
             CardLearningState(
@@ -98,8 +100,8 @@ class StudyServiceTest(
                 status = status,
                 totalReviews = totalReviews,
                 consecutiveAgainCount = consecutiveAgainCount,
-                nextReviewAt = nextReviewAt,
-                lastReviewedAt = lastReviewedAt,
+                nextReviewDate = nextReviewDate,
+                lastReviewedDate = lastReviewedDate,
             ),
         )
 
@@ -228,10 +230,8 @@ class StudyServiceTest(
             unchanged.status shouldBe StudySessionStatus.COMPLETED
         }
 
-        it("STOPPED 상태면 오늘 세션이라도 RestDay를 반환한다") {
+        it("STOPPED 상태인 오늘 세션은 종료상태로 보아 Completed를 반환한다") {
             // 정상 flow에서는 나올 수 없음
-            every { deckPresetApi.getLatestDeckPresetByUser(any(), any()) } returns
-                Sm2ParamsFixture.DECK_PRESET_DTO_FIXTURE.copy(newPerDay = 0, reviewPerDay = 0)
             val session = createSession(
                 status = StudySessionStatus.STOPPED,
                 startedAt = baseNow,
@@ -244,11 +244,13 @@ class StudyServiceTest(
                 deckId = DECK_ID,
             )
 
-            result shouldBe TodayStudySessionState.RestDay
+            val completed = result.shouldBeInstanceOf<TodayStudySessionState.Completed>()
+            completed.session.sessionId shouldBe session.id
 
             val unchanged = studySessionRepository.findByIdOrNull(session.id)
             unchanged.shouldNotBeNull()
             unchanged.status shouldBe StudySessionStatus.STOPPED
+            verify(exactly = 0) { deckPresetApi.getLatestDeckPresetByUser(any(), any()) }
         }
 
         it("여러 세션이 있다면 가장 최신 세션을 기준으로 응답한다") {
@@ -361,10 +363,9 @@ class StudyServiceTest(
             notStarted.pool.newCount shouldBe 2
         }
 
-        it("오늘 세션이라도 STOPPED 상태면 세션 없음으로 취급한다") {
-            every { deckPresetApi.getLatestDeckPresetsByDeckId(any(), any()) } returns
-                mapOf(DECK_ID to Sm2ParamsFixture.DECK_PRESET_DTO_FIXTURE.copy(newPerDay = 0, reviewPerDay = 0))
-            createSession(status = StudySessionStatus.STOPPED, startedAt = baseNow)
+        it("STOPPED 상태인 오늘 세션은 종료상태로 보아 Completed로 반환된다") {
+            // 정상 flow에서는 나올 수 없음
+            val session = createSession(status = StudySessionStatus.STOPPED, startedAt = baseNow)
 
             val result = studyService.getTodaySummaries(
                 now = baseNow,
@@ -373,7 +374,8 @@ class StudyServiceTest(
                 deckIds = setOf(DECK_ID),
             )
 
-            result[DECK_ID] shouldBe TodayStudySessionState.RestDay
+            val completed = result[DECK_ID].shouldBeInstanceOf<TodayStudySessionState.Completed>()
+            completed.session.sessionId shouldBe session.id
         }
 
         it("세션이 없고 학습 대상 카드가 있으면 정확한 pool 값의 NotStarted를 반환한다") {
@@ -386,7 +388,7 @@ class StudyServiceTest(
                 createCls(
                     cardId = (100 + i).toLong(),
                     status = CardLearningStatus.REVIEW,
-                    nextReviewAt = baseNow,
+                    nextReviewDate = baseDate,
                 )
             }
 
@@ -427,7 +429,7 @@ class StudyServiceTest(
                 createCls(
                     cardId = (100 + i).toLong(),
                     status = CardLearningStatus.REVIEW,
-                    nextReviewAt = baseNow,
+                    nextReviewDate = baseDate,
                 )
             }
 
@@ -635,7 +637,7 @@ class StudyServiceTest(
                     createCls(
                         cardId = (100 + i).toLong(),
                         status = CardLearningStatus.REVIEW,
-                        nextReviewAt = baseNow,
+                        nextReviewDate = baseDate,
                     )
                 }
 
@@ -661,7 +663,7 @@ class StudyServiceTest(
                 saved.deckPresetIdSnapshot shouldBe Sm2ParamsFixture.DECK_PRESET_DTO_FIXTURE.id
             }
 
-            it("과거 세션이 ACTIVE로 남아있을 경우 STOPPED으로 sync 후 신규 ACTIVE 세션을 생성한다") {
+            it("과거 세션이 ACTIVE로 남아있을 경우 정리하지 않고 신규 ACTIVE 세션을 생성한다") {
                 every { deckPresetApi.getLatestDeckPresetByUser(any(), any()) } returns
                     Sm2ParamsFixture.DECK_PRESET_DTO_FIXTURE
                 repeat(5) { i ->
@@ -683,51 +685,130 @@ class StudyServiceTest(
                 val sessions = studySessionRepository.findAll()
                 sessions.size shouldBe 2
 
-                val stoppedStaleSession = sessions.find { it.id == staleSession.id }
-                stoppedStaleSession.shouldNotBeNull()
-                stoppedStaleSession.status shouldBe StudySessionStatus.STOPPED
+                val unchangedStaleSession = sessions.find { it.id == staleSession.id }
+                unchangedStaleSession.shouldNotBeNull()
+                unchangedStaleSession.status shouldBe StudySessionStatus.ACTIVE // 여전히 ACTIVE
 
                 val todaySession = sessions.find { it.id == inProgress.session.sessionId }
                 todaySession.shouldNotBeNull()
                 todaySession.status shouldBe StudySessionStatus.ACTIVE
             }
+        }
 
-            context("과거 세션이 종료된 상태일 때") {
-                withData(
-                    nameFn = { "과거 세션이 $it 상태라면 신규 ACTIVE 세션을 생성한다" },
-                    StudySessionStatus.COMPLETED,
-                    StudySessionStatus.STOPPED,
-                ) { pastStatus ->
-                    every { deckPresetApi.getLatestDeckPresetByUser(any(), any()) } returns
-                        Sm2ParamsFixture.DECK_PRESET_DTO_FIXTURE
-                    repeat(5) { i ->
-                        createCls(cardId = (i + 1).toLong(), status = CardLearningStatus.NEW)
-                    }
-                    createSession(status = pastStatus, startedAt = yesterday)
-
-                    val result = studyService.startOrResumeDailyStudySession(
-                        now = baseNow,
-                        userId = USER_ID,
-                        deckId = DECK_ID,
-                        studyType = StudyType.DAILY,
-                        timezone = kstZoneId,
-                        dayCutoffHour = dayCutoffHour,
-                    )
-
-                    val inProgress = result.shouldBeInstanceOf<TodayStudySessionState.InProgress>()
-
-                    val sessions = studySessionRepository.findAll()
-                    sessions.size shouldBe 2
-
-                    val todaySession = sessions.find { it.id == inProgress.session.sessionId }
-                    todaySession.shouldNotBeNull()
-                    todaySession.status shouldBe StudySessionStatus.ACTIVE
+        context("과거 세션이 종료된 상태일 때") {
+            withData(
+                nameFn = { "과거 세션이 $it 상태라면 신규 ACTIVE 세션을 생성한다" },
+                StudySessionStatus.COMPLETED,
+                StudySessionStatus.STOPPED,
+            ) { pastStatus ->
+                every { deckPresetApi.getLatestDeckPresetByUser(any(), any()) } returns
+                    Sm2ParamsFixture.DECK_PRESET_DTO_FIXTURE
+                repeat(5) { i ->
+                    createCls(cardId = (i + 1).toLong(), status = CardLearningStatus.NEW)
                 }
+                createSession(status = pastStatus, startedAt = yesterday)
+
+                val result = studyService.startOrResumeDailyStudySession(
+                    now = baseNow,
+                    userId = USER_ID,
+                    deckId = DECK_ID,
+                    studyType = StudyType.DAILY,
+                    timezone = kstZoneId,
+                    dayCutoffHour = dayCutoffHour,
+                )
+
+                val inProgress = result.shouldBeInstanceOf<TodayStudySessionState.InProgress>()
+
+                val sessions = studySessionRepository.findAll()
+                sessions.size shouldBe 2
+
+                val todaySession = sessions.find { it.id == inProgress.session.sessionId }
+                todaySession.shouldNotBeNull()
+                todaySession.status shouldBe StudySessionStatus.ACTIVE
+            }
+        }
+
+        context("단조적이지 않은 시간으로 조회") {
+            it("미래 날짜에 세션을 만든 뒤 과거(오늘)로 돌아와도 오늘 세션을 재개한다") {
+                every {
+                    deckPresetApi.getLatestDeckPresetByUser(any(), any())
+                } returns Sm2ParamsFixture.DECK_PRESET_DTO_FIXTURE.copy(newPerDay = 5, reviewPerDay = 0)
+                repeat(5) { i ->
+                    createCls(cardId = (i + 1).toLong(), status = CardLearningStatus.NEW)
+                }
+                val today = baseNow
+                val future = baseNow.plus(1, ChronoUnit.DAYS)
+
+                val todayResult = studyService.startOrResumeDailyStudySession(
+                    now = today,
+                    userId = USER_ID,
+                    deckId = DECK_ID,
+                    studyType = StudyType.DAILY,
+                    timezone = kstZoneId,
+                    dayCutoffHour = dayCutoffHour,
+                )
+                val todaySessionId = todayResult.shouldBeInstanceOf<TodayStudySessionState.InProgress>().session.sessionId
+
+                // 시간대 동쪽으로 이동(미래 날짜) -> 새 세션 생성
+                studyService.startOrResumeDailyStudySession(
+                    now = future,
+                    userId = USER_ID,
+                    deckId = DECK_ID,
+                    studyType = StudyType.DAILY,
+                    timezone = kstZoneId,
+                    dayCutoffHour = dayCutoffHour,
+                )
+
+                // 시간대 서쪽으로 이동(오늘로 복귀) -> 세션 재개
+                val resumed = studyService.startOrResumeDailyStudySession(
+                    now = today,
+                    userId = USER_ID,
+                    deckId = DECK_ID,
+                    studyType = StudyType.DAILY,
+                    timezone = kstZoneId,
+                    dayCutoffHour = dayCutoffHour,
+                )
+
+                resumed.shouldBeInstanceOf<TodayStudySessionState.InProgress>().session.sessionId shouldBe todaySessionId
+                // 미래 세션은 STOP되지 않고 그대로 남아 날짜별 2개 세션이 존재한다
+                studySessionRepository.findAll().size shouldBe 2
+            }
+        }
+
+        context("학습 목표 동기화") {
+            it("재개 시 학습 카드 풀이 줄어 이미 목표를 채웠다면 COMPLETED로 전환된다") {
+                val session = createSession(
+                    status = StudySessionStatus.ACTIVE,
+                    newStudied = 3,
+                    reviewStudied = 0,
+                    newCardsGoal = 10,
+                    reviewCardsGoal = 0,
+                )
+
+                val result = studyService.startOrResumeDailyStudySession(
+                    now = baseNow,
+                    userId = USER_ID,
+                    deckId = DECK_ID,
+                    studyType = StudyType.DAILY,
+                    timezone = kstZoneId,
+                    dayCutoffHour = dayCutoffHour,
+                )
+
+                val completed = result.shouldBeInstanceOf<TodayStudySessionState.Completed>()
+                completed.session.sessionId shouldBe session.id
+                completed.session.newCardsGoal shouldBe 3
+
+                val saved = studySessionRepository.findByIdOrNull(session.id)
+                saved.shouldNotBeNull()
+                saved.status shouldBe StudySessionStatus.COMPLETED
             }
         }
 
         it("오늘 세션이 ACTIVE 상태라면 신규 생성 없이 기존 세션을 그대로 반환한다") {
             val existingSession = createSession(status = StudySessionStatus.ACTIVE)
+            repeat(10) { i ->
+                createCls(cardId = (i + 1).toLong(), status = CardLearningStatus.NEW)
+            }
 
             val result = studyService.startOrResumeDailyStudySession(
                 now = baseNow,
@@ -790,18 +871,18 @@ class StudyServiceTest(
                 reviewCardsGoal = 5,
                 reviewStudied = 2,
             )
-            val beforeSessionStart = session.sessionStart.minus(1, ChronoUnit.MILLIS)
+            val beforeSessionDate = baseDate.minusDays(1L)
             repeat(10) { i ->
                 createCls(
                     cardId = (i + 1).toLong(),
                     status = CardLearningStatus.NEW,
-                    lastReviewedAt = beforeSessionStart,
+                    lastReviewedDate = beforeSessionDate,
                 )
                 createCls(
                     cardId = (10 + i + 1).toLong(),
                     status = CardLearningStatus.REVIEW,
-                    nextReviewAt = baseNow,
-                    lastReviewedAt = beforeSessionStart,
+                    nextReviewDate = baseDate,
+                    lastReviewedDate = beforeSessionDate,
                 )
             }
 
@@ -809,6 +890,7 @@ class StudyServiceTest(
                 userId = USER_ID,
                 sessionId = session.id,
                 now = baseNow,
+                timezone = kstZoneId,
             )
 
             result.filter { it.status == CardLearningStatus.NEW }.size shouldBe (session.newCardsGoal - session.newCardsStudied)
@@ -821,6 +903,7 @@ class StudyServiceTest(
                     userId = USER_ID,
                     sessionId = 999L,
                     now = baseNow,
+                    timezone = kstZoneId,
                 )
             }
         }
@@ -833,6 +916,7 @@ class StudyServiceTest(
                     userId = USER_ID,
                     sessionId = session.id,
                     now = baseNow,
+                    timezone = kstZoneId,
                 )
             }
         }
@@ -850,6 +934,7 @@ class StudyServiceTest(
                     userId = USER_ID,
                     sessionId = session.id,
                     now = baseNow,
+                    timezone = kstZoneId,
                 )
             }
         }
@@ -861,6 +946,7 @@ class StudyServiceTest(
                 userId = USER_ID,
                 sessionId = session.id,
                 now = baseNow,
+                timezone = kstZoneId,
             )
 
             result.filter { it.status == CardLearningStatus.NEW }.size shouldBe 0
@@ -873,6 +959,7 @@ class StudyServiceTest(
                 userId = USER_ID,
                 sessionId = session.id,
                 now = baseNow,
+                timezone = kstZoneId,
             )
 
             result.filter { it.status == CardLearningStatus.REVIEW }.size shouldBe 0
@@ -880,55 +967,56 @@ class StudyServiceTest(
 
         it("세션 진입 이후 평가된 카드는 같은 세션에서 다시 나오지 않는다") {
             val session = createSession()
-            val afterSessionStart = session.sessionStart.plus(1, ChronoUnit.MINUTES)
             createCls(
                 cardId = 1L,
                 status = CardLearningStatus.REVIEW,
-                nextReviewAt = baseNow,
-                lastReviewedAt = afterSessionStart, // 세션 시작 이후 평가
+                nextReviewDate = baseDate.plusDays(1L),
+                lastReviewedDate = baseDate, // 오늘(sessionDate)에 평가됨
             )
             createCls(
                 cardId = 2L,
                 status = CardLearningStatus.NEW,
-                lastReviewedAt = afterSessionStart, // 세션 시작 이후 평가
+                lastReviewedDate = baseDate, // 오늘(sessionDate)에 평가됨
             )
 
             val result = studyService.getStudySessionCardQueue(
                 userId = USER_ID,
                 sessionId = session.id,
                 now = baseNow,
+                timezone = kstZoneId,
             )
 
             result.filter { it.status == CardLearningStatus.NEW }.size shouldBe 0
             result.filter { it.status == CardLearningStatus.REVIEW }.size shouldBe 0
         }
 
-        it("REVIEW queue는 nextReviewAt 기준 오름차순으로 정렬된다") {
+        it("REVIEW queue는 nextReviewDate 기준 오름차순으로 정렬된다") {
             val session = createSession()
-            val justBeforeSessionStart = session.sessionStart.minus(1, ChronoUnit.MILLIS)
+            val justBeforeSessionDate = baseDate.minusDays(1L)
             val thirdReview = createCls(
                 cardId = 1L,
                 status = CardLearningStatus.REVIEW,
-                nextReviewAt = baseNow.minus(1, ChronoUnit.HOURS),
-                lastReviewedAt = justBeforeSessionStart,
+                nextReviewDate = baseDate.minusDays(1L),
+                lastReviewedDate = justBeforeSessionDate,
             )
             val firstReview = createCls(
                 cardId = 2L,
                 status = CardLearningStatus.REVIEW,
-                nextReviewAt = baseNow.minus(3, ChronoUnit.HOURS),
-                lastReviewedAt = justBeforeSessionStart,
+                nextReviewDate = baseDate.minusDays(3L),
+                lastReviewedDate = justBeforeSessionDate,
             )
             val secondReview = createCls(
                 cardId = 3L,
                 status = CardLearningStatus.REVIEW,
-                nextReviewAt = baseNow.minus(2, ChronoUnit.HOURS),
-                lastReviewedAt = justBeforeSessionStart,
+                nextReviewDate = baseDate.minusDays(2L),
+                lastReviewedDate = justBeforeSessionDate,
             )
 
             val result = studyService.getStudySessionCardQueue(
                 userId = USER_ID,
                 sessionId = session.id,
                 now = baseNow,
+                timezone = kstZoneId,
             )
 
             val orderedCardId = listOf(
@@ -939,6 +1027,34 @@ class StudyServiceTest(
             result
                 .filter { it.status == CardLearningStatus.REVIEW }
                 .map { it.cardId } shouldContainExactly orderedCardId
+        }
+
+        context("세션을 시작한 tz과 클라이언트의 tz가 다를 경우 클라이언트 기준으로 판단한다") {
+            val southZoneId = ZoneId.of("America/Los_Angeles") // 서쪽 (UTC-7)
+            val eastZoneId = ZoneId.of("Pacific/Auckland") // 동쪽 (UTC+12)
+
+            it("시작한 tz 기준으로는 만료지만 클라이언트 tz는 만료가 아니라면 큐를 반환한다") {
+                val session = createSession()
+                val result = studyService.getStudySessionCardQueue(
+                    userId = USER_ID,
+                    sessionId = session.id,
+                    now = Instant.parse("2026-05-20T00:00:00Z"), // 시작한 kst 기준으로는 만료, 서쪽에 있는 시간대 기준으로는 05-19으로 만료가 아님
+                    timezone = southZoneId,
+                )
+                result shouldBe emptyList()
+            }
+
+            it("시작한 tz 기준으로는 만료가 아니지만, 클라이언트 tz는 만료라면 SessionExpiredException을 던진다") {
+                val session = createSession()
+                shouldThrow<SessionExpiredException> {
+                    studyService.getStudySessionCardQueue(
+                        userId = USER_ID,
+                        sessionId = session.id,
+                        now = Instant.parse("2026-05-19T17:00:00Z"), // 시작한 kst 기준으로는 만료가 아니지만, 더 동쪽에 있는 시간대 기준으로는 50-20으로 만료
+                        timezone = eastZoneId,
+                    )
+                }
+            }
         }
     }
 }) {

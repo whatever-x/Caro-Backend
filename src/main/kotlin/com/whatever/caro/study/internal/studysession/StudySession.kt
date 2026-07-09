@@ -82,13 +82,10 @@ class StudySession(
     val sessionStart: Instant
         get() = sessionDate.atTime(dayCutoffHour, 0).atZone(timezone).toInstant()
 
-    @get:Transient
-    val nextSessionStart: Instant
-        get() = sessionDate.plusDays(1).atTime(dayCutoffHour, 0).atZone(timezone).toInstant()
-
     fun isTodaySession(
         now: Instant,
-    ): Boolean = sessionDate == now.atZone(timezone).minusHours(dayCutoffHour.toLong()).toLocalDate()
+        clientTimezone: ZoneId,
+    ): Boolean = sessionDate == now.atZone(clientTimezone).minusHours(dayCutoffHour.toLong()).toLocalDate()
 
     fun updateStudiedCard(
         status: ReviewType,

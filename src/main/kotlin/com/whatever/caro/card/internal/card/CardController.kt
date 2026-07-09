@@ -26,7 +26,9 @@ import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RestController
+import java.time.ZoneId
 
 @Validated
 @RestController
@@ -80,9 +82,15 @@ class CardController(
     fun deleteCard(
         @Parameter(description = "카드 ID", required = true)
         @Positive @PathVariable id: Long,
+        @RequestHeader("Client-Timezone", required = true)
+        timezone: ZoneId,
     ): ResponseEntity<ApiResponse<DeleteCardResponse>> {
         val userId = SecurityUtil.currentUser().userId
-        val result = cardService.deleteCard(userId = userId, dto = DeleteCardDto(cardId = id)).toResponse()
+        val result = cardService.deleteCard(
+            userId = userId,
+            timezone = timezone,
+            dto = DeleteCardDto(cardId = id),
+        ).toResponse()
         return ResponseEntity.ok(ApiResponse.ok(result))
     }
 }
