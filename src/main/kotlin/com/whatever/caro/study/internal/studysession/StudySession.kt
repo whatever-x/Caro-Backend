@@ -116,12 +116,18 @@ class StudySession(
 
     fun completeIfGoalAchieved(
         now: Instant,
-    ) {
+    ): Boolean {
+        if (status != StudySessionStatus.ACTIVE) {
+            return false
+        }
+
         if ((newCardsStudied >= newCardsGoal) && (reviewCardsStudied >= reviewCardsGoal)) {
             complete(now)
+            if (newCardsGoal == 0 && reviewCardsGoal == 0) {
+                logger.debug { "All cards deleted. Session status updated: $status. sessionId: $id" }
+            }
+            return true
         }
-        if (newCardsGoal == 0 && reviewCardsGoal == 0) {
-            logger.debug { "All cards deleted. Session status updated: $status. sessionId: $id" }
-        }
+        return false
     }
 }

@@ -443,4 +443,147 @@ class CardLearningStateRepositoryTest(
             result.associate { it.deckId to it.count } shouldBe mapOf(1L to 1L)
         }
     }
+
+    describe("existsNewCardByUser") {
+        it("user에게 NEW 카드가 하나라도 있으면 true를 반환한다") {
+            createCls(cardId = 1L, userId = 1L, status = CardLearningStatus.NEW)
+
+            val result = cardLearningStateRepository.existsNewCardByUser(userId = 1L)
+
+            result shouldBe true
+        }
+
+        it("NEW 카드가 없으면 false를 반환한다") {
+            createCls(cardId = 1L, userId = 1L, status = CardLearningStatus.REVIEW, nextReviewAt = beforeCutoff)
+
+            val result = cardLearningStateRepository.existsNewCardByUser(userId = 1L)
+
+            result shouldBe false
+        }
+
+        it("soft delete된 NEW 카드는 제외된다") {
+            val deleted = createCls(cardId = 1L, userId = 1L, status = CardLearningStatus.NEW)
+            deleted.softDelete(deletedAt = beforeCutoff)
+            cardLearningStateRepository.save(deleted)
+
+            val result = cardLearningStateRepository.existsNewCardByUser(userId = 1L)
+
+            result shouldBe false
+        }
+
+        it("다른 user의 NEW 카드는 제외된다") {
+            createCls(cardId = 1L, userId = 2L, status = CardLearningStatus.NEW)
+
+            val result = cardLearningStateRepository.existsNewCardByUser(userId = 1L)
+            result shouldBe false
+        }
+    }
+
+    describe("existsTodayReviewCardByUser") {
+        it("REVIEW 카드가 없다면 false를 반환한다") {
+            createCls(
+                cardId = 1L,
+                userId = 1L,
+                status = CardLearningStatus.NEW,
+                nextReviewAt = beforeCutoff,
+            )
+
+            val result = cardLearningStateRepository.existsTodayReviewCardByUser(
+                userId = 1L,
+                nextSessionStart = nextSessionStart,
+            )
+
+            result shouldBe false
+        }
+
+        it("오늘 학습에 포함된 카드가 존재한다면 true를 반환한다") {
+            createCls(
+                cardId = 1L,
+                userId = 1L,
+                status = CardLearningStatus.REVIEW,
+                nextReviewAt = nextSessionStart.minusSeconds(1), // nextReviewAt이 nextSessionStart 직전(1초 전)
+            )
+
+            val result = cardLearningStateRepository.existsTodayReviewCardByUser(
+                userId = 1L,
+                nextSessionStart = nextSessionStart,
+            )
+
+            result shouldBe true
+        }
+
+        it("오늘 학습 범위에 포함되는 카드가 없다면 false를 반환한다") {
+            createCls(
+                cardId = 1L,
+                userId = 1L,
+                status = CardLearningStatus.REVIEW,
+                nextReviewAt = nextSessionStart,
+            )
+
+            val result = cardLearningStateRepository.existsTodayReviewCardByUser(
+                userId = 1L,
+                nextSessionStart = nextSessionStart,
+            )
+
+            result shouldBe false
+        }
+
+        it("soft delete된 REVIEW 카드는 제외된다") {
+            val deleted = createCls(cardId = 1L, userId = 1L, status = CardLearningStatus.REVIEW, nextReviewAt = beforeCutoff)
+            deleted.softDelete(deletedAt = beforeCutoff)
+            cardLearningStateRepository.save(deleted)
+
+            val result = cardLearningStateRepository.existsTodayReviewCardByUser(
+                userId = 1L,
+                nextSessionStart = nextSessionStart,
+            )
+
+            result shouldBe false
+        }
+
+        it("다른 user의 REVIEW 카드는 제외된다") {
+            createCls(cardId = 1L, userId = 2L, status = CardLearningStatus.REVIEW, nextReviewAt = beforeCutoff)
+
+            val result = cardLearningStateRepository.existsTodayReviewCardByUser(
+                userId = 1L,
+                nextSessionStart = nextSessionStart,
+            )
+
+            result shouldBe false
+        }
+    }
+
+    describe("existsByUserIdAndDeletedAtIsNull") {
+        it("user에게 학습 카드가 하나라도 있으면 true를 반환한다") {
+            createCls(cardId = 1L, userId = 1L, status = CardLearningStatus.NEW)
+
+            val result = cardLearningStateRepository.existsByUserIdAndDeletedAtIsNull(userId = 1L)
+
+            result shouldBe true
+        }
+
+        it("카드가 없으면 false를 반환한다") {
+            val result = cardLearningStateRepository.existsByUserIdAndDeletedAtIsNull(userId = 1L)
+
+            result shouldBe false
+        }
+
+        it("soft delete된 카드만 있으면 false를 반환한다") {
+            val deleted = createCls(cardId = 1L, userId = 1L, status = CardLearningStatus.NEW)
+            deleted.softDelete(deletedAt = beforeCutoff)
+            cardLearningStateRepository.save(deleted)
+
+            val result = cardLearningStateRepository.existsByUserIdAndDeletedAtIsNull(userId = 1L)
+
+            result shouldBe false
+        }
+
+        it("다른 user의 카드는 제외된다") {
+            createCls(cardId = 1L, userId = 2L, status = CardLearningStatus.NEW)
+
+            val result = cardLearningStateRepository.existsByUserIdAndDeletedAtIsNull(userId = 1L)
+
+            result shouldBe false
+        }
+    }
 })

@@ -3,6 +3,7 @@ package com.whatever.caro.study.internal
 import com.whatever.caro.card.api.deck.DeckPresetApi
 import com.whatever.caro.card.api.deck.DeckPresetDto
 import com.whatever.caro.study.CardLearningStatus
+import com.whatever.caro.study.DailyStudyCompletedEvent
 import com.whatever.caro.study.ReviewType
 import com.whatever.caro.study.StudySessionStatus
 import com.whatever.caro.study.exception.SessionExpiredException
@@ -12,6 +13,7 @@ import com.whatever.caro.study.internal.cardlearningstate.CardLearningStateRepos
 import com.whatever.caro.study.internal.studysession.ReviewLog
 import com.whatever.caro.study.internal.studysession.ReviewLogRepository
 import com.whatever.caro.study.internal.studysession.StudySessionRepository
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
@@ -22,6 +24,7 @@ class EvaluationService(
     private val deckPresetApi: DeckPresetApi,
     private val cardLearningStateRepository: CardLearningStateRepository,
     private val reviewLogRepository: ReviewLogRepository,
+    private val applicationEventPublisher: ApplicationEventPublisher,
 ) {
     @Transactional
     fun evaluate(
@@ -90,7 +93,14 @@ class EvaluationService(
             session.updateStudiedCard(reviewLog.reviewType)
             reviewLog
         }
-        session.completeIfGoalAchieved(now)
+        if (session.completeIfGoalAchieved(now)) {
+            applicationEventPublisher.publishEvent(
+                DailyStudyCompletedEvent(
+                    userId = userId,
+                    studyDate = session.sessionDate,
+                ),
+            )
+        }
 
         reviewLogRepository.saveAll(newReviewLogs)
 
