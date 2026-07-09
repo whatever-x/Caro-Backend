@@ -46,7 +46,7 @@ class UserServiceTest(
         provider: SocialProvider,
         providerUserId: String,
         email: String? = null,
-    ): SocialAccount = socialAccountRepository.save(SocialAccount(user = user, provider = provider, providerUserId = providerUserId, email = email))
+    ): SocialAccount = socialAccountRepository.save(SocialAccount(user = user, provider = provider, providerUserId = providerUserId, encryptedEmail = email))
 
     describe("createSocialUser") {
         data class EmailCase(

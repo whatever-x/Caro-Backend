@@ -2,7 +2,9 @@ package com.whatever.caro.user.internal
 
 import com.whatever.caro.common.entity.BaseTimeEntity
 import com.whatever.caro.user.SocialProvider
+import com.whatever.caro.user.internal.encrypt.EmailCryptoConverter
 import jakarta.persistence.Column
+import jakarta.persistence.Convert
 import jakarta.persistence.Entity
 import jakarta.persistence.EnumType
 import jakarta.persistence.Enumerated
@@ -30,6 +32,13 @@ class SocialAccount(
 
     @Column
     var email: String? = null,
+
+    @Column(name = "encrypted_email", nullable = true)
+    @Convert(converter = EmailCryptoConverter::class)
+    var encryptedEmail: String? = null,
+
+    @Column(name = "hashed_email", nullable = true)
+    var hashedEmail: String? = null,
 ) : BaseTimeEntity() {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

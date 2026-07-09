@@ -2,7 +2,9 @@ package com.whatever.caro.user.internal
 
 import com.whatever.caro.common.entity.SoftDeletableEntity
 import com.whatever.caro.user.UserStatus
+import com.whatever.caro.user.internal.encrypt.EmailCryptoConverter
 import jakarta.persistence.Column
+import jakarta.persistence.Convert
 import jakarta.persistence.Entity
 import jakarta.persistence.EnumType
 import jakarta.persistence.Enumerated
@@ -19,6 +21,13 @@ class User(
 
     @Column(name = "primary_email", nullable = true)
     var primaryEmail: String? = null,
+
+    @Convert(converter = EmailCryptoConverter::class)
+    @Column(name = "encrypted_primary_email", nullable = true)
+    var encryptedPrimaryEmail: String? = null,
+
+    @Column(name = "hashed_primary_email", nullable = true)
+    var hashedPrimaryEmail: String? = null,
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

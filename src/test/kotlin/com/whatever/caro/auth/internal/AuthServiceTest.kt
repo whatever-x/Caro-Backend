@@ -15,6 +15,8 @@ import com.whatever.caro.auth.internal.web.request.SocialLoginRequest
 import com.whatever.caro.user.SocialProvider
 import com.whatever.caro.user.UserApi
 import com.whatever.caro.user.UserStatus
+import com.whatever.caro.user.internal.SocialAccountRepository
+import com.whatever.caro.user.internal.UserRepository
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.DescribeSpec
 import io.kotest.matchers.nulls.shouldNotBeNull
@@ -54,6 +56,8 @@ class AuthServiceTest(
     private val jwtTokenProvider: JwtTokenProvider,
     private val redisTemplate: StringRedisTemplate,
     private val userApi: UserApi,
+    private val userRepository: UserRepository,
+    private val socialAccountRepository: SocialAccountRepository,
 ) : DescribeSpec({
 
     val mockVerifier = mockk<SocialIdTokenVerifier>()
@@ -61,6 +65,9 @@ class AuthServiceTest(
     afterEach {
         clearMocks(socialIdTokenVerifierFactory, mockVerifier, answers = false)
         redisTemplate.connectionFactory?.connection?.serverCommands()?.flushDb()
+        // 테스트 격리: 이메일 UNIQUE 충돌 방지를 위해 매 테스트 후 user/social 데이터 정리 (FK 때문에 social 먼저)
+        socialAccountRepository.deleteAllInBatch()
+        userRepository.deleteAllInBatch()
     }
 
     fun stubSocialVerifier(
