@@ -20,6 +20,8 @@ class CardLearningStateRepositoryTest(
     val sessionDate: LocalDate = LocalDate.parse("2026-05-18")
     val deletedAt: Instant = Instant.parse("2026-05-18T19:00:00Z")
 
+    val nextSessionStart: LocalDate = sessionDate.plusDays(1)
+
     afterEach {
         cardLearningStateRepository.deleteAllInBatch()
     }
@@ -449,7 +451,7 @@ class CardLearningStateRepositoryTest(
         }
 
         it("NEW 카드가 없으면 false를 반환한다") {
-            createCls(cardId = 1L, userId = 1L, status = CardLearningStatus.REVIEW, nextReviewAt = beforeCutoff)
+            createCls(cardId = 1L, userId = 1L, status = CardLearningStatus.REVIEW, nextReviewDate = sessionDate)
 
             val result = cardLearningStateRepository.existsNewCardByUser(userId = 1L)
 
@@ -458,7 +460,7 @@ class CardLearningStateRepositoryTest(
 
         it("soft delete된 NEW 카드는 제외된다") {
             val deleted = createCls(cardId = 1L, userId = 1L, status = CardLearningStatus.NEW)
-            deleted.softDelete(deletedAt = beforeCutoff)
+            deleted.softDelete(deletedAt = deletedAt)
             cardLearningStateRepository.save(deleted)
 
             val result = cardLearningStateRepository.existsNewCardByUser(userId = 1L)
@@ -480,7 +482,7 @@ class CardLearningStateRepositoryTest(
                 cardId = 1L,
                 userId = 1L,
                 status = CardLearningStatus.NEW,
-                nextReviewAt = beforeCutoff,
+                nextReviewDate = sessionDate,
             )
 
             val result = cardLearningStateRepository.existsTodayReviewCardByUser(
@@ -496,7 +498,7 @@ class CardLearningStateRepositoryTest(
                 cardId = 1L,
                 userId = 1L,
                 status = CardLearningStatus.REVIEW,
-                nextReviewAt = nextSessionStart.minusSeconds(1), // nextReviewAt이 nextSessionStart 직전(1초 전)
+                nextReviewDate = nextSessionStart.minusDays(1), // nextSessionStart 직전날(=오늘)
             )
 
             val result = cardLearningStateRepository.existsTodayReviewCardByUser(
@@ -512,7 +514,7 @@ class CardLearningStateRepositoryTest(
                 cardId = 1L,
                 userId = 1L,
                 status = CardLearningStatus.REVIEW,
-                nextReviewAt = nextSessionStart,
+                nextReviewDate = nextSessionStart,
             )
 
             val result = cardLearningStateRepository.existsTodayReviewCardByUser(
@@ -524,8 +526,8 @@ class CardLearningStateRepositoryTest(
         }
 
         it("soft delete된 REVIEW 카드는 제외된다") {
-            val deleted = createCls(cardId = 1L, userId = 1L, status = CardLearningStatus.REVIEW, nextReviewAt = beforeCutoff)
-            deleted.softDelete(deletedAt = beforeCutoff)
+            val deleted = createCls(cardId = 1L, userId = 1L, status = CardLearningStatus.REVIEW, nextReviewDate = sessionDate)
+            deleted.softDelete(deletedAt = deletedAt)
             cardLearningStateRepository.save(deleted)
 
             val result = cardLearningStateRepository.existsTodayReviewCardByUser(
@@ -537,7 +539,7 @@ class CardLearningStateRepositoryTest(
         }
 
         it("다른 user의 REVIEW 카드는 제외된다") {
-            createCls(cardId = 1L, userId = 2L, status = CardLearningStatus.REVIEW, nextReviewAt = beforeCutoff)
+            createCls(cardId = 1L, userId = 2L, status = CardLearningStatus.REVIEW, nextReviewDate = sessionDate)
 
             val result = cardLearningStateRepository.existsTodayReviewCardByUser(
                 userId = 1L,
@@ -565,7 +567,7 @@ class CardLearningStateRepositoryTest(
 
         it("soft delete된 카드만 있으면 false를 반환한다") {
             val deleted = createCls(cardId = 1L, userId = 1L, status = CardLearningStatus.NEW)
-            deleted.softDelete(deletedAt = beforeCutoff)
+            deleted.softDelete(deletedAt = deletedAt)
             cardLearningStateRepository.save(deleted)
 
             val result = cardLearningStateRepository.existsByUserIdAndDeletedAtIsNull(userId = 1L)

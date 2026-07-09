@@ -140,16 +140,16 @@ interface CardLearningStateRepository : JpaRepository<CardLearningState, Long> {
         )
 
     /**
-     * 사용자에게 오늘 복습 대상(REVIEW, next_review_at < nextSessionStart) 카드 존재 여부
+     * 사용자에게 오늘 복습 대상(REVIEW, next_review_date < nextSessionStart) 카드 존재 여부.
      */
     fun existsTodayReviewCardByUser(
         userId: Long,
-        nextSessionStart: Instant,
+        nextSessionStart: LocalDate,
     ): Boolean =
-        existsByUserIdAndStatusAndNextReviewAtLessThanAndDeletedAtIsNull(
+        existsByUserIdAndStatusAndNextReviewDateLessThanAndDeletedAtIsNull(
             userId = userId,
             status = CardLearningStatus.REVIEW,
-            nextReviewAt = nextSessionStart,
+            nextReviewDate = nextSessionStart,
         )
 
     /**
@@ -164,9 +164,9 @@ interface CardLearningStateRepository : JpaRepository<CardLearningState, Long> {
         status: CardLearningStatus,
     ): Boolean
 
-    fun existsByUserIdAndStatusAndNextReviewAtLessThanAndDeletedAtIsNull(
+    fun existsByUserIdAndStatusAndNextReviewDateLessThanAndDeletedAtIsNull(
         userId: Long,
         status: CardLearningStatus,
-        nextReviewAt: Instant,
+        nextReviewDate: LocalDate,
     ): Boolean
 }
