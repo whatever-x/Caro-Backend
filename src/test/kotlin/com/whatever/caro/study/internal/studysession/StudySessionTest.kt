@@ -22,11 +22,12 @@ class StudySessionTest :
             reviewCardsGoal: Int = 0,
             reviewCardsStudied: Int = 0,
             startedAt: Instant = Instant.parse("2026-05-18T00:00:00Z"),
+            status: StudySessionStatus = StudySessionStatus.ACTIVE,
         ): StudySession =
             StudySession(
                 userId = 1L,
                 deckId = 1L,
-                status = StudySessionStatus.ACTIVE,
+                status = status,
                 studyType = StudyType.DAILY,
                 startedAt = startedAt,
                 timezone = kstZoneId,
@@ -172,6 +173,20 @@ class StudySessionTest :
                 s.completeIfGoalAchieved(now)
 
                 s.status shouldBe StudySessionStatus.COMPLETED
+            }
+
+            context("세션 상태에 따라 complete 시 반환값이 달라진다") {
+                withData(
+                    nameFn = { "세션 상태가 $it 라면 ${it == StudySessionStatus.ACTIVE}를 반환한다" },
+                    listOf(StudySessionStatus.ACTIVE, StudySessionStatus.STOPPED, StudySessionStatus.COMPLETED),
+                ) { status ->
+                    val now = Instant.now()
+                    val s = createSession(status = status)
+
+                    val result = s.completeIfGoalAchieved(now)
+
+                    result shouldBe (status == StudySessionStatus.ACTIVE)
+                }
             }
         }
     })

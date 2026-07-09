@@ -126,6 +126,5 @@ springdoc:
     tags-sorter: alpha
     display-request-duration: true
   packages-to-scan: com.whatever.caro
-  paths-to-match: /api/**, /v1/**
   default-produces-media-type: application/json
   default-consumes-media-type: application/json
