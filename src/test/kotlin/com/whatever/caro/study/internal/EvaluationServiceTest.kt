@@ -12,6 +12,9 @@ import com.whatever.caro.study.exception.SessionNotActiveException
 import com.whatever.caro.study.exception.SessionNotFoundException
 import com.whatever.caro.study.internal.cardlearningstate.CardLearningState
 import com.whatever.caro.study.internal.cardlearningstate.CardLearningStateRepository
+import com.whatever.caro.study.internal.streak.RestDayCheckService
+import com.whatever.caro.study.internal.streak.StreakStateRepository
+import com.whatever.caro.study.internal.streak.StudyDayRepository
 import com.whatever.caro.study.internal.studysession.ReviewLogRepository
 import com.whatever.caro.study.internal.studysession.StudySession
 import com.whatever.caro.study.internal.studysession.StudySessionRepository
@@ -33,17 +36,22 @@ import org.springframework.data.repository.findByIdOrNull
 import org.springframework.modulith.test.ApplicationModuleTest
 import java.math.BigDecimal
 import java.time.Instant
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.temporal.ChronoUnit
 
 // Kotest DescribeSpec의 생성자 주입에서는 @MockitoBean/@TestBean 사용이 제한적이라 @TestConfiguration + @Primary로 Bean 교체
-// card 모듈의 DeckPresetApi 만 mock 으로 대체하고 나머지 레포지토리는 실제 JPA 를 사용
+// card 모듈의 DeckPresetApi와 study의 RestDayCheckService를 mock 으로 대체하고 나머지 레포지토리는 실제 JPA 를 사용
 @TestConfiguration
 class MockDeckPresetApiConfig {
     @Bean
     @Primary
     fun deckPresetApi(): DeckPresetApi = mockk(relaxed = true)
+
+    @Bean
+    @Primary
+    fun restDayCheckService(): RestDayCheckService = mockk(relaxed = true)
 }
 
 @ApplicationModuleTest(extraIncludes = ["common"])
@@ -54,9 +62,13 @@ class EvaluationServiceTest(
     private val studySessionRepository: StudySessionRepository,
     private val cardLearningStateRepository: CardLearningStateRepository,
     private val reviewLogRepository: ReviewLogRepository,
+    private val studyDayRepository: StudyDayRepository,
+    private val streakStateRepository: StreakStateRepository,
 ) : DescribeSpec({
 
+    val southZoneId = ZoneId.of("America/Los_Angeles")
     val kstZoneId = ZoneId.of("Asia/Seoul")
+    val eastZoneId = ZoneId.of("Pacific/Auckland")
     val dayCutoffHour = 4
     val baseNow: Instant = LocalDateTime.parse("2026-06-03T10:00:00").atZone(kstZoneId).toInstant()
     val yesterday: Instant = baseNow.minus(1, ChronoUnit.DAYS)
@@ -65,6 +77,8 @@ class EvaluationServiceTest(
         reviewLogRepository.deleteAllInBatch()
         studySessionRepository.deleteAllInBatch()
         cardLearningStateRepository.deleteAllInBatch()
+        studyDayRepository.deleteAllInBatch()
+        streakStateRepository.deleteAllInBatch()
         clearMocks(deckPresetApi)
     }
 
@@ -105,8 +119,8 @@ class EvaluationServiceTest(
         repetitions: Int = 0,
         lapses: Int = 0,
         consecutiveAgainCount: Int = 0,
-        lastReviewedAt: Instant? = null,
-        nextReviewAt: Instant? = null,
+        lastReviewedDate: LocalDate? = null,
+        nextReviewDate: LocalDate? = null,
     ): CardLearningState =
         cardLearningStateRepository.save(
             CardLearningState(
@@ -119,8 +133,8 @@ class EvaluationServiceTest(
                 repetitions = repetitions,
                 lapses = lapses,
                 consecutiveAgainCount = consecutiveAgainCount,
-                lastReviewedAt = lastReviewedAt,
-                nextReviewAt = nextReviewAt,
+                lastReviewedDate = lastReviewedDate,
+                nextReviewDate = nextReviewDate,
             ),
         )
 
@@ -148,6 +162,7 @@ class EvaluationServiceTest(
 
                 val result = evaluationService.evaluate(
                     now = baseNow,
+                    timezone = kstZoneId,
                     userId = USER_ID,
                     sessionId = session.id,
                     items = listOf(getEvaluatedCardDto(cardId = cls.cardId, rating = Rating.FAIR)),
@@ -171,6 +186,7 @@ class EvaluationServiceTest(
 
                 evaluationService.evaluate(
                     now = baseNow,
+                    timezone = kstZoneId,
                     userId = USER_ID,
                     sessionId = session.id,
                     items = listOf(
@@ -201,6 +217,7 @@ class EvaluationServiceTest(
 
                 evaluationService.evaluate(
                     now = baseNow,
+                    timezone = kstZoneId,
                     userId = USER_ID,
                     sessionId = session.id,
                     items = listOf(getEvaluatedCardDto(cardId = cls.cardId, rating = Rating.EASY)),
@@ -209,7 +226,7 @@ class EvaluationServiceTest(
                 val updatedCls = cardLearningStateRepository.findByIdOrNull(cls.id)!!
                 updatedCls.easeFactor shouldBeGreaterThan cls.easeFactor
                 updatedCls.intervalDays shouldBeGreaterThan cls.intervalDays
-                updatedCls.nextReviewAt shouldBe baseNow.plus(updatedCls.intervalDays.toLong(), ChronoUnit.DAYS)
+                updatedCls.nextReviewDate shouldBe session.sessionDate.plusDays(updatedCls.intervalDays.toLong())
                 updatedCls.status shouldBe CardLearningStatus.REVIEW
 
                 val log = reviewLogRepository.findAllByStudySessionId(session.id).first()
@@ -226,12 +243,13 @@ class EvaluationServiceTest(
                     intervalDays = 10,
                     easeFactor = BigDecimal("2.50"),
                     repetitions = 2,
-                    lastReviewedAt = baseNow.minus(10, ChronoUnit.DAYS),
-                    nextReviewAt = baseNow,
+                    lastReviewedDate = session.sessionDate.minusDays(10L),
+                    nextReviewDate = session.sessionDate,
                 )
 
                 evaluationService.evaluate(
                     now = baseNow,
+                    timezone = kstZoneId,
                     userId = USER_ID,
                     sessionId = session.id,
                     items = listOf(getEvaluatedCardDto(cardId = 1L, rating = Rating.EASY)),
@@ -253,6 +271,7 @@ class EvaluationServiceTest(
 
                 val result = evaluationService.evaluate(
                     now = baseNow,
+                    timezone = kstZoneId,
                     userId = USER_ID,
                     sessionId = session.id,
                     items = listOf(getEvaluatedCardDto(cardId = cls.cardId, rating = Rating.FAIR)),
@@ -273,6 +292,7 @@ class EvaluationServiceTest(
 
                 val result = evaluationService.evaluate(
                     now = baseNow,
+                    timezone = kstZoneId,
                     userId = USER_ID,
                     sessionId = session.id,
                     items = listOf(getEvaluatedCardDto(cardId = cls.cardId, rating = Rating.FAIR)),
@@ -291,6 +311,7 @@ class EvaluationServiceTest(
                 shouldThrow<SessionNotFoundException> {
                     evaluationService.evaluate(
                         now = baseNow,
+                        timezone = kstZoneId,
                         userId = USER_ID,
                         sessionId = 999L,
                         items = emptyList(),
@@ -304,6 +325,7 @@ class EvaluationServiceTest(
                 shouldThrow<SessionNotActiveException> {
                     evaluationService.evaluate(
                         now = baseNow,
+                        timezone = kstZoneId,
                         userId = USER_ID,
                         sessionId = session.id,
                         items = emptyList(),
@@ -317,6 +339,7 @@ class EvaluationServiceTest(
                 shouldThrow<SessionNotActiveException> {
                     evaluationService.evaluate(
                         now = baseNow,
+                        timezone = kstZoneId,
                         userId = USER_ID,
                         sessionId = session.id,
                         items = emptyList(),
@@ -330,6 +353,7 @@ class EvaluationServiceTest(
                 shouldThrow<SessionNotActiveException> {
                     evaluationService.evaluate(
                         now = baseNow,
+                        timezone = kstZoneId,
                         userId = USER_ID,
                         sessionId = session.id,
                         items = emptyList(),
@@ -343,6 +367,7 @@ class EvaluationServiceTest(
                 shouldThrow<SessionExpiredException> {
                     evaluationService.evaluate(
                         now = baseNow,
+                        timezone = kstZoneId,
                         userId = USER_ID,
                         sessionId = session.id,
                         items = emptyList(),
@@ -356,6 +381,7 @@ class EvaluationServiceTest(
                 shouldThrow<SessionNotFoundException> {
                     evaluationService.evaluate(
                         now = baseNow,
+                        timezone = kstZoneId,
                         userId = USER_ID,
                         sessionId = otherUserSession.id,
                         items = emptyList(),
@@ -373,6 +399,7 @@ class EvaluationServiceTest(
 
                 val result = evaluationService.evaluate(
                     now = baseNow,
+                    timezone = kstZoneId,
                     userId = USER_ID,
                     sessionId = session.id,
                     items = listOf(
@@ -392,6 +419,7 @@ class EvaluationServiceTest(
                 val cls1 = createCls(cardId = 1L, status = CardLearningStatus.NEW)
                 evaluationService.evaluate(
                     now = baseNow,
+                    timezone = kstZoneId,
                     userId = USER_ID,
                     sessionId = session.id,
                     items = listOf(getEvaluatedCardDto(cardId = cls1.cardId, rating = Rating.FAIR)),
@@ -399,6 +427,7 @@ class EvaluationServiceTest(
 
                 val result = evaluationService.evaluate(
                     now = baseNow,
+                    timezone = kstZoneId,
                     userId = USER_ID,
                     sessionId = session.id,
                     items = listOf(getEvaluatedCardDto(cardId = cls1.cardId, rating = Rating.EASY)),
@@ -416,6 +445,7 @@ class EvaluationServiceTest(
 
                 val result = evaluationService.evaluate(
                     now = baseNow,
+                    timezone = kstZoneId,
                     userId = USER_ID,
                     sessionId = session.id,
                     items = listOf(
@@ -433,6 +463,56 @@ class EvaluationServiceTest(
             }
         }
 
+        context("세션 저장 tz와 클라이언트 tz이 다른 경우") {
+            it("클라이언트 tz 기준 date가 세션의 date보다 미래라면 SessionExpiredException을 던진다") {
+                val session = createSession(startedAt = baseNow) // kst 26-06-03
+                val clientNow = LocalDateTime.parse("2026-06-04T04:00:00").atZone(eastZoneId).toInstant()
+
+                shouldThrow<SessionExpiredException> {
+                    evaluationService.evaluate(
+                        now = clientNow,
+                        timezone = eastZoneId,
+                        userId = USER_ID,
+                        sessionId = session.id,
+                        items = emptyList(),
+                    )
+                }
+            }
+
+            it("클라이언트 tz 기준 date가 세션의 date보다 과거라면 SessionExpiredException을 던진다") {
+                val session = createSession(startedAt = baseNow) // kst 26-06-03
+                val clientNow = LocalDateTime.parse("2026-06-02T18:00:00").atZone(southZoneId).toInstant()
+
+                shouldThrow<SessionExpiredException> {
+                    evaluationService.evaluate(
+                        now = clientNow,
+                        timezone = southZoneId, // UTC -7이므로, kst 기준으로는 여전히 `26-06-03`
+                        userId = USER_ID,
+                        sessionId = session.id,
+                        items = emptyList(),
+                    )
+                }
+            }
+
+            it("세션을 시작한 tz 기준으로는 만료지만, 클라이언트 tz 기준 date로 만료가 아니라면 정상 반영한다") {
+                stubPreset()
+                val session = createSession(startedAt = baseNow) // kst 26-06-03
+                val cls = createCls(cardId = 1L, status = CardLearningStatus.NEW)
+                val clientNow = LocalDateTime.parse("2026-06-04T04:00:00").atZone(kstZoneId).toInstant()
+
+                val result = evaluationService.evaluate(
+                    now = clientNow,
+                    timezone = southZoneId, // UTC -7이므로, 클라이언트는 여전히 `26-06-03`
+                    userId = USER_ID,
+                    sessionId = session.id,
+                    items = listOf(getEvaluatedCardDto(cardId = cls.cardId, rating = Rating.FAIR)),
+                )
+
+                result.evaluatedItems.size shouldBe 1
+                result.failedItems.size shouldBe 0
+            }
+        }
+
         context("서버의 상태가 깨져 데이터 불일치가 발생한 경우") {
             it("CLS가 없는 card 평가 시 IllegalStateException을 던진고 롤백이 이뤄진다") {
                 stubPreset()
@@ -443,6 +523,7 @@ class EvaluationServiceTest(
                 shouldThrow<IllegalStateException> {
                     evaluationService.evaluate(
                         now = baseNow,
+                        timezone = kstZoneId,
                         userId = USER_ID,
                         sessionId = session.id,
                         items = listOf(

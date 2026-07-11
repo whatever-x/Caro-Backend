@@ -8,18 +8,14 @@ import io.kotest.core.spec.style.DescribeSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import java.math.BigDecimal
-import java.time.Instant
-import java.time.LocalDateTime
-import java.time.ZoneId
+import java.time.LocalDate
 import java.time.temporal.ChronoUnit
 
 class SchedulingStateTest :
     DescribeSpec({
 
-        val baseNow: Instant = LocalDateTime.parse("2026-06-03T10:00:00")
-            .atZone(ZoneId.of("Asia/Seoul"))
-            .toInstant()
-        val context = SchedulingContext(now = baseNow, params = SM2_PARAMS_FIXTURE)
+        val baseDate: LocalDate = LocalDate.parse("2026-06-03")
+        val context = SchedulingContext(studyDate = baseDate, params = SM2_PARAMS_FIXTURE)
 
         val efDeltaAgain = BigDecimal("0.20")
         val efDeltaEasy = BigDecimal("0.15")
@@ -47,8 +43,8 @@ class SchedulingStateTest :
                 result.repetitions shouldBe 1
                 result.lapses shouldBe 0
                 result.consecutiveAgainCount shouldBe 0
-                result.lastReviewedAt shouldBe baseNow
-                result.nextReviewAt shouldBe baseNow.plus(SM2_PARAMS_FIXTURE.newFairInterval.toLong(), ChronoUnit.DAYS)
+                result.lastReviewedDate shouldBe baseDate
+                result.nextReviewDate shouldBe baseDate.plus(SM2_PARAMS_FIXTURE.newFairInterval.toLong(), ChronoUnit.DAYS)
             }
 
             it("EASY 평가 시 ef는 +0.15되고 Review로 졸업한다") {
@@ -61,7 +57,7 @@ class SchedulingStateTest :
                 result.intervalDays shouldBe SM2_PARAMS_FIXTURE.newEasyInterval
                 result.repetitions shouldBe 1
                 result.lapses shouldBe 0
-                result.nextReviewAt shouldBe baseNow.plus(SM2_PARAMS_FIXTURE.newEasyInterval.toLong(), ChronoUnit.DAYS)
+                result.nextReviewDate shouldBe baseDate.plus(SM2_PARAMS_FIXTURE.newEasyInterval.toLong(), ChronoUnit.DAYS)
             }
 
             it("AGAIN 평가 시 ef는 1.30 미만으로 감소하지 않는다") {
@@ -100,8 +96,8 @@ class SchedulingStateTest :
                     intervalDays = 20,
                     repetitions = 5,
                     lapses = 1,
-                    lastReviewedAt = baseNow.minus(20, ChronoUnit.DAYS),
-                    nextReviewAt = baseNow,
+                    lastReviewedDate = baseDate.minusDays(20L),
+                    nextReviewDate = baseDate,
                     consecutiveAgainCount = 0,
                 )
 
@@ -121,8 +117,8 @@ class SchedulingStateTest :
                     intervalDays = 1,
                     repetitions = 1,
                     lapses = 0,
-                    lastReviewedAt = baseNow.minus(1, ChronoUnit.DAYS),
-                    nextReviewAt = baseNow,
+                    lastReviewedDate = baseDate.minusDays(1L),
+                    nextReviewDate = baseDate,
                     consecutiveAgainCount = 0,
                 )
 
@@ -138,8 +134,8 @@ class SchedulingStateTest :
                     intervalDays = 10,
                     repetitions = 2,
                     lapses = 3,
-                    lastReviewedAt = baseNow.minus(10, ChronoUnit.DAYS),
-                    nextReviewAt = baseNow,
+                    lastReviewedDate = baseDate.minusDays(10),
+                    nextReviewDate = baseDate,
                     consecutiveAgainCount = 1,
                 )
 
@@ -159,8 +155,8 @@ class SchedulingStateTest :
                     intervalDays = 100,
                     repetitions = 5,
                     lapses = 0,
-                    lastReviewedAt = baseNow.minus(100, ChronoUnit.DAYS),
-                    nextReviewAt = baseNow,
+                    lastReviewedDate = baseDate.minusDays(100L),
+                    nextReviewDate = baseDate,
                     consecutiveAgainCount = 0,
                 )
 
@@ -178,8 +174,8 @@ class SchedulingStateTest :
                     intervalDays = 1, // 1 * 1.30 = 1.30, coerceIn(2, 180) -> 2
                     repetitions = 1,
                     lapses = 0,
-                    lastReviewedAt = baseNow.minus(1, ChronoUnit.DAYS),
-                    nextReviewAt = baseNow,
+                    lastReviewedDate = baseDate.minusDays(1L),
+                    nextReviewDate = baseDate,
                     consecutiveAgainCount = 6,
                 )
 
@@ -194,8 +190,8 @@ class SchedulingStateTest :
                     intervalDays = 10,
                     repetitions = 2,
                     lapses = 0,
-                    lastReviewedAt = baseNow.minus(10, ChronoUnit.DAYS),
-                    nextReviewAt = baseNow,
+                    lastReviewedDate = baseDate.minusDays(10L),
+                    nextReviewDate = baseDate,
                     consecutiveAgainCount = 2,
                 )
 
@@ -215,8 +211,8 @@ class SchedulingStateTest :
                     intervalDays = maxInterval,
                     repetitions = 5,
                     lapses = 0,
-                    lastReviewedAt = baseNow.minus(maxInterval.toLong(), ChronoUnit.DAYS),
-                    nextReviewAt = baseNow,
+                    lastReviewedDate = baseDate.minusDays(maxInterval.toLong()),
+                    nextReviewDate = baseDate,
                     consecutiveAgainCount = 0,
                 )
 

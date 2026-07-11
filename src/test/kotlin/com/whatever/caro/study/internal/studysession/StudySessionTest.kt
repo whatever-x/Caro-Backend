@@ -13,22 +13,23 @@ import java.time.ZoneId
 class StudySessionTest :
     DescribeSpec({
         val kstZoneId = ZoneId.of("Asia/Seoul")
+        val laZoneId = ZoneId.of("America/Los_Angeles")
         val dayCutoffHour = 4
-        // 산식: isTodaySession(now) = (sessionDate == now.atZone(KST).minusHours(4).toLocalDate())
-        // sessionDate=2026-05-18 기준으로 "now가 cutoff 04:00 직전인지" 경계 검증
 
         fun createSession(
             newCardsGoal: Int = 0,
             newCardsStudied: Int = 0,
             reviewCardsGoal: Int = 0,
             reviewCardsStudied: Int = 0,
+            startedAt: Instant = Instant.parse("2026-05-18T00:00:00Z"),
+            status: StudySessionStatus = StudySessionStatus.ACTIVE,
         ): StudySession =
             StudySession(
                 userId = 1L,
                 deckId = 1L,
-                status = StudySessionStatus.ACTIVE,
+                status = status,
                 studyType = StudyType.DAILY,
-                startedAt = Instant.parse("2026-05-18T00:00:00Z"),
+                startedAt = startedAt,
                 timezone = kstZoneId,
                 dayCutoffHour = dayCutoffHour,
                 deckPresetIdSnapshot = 1L,
@@ -39,6 +40,7 @@ class StudySessionTest :
             )
 
         describe("isTodaySession - KST cutoff=04:00 경계 (sessionDate=2026-05-18 기준)") {
+            // sessionDate=2026-05-18 기준으로, 클라이언트 현지 시각이 세션에 포함되는지 검증
             data class Case(
                 val nowKst: String,
                 val expected: Boolean,
@@ -47,25 +49,25 @@ class StudySessionTest :
 
             withData(
                 nameFn = { it.label },
-                // KST 03:59:59 → minusHours(4) = 05-18T23:59:59 → date=05-18 → sessionDate와 같음 → true
+                // KST 05-19T03:59:59 → minusHours(4) = 05-18T23:59:59 → date=05-18 → sessionDate와 같음 → true
                 Case(
                     "2026-05-19T03:59:59",
                     true,
                     "KST 2026-05-19 03:59:59 (cutoff 1초 전) → 여전히 전일 sessionDate=2026-05-18 (true)",
                 ),
-                // KST 04:00:00 → minusHours(4) = 05-19T00:00:00 → date=05-19 → 다른 sessionDate → false
+                // KST 05-19T04:00:00 → minusHours(4) = 05-19T00:00:00 → date=05-19 → 다른 sessionDate → false
                 Case(
                     "2026-05-19T04:00:00",
                     false,
                     "KST 2026-05-19 04:00:00 (cutoff 정각) → 새 sessionDate=2026-05-19로 전환 (false)",
                 ),
-                // KST 04:00:01 → minusHours(4) = 05-19T00:00:01 → date=05-19 → false
+                // KST 05-19T04:00:01 → minusHours(4) = 05-19T00:00:01 → date=05-19 → false
                 Case(
                     "2026-05-19T04:00:01",
                     false,
                     "KST 2026-05-19 04:00:01 (cutoff 1초 후) → 새 sessionDate=2026-05-19 (false)",
                 ),
-                // KST 자정 직후 00:00:01 → minusHours(4) = 05-18T20:00:01 → date=05-18 → true (자정이 분기 아님)
+                // KST 자정 직후 05-19T00:00:01 → minusHours(4) = 05-18T20:00:01 → date=05-18 → true (자정이 분기 아님)
                 Case(
                     "2026-05-19T00:00:01",
                     true,
@@ -75,7 +77,22 @@ class StudySessionTest :
                 val now = LocalDateTime.parse(case.nowKst).atZone(kstZoneId).toInstant()
                 val session = createSession()
 
-                session.isTodaySession(now) shouldBe case.expected
+                session.isTodaySession(now, kstZoneId) shouldBe case.expected
+            }
+        }
+
+        describe("isTodaySession - 세션 시작 tz(KST)와 현재 클라이언트의 tz가 다른 케이스") {
+            val session = createSession()
+            val utcNow = Instant.parse("2026-05-18T19:00:00Z")
+
+            it("세션의 date와 현재 클라이언트의 date가 다를 경우 false를 반환한다") {
+                // kst는 UTC+9이므로, 클라이언트의 date는 2026-05-19
+                session.isTodaySession(utcNow, ZoneId.of("Asia/Tokyo")) shouldBe false
+            }
+
+            it("세션의 date와 현재 클라이언트의 date가 같을 경우 true를 반환한다") {
+                // la는 UTC-7이므로, 클라이언트의 date는 2026-05-18
+                session.isTodaySession(utcNow, laZoneId) shouldBe true
             }
         }
 
@@ -156,6 +173,20 @@ class StudySessionTest :
                 s.completeIfGoalAchieved(now)
 
                 s.status shouldBe StudySessionStatus.COMPLETED
+            }
+
+            context("세션 상태에 따라 complete 시 반환값이 달라진다") {
+                withData(
+                    nameFn = { "세션 상태가 $it 라면 ${it == StudySessionStatus.ACTIVE}를 반환한다" },
+                    listOf(StudySessionStatus.ACTIVE, StudySessionStatus.STOPPED, StudySessionStatus.COMPLETED),
+                ) { status ->
+                    val now = Instant.now()
+                    val s = createSession(status = status)
+
+                    val result = s.completeIfGoalAchieved(now)
+
+                    result shouldBe (status == StudySessionStatus.ACTIVE)
+                }
             }
         }
     })

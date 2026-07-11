@@ -7,6 +7,7 @@ import com.whatever.caro.user.UserStatus
 import com.whatever.caro.user.exception.AlreadyCompletedException
 import com.whatever.caro.user.exception.NicknameDuplicatedException
 import com.whatever.caro.user.exception.UserNotFoundException
+import com.whatever.caro.user.internal.encrypt.EmailHasher
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.data.repository.findByIdOrNull
@@ -18,6 +19,7 @@ private val logger = KotlinLogging.logger {}
 
 @Service
 class UserService(
+    private val emailHasher: EmailHasher,
     private val userRepository: UserRepository,
     private val socialAccountRepository: SocialAccountRepository,
 ) : UserApi {
@@ -46,9 +48,12 @@ class UserService(
     ): UserInfo {
         try {
             val tempNickname = "temp_${UUID.randomUUID().toString().take(8)}"
+            val hashedSocialEmail = emailHasher.hash(email)
             val user = User(
                 nickname = tempNickname,
                 isTermsAgreed = false,
+                encryptedPrimaryEmail = email,
+                hashedPrimaryEmail = hashedSocialEmail,
             )
             userRepository.save(user)
 
@@ -56,12 +61,17 @@ class UserService(
                 user = user,
                 provider = provider,
                 providerUserId = providerUserId,
-                email = email,
+                encryptedEmail = email,
+                hashedEmail = hashedSocialEmail,
             )
             socialAccountRepository.save(socialAccount)
 
             return socialAccount.user.toInfo()
         } catch (e: DataIntegrityViolationException) {
+            // NOTE: 이메일 hash UNIQUE(users.active_hashed_primary_email, social_accounts.hashed_email) 추가로
+            //  이 예외가 이제 두 의미를 가짐 - ① 소셜계정(provider+providerUserId) 중복 race ② 동일 이메일 중복.
+            //  현재 복구는 ①만 처리(provider로 재조회). 멀티 provider 같은 이메일 가입(②)은 여기서 못 찾아 re-throw됨.
+            //  TODO: 계정 연동(account linking) 정책 확정 시 제약명으로 원인 구분하여 분기.
             logger.error { "Race condition detected for provider=$provider, providerUserId=$providerUserId" }
             return findBySocialProvider(provider, providerUserId) ?: throw e
         }

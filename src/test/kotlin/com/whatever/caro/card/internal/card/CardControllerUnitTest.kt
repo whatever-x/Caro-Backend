@@ -19,6 +19,7 @@ import io.kotest.matchers.shouldBe
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import java.time.ZoneId
 import org.springframework.http.HttpStatus
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
@@ -134,17 +135,21 @@ class CardControllerUnitTest :
         }
 
         describe("deleteCards") {
+            val clientTimezone = ZoneId.of("Asia/Seoul")
+
             it("DeleteCardsRequest 를 DeleteCardDto 로 변환해 서비스에 위임하고 200 과 삭제 개수를 반환한다") {
-                every { cardService.deleteCard(1L, DeleteCardDto(cardIds = setOf(100L, 101L))) } returns DeleteCardResponseDto(
+                every {
+                    cardService.deleteCard(1L, clientTimezone, DeleteCardDto(cardIds = setOf(100L, 101L)))
+                } returns DeleteCardResponseDto(
                     deletedCardsCount = 2,
                 )
 
-                val response = controller.deleteCards(DeleteCardsRequest(cardIds = setOf(100L, 101L)))
+                val response = controller.deleteCards(clientTimezone, DeleteCardsRequest(cardIds = setOf(100L, 101L)))
 
                 response.statusCode shouldBe HttpStatus.OK
                 response.body!!.success shouldBe true
                 response.body!!.data!!.deletedCardsCount shouldBe 2
-                verify { cardService.deleteCard(1L, DeleteCardDto(cardIds = setOf(100L, 101L))) }
+                verify { cardService.deleteCard(1L, clientTimezone, DeleteCardDto(cardIds = setOf(100L, 101L))) }
             }
         }
     })

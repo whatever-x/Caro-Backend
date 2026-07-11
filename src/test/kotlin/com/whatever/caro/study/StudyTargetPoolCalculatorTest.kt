@@ -69,7 +69,7 @@ class StudyTargetPoolCalculatorTest :
             }
         }
 
-        describe("getTodayPool - 04시 기준 cutoff nextSessionStart 시간 계산") {
+        describe("getTodayPool - 04시 cutoff 기준 today(sessionDate) 계산") {
             data class TimezoneCase(
                 val requestedAt: String,
                 val timezone: ZoneId,
@@ -137,7 +137,7 @@ class StudyTargetPoolCalculatorTest :
                     repo.countTodayReviewCards(
                         userId = 1L,
                         deckId = 1L,
-                        nextSessionStart = LocalDateTime.parse(case.expectedNextSessionStart).atZone(case.timezone).toInstant(),
+                        today = LocalDateTime.parse(case.expectedNextSessionStart).toLocalDate().minusDays(1),
                     )
                 }
             }
@@ -220,7 +220,7 @@ class StudyTargetPoolCalculatorTest :
             }
         }
 
-        describe("getTodayPools - 04시 기준 cutoff nextSessionStart 시간 계산 (단건과 동일 규칙)") {
+        describe("getTodayPools - 04시 cutoff 기준 today(sessionDate) 계산 (단건과 동일 규칙)") {
             data class BatchTimezoneCase(
                 val requestedAt: String,
                 val timezone: ZoneId,
@@ -273,7 +273,7 @@ class StudyTargetPoolCalculatorTest :
                 verify(exactly = 1) {
                     repo.countReviewCardsByDeckIds(
                         deckIds = setOf(1L),
-                        nextSessionStart = LocalDateTime.parse(case.expectedNextSessionStart).atZone(case.timezone).toInstant(),
+                        today = LocalDateTime.parse(case.expectedNextSessionStart).toLocalDate().minusDays(1),
                     )
                 }
             }

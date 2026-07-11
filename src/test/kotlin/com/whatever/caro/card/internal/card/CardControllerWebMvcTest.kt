@@ -102,6 +102,7 @@ class CardControllerWebMvcTest : DescribeSpec() {
         describe("DELETE /v1/cards - @Valid 검증") {
             it("cardIds 가 비어있으면 400 을 반환한다") {
                 mockMvc.delete("/v1/cards") {
+                    header("Client-Timezone", "Asia/Seoul")
                     contentType = MediaType.APPLICATION_JSON
                     content = """{"cardIds": []}"""
                 }.andExpect {
@@ -112,6 +113,7 @@ class CardControllerWebMvcTest : DescribeSpec() {
             it("cardIds 가 1000개를 초과하면 400 을 반환한다") {
                 val ids = (1..1001).joinToString(",")
                 mockMvc.delete("/v1/cards") {
+                    header("Client-Timezone", "Asia/Seoul")
                     contentType = MediaType.APPLICATION_JSON
                     content = """{"cardIds": [$ids]}"""
                 }.andExpect {
@@ -121,8 +123,18 @@ class CardControllerWebMvcTest : DescribeSpec() {
 
             it("cardIds 에 0 이하가 섞이면 400 을 반환한다") {
                 mockMvc.delete("/v1/cards") {
+                    header("Client-Timezone", "Asia/Seoul")
                     contentType = MediaType.APPLICATION_JSON
                     content = """{"cardIds": [1, 0]}"""
+                }.andExpect {
+                    status { isBadRequest() }
+                }
+            }
+
+            it("Client-Timezone 헤더가 없으면 400 을 반환한다") {
+                mockMvc.delete("/v1/cards") {
+                    contentType = MediaType.APPLICATION_JSON
+                    content = """{"cardIds": [1]}"""
                 }.andExpect {
                     status { isBadRequest() }
                 }

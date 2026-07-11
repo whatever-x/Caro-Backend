@@ -3,6 +3,7 @@ package com.whatever.caro.study.internal
 import com.whatever.caro.card.api.deck.DeckPresetApi
 import com.whatever.caro.card.api.deck.DeckPresetDto
 import com.whatever.caro.study.CardLearningStatus
+import com.whatever.caro.study.DailyStudyCompletedEvent
 import com.whatever.caro.study.ReviewType
 import com.whatever.caro.study.StudySessionStatus
 import com.whatever.caro.study.exception.SessionExpiredException
@@ -12,9 +13,11 @@ import com.whatever.caro.study.internal.cardlearningstate.CardLearningStateRepos
 import com.whatever.caro.study.internal.studysession.ReviewLog
 import com.whatever.caro.study.internal.studysession.ReviewLogRepository
 import com.whatever.caro.study.internal.studysession.StudySessionRepository
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
+import java.time.ZoneId
 
 @Service
 class EvaluationService(
@@ -22,10 +25,12 @@ class EvaluationService(
     private val deckPresetApi: DeckPresetApi,
     private val cardLearningStateRepository: CardLearningStateRepository,
     private val reviewLogRepository: ReviewLogRepository,
+    private val applicationEventPublisher: ApplicationEventPublisher,
 ) {
     @Transactional
     fun evaluate(
         now: Instant,
+        timezone: ZoneId,
         userId: Long,
         sessionId: Long,
         items: List<EvaluatedCardDto>,
@@ -37,7 +42,7 @@ class EvaluationService(
         if (session.status != StudySessionStatus.ACTIVE) {
             throw SessionNotActiveException()
         }
-        if (session.isTodaySession(now).not()) {
+        if (session.isTodaySession(now, timezone).not()) {
             throw SessionExpiredException()
         }
 
@@ -65,7 +70,7 @@ class EvaluationService(
             val cls = clsByCardId[it.item.cardId]
                 ?: error("CardLearningState not exist for cardId=${it.item.cardId}")
 
-            val context = SchedulingContext(now, params)
+            val context = SchedulingContext(studyDate = session.sessionDate, params = params)
             val nextState = cls.toSchedulingState().nextStates(context).pick(it.item.rating)
 
             val reviewLog = ReviewLog(
@@ -83,14 +88,21 @@ class EvaluationService(
             )
 
             cls.applyScheduling(
-                now = now,
+                studyDate = session.sessionDate,
                 nextState = nextState,
             )
 
             session.updateStudiedCard(reviewLog.reviewType)
             reviewLog
         }
-        session.completeIfGoalAchieved(now)
+        if (session.completeIfGoalAchieved(now)) {
+            applicationEventPublisher.publishEvent(
+                DailyStudyCompletedEvent(
+                    userId = userId,
+                    studyDate = session.sessionDate,
+                ),
+            )
+        }
 
         reviewLogRepository.saveAll(newReviewLogs)
 

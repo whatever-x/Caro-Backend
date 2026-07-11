@@ -27,6 +27,8 @@ import org.springframework.test.web.servlet.get
         "DB_PASSWORD=dummy",
         "REDIS_HOST=dummy",
         "REDIS_PASSWORD=dummy",
+        "EMAIL_ENCRYPTION_KEY=dGVzdC1lbmNyeXB0aW9uLWtleS0wMTIzNDU2Nzg5YWI=",
+        "EMAIL_BLIND_INDEX_KEY=dGVzdC1ibGluZGluZGV4LWtleS0wMTIzNDU2Nzg5YWI=",
     ],
 )
 class SwaggerDisabledInProdTest(

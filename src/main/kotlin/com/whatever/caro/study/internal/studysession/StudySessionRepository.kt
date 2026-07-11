@@ -4,34 +4,9 @@ import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
 import org.springframework.transaction.annotation.Transactional
+import java.time.LocalDate
 
 interface StudySessionRepository : JpaRepository<StudySession, Long> {
-
-    @Query(
-        """
-        select ss from StudySession ss
-        where ss.userId = :userId
-          and ss.deckId = :deckId
-        order by ss.startedAt desc limit 1
-    """,
-    )
-    fun findByUserAndDeckOrderByStartedAtDesc(
-        userId: Long,
-        deckId: Long,
-    ): StudySession?
-
-    @Transactional
-    @Modifying(flushAutomatically = true, clearAutomatically = true)
-    @Query(
-        """
-        update StudySession ss set ss.status = StudySessionStatus.STOPPED
-        where ss.id = :id
-          and ss.status = StudySessionStatus.ACTIVE
-    """,
-    )
-    fun setStoppedIfActive(
-        id: Long,
-    ): Int
 
     fun findByIdAndUserId(
         id: Long,
@@ -42,18 +17,42 @@ interface StudySessionRepository : JpaRepository<StudySession, Long> {
         """
         select ss from StudySession ss
         where ss.userId = :userId
+            and ss.deckId = :deckId
+            and ss.sessionDate between :fromDate and :toDate
+    """,
+    )
+    fun findByUserIdAndDeckIdAndSessionDateBetween(
+        userId: Long,
+        deckId: Long,
+        fromDate: LocalDate,
+        toDate: LocalDate,
+    ): List<StudySession>
+
+    @Query(
+        """
+        select ss from StudySession ss
+        where ss.userId = :userId
             and ss.deckId in :deckIds
-            and not exists (
-                select 1 from StudySession ss2
-                where ss2.userId = :userId
-                    and ss2.deckId = ss.deckId
-                    and (ss2.startedAt > ss.startedAt
-                            or (ss2.startedAt = ss.startedAt and ss2.id > ss.id))
-            )
+            and ss.sessionDate between :fromDate and :toDate
         """,
     )
-    fun findLatestByUserIdAndDeckIdIn(
+    fun findByUserIdAndDeckIdInAndSessionDateBetween(
         userId: Long,
         deckIds: Set<Long>,
+        fromDate: LocalDate,
+        toDate: LocalDate,
     ): List<StudySession>
+
+    @Transactional
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query(
+        """
+        update StudySession ss set ss.status = StudySessionStatus.STOPPED
+        where ss.status = StudySessionStatus.ACTIVE
+            and ss.sessionDate <= :before
+    """,
+    )
+    fun stopStaledActiveBefore(
+        before: LocalDate,
+    ): Int
 }

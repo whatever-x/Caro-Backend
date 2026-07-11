@@ -29,6 +29,7 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Clock
 import java.time.Instant
+import java.time.ZoneId
 
 @Service
 class CardService(
@@ -202,6 +203,7 @@ class CardService(
     @Transactional
     fun deleteCard(
         userId: Long,
+        timezone: ZoneId,
         dto: DeleteCardDto,
     ): DeleteCardResponseDto {
         // 받은 카드들 중에서 내게 아닌 카드가 섞여있는지 체크. 한개라도 있다면 카드 삭제 수행 하지 않음
@@ -252,6 +254,7 @@ class CardService(
                         userId = userId,
                         deletedCardIds = deckCards.map { it.id }.toSet(),
                         deletedAt = now,
+                        clientTimezone = timezone,
                     ),
                 )
             }

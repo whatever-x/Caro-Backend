@@ -36,6 +36,7 @@ internal class CardLearningStateEventListener(
 
         studyService.adjustGoalsOnCardDeletion(
             now = event.deletedAt,
+            timezone = event.clientTimezone,
             userId = event.userId,
             deckId = event.deckId,
         )

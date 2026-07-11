@@ -479,6 +479,8 @@ class CardServiceUnitTest :
         }
 
         describe("deleteCard") {
+            val clientTimezone = ZoneId.of("Asia/Seoul")
+
             it("여러 카드를 soft delete 하고, 마지막 카드인 노트는 함께 삭제하며, 덱 cardCount 를 감소시킨다") {
                 val userId = 1L
                 val noteType = newNoteType(id = 1L)
@@ -501,7 +503,7 @@ class CardServiceUnitTest :
                     cardRepository.findSurvivorNoteIdsByNoteIdInExcludingCards(setOf(200L, 201L), listOf(300L, 301L))
                 } returns emptyList()
 
-                val result = cardService.deleteCard(userId, DeleteCardDto(cardIds = setOf(300L, 301L)))
+                val result = cardService.deleteCard(userId, clientTimezone, DeleteCardDto(cardIds = setOf(300L, 301L)))
 
                 result.deletedCardsCount shouldBe 2
                 card1.isDeleted.shouldBeTrue()
@@ -517,6 +519,7 @@ class CardServiceUnitTest :
                             userId = userId,
                             deletedCardIds = setOf(300L, 301L),
                             deletedAt = fixedNow,
+                            clientTimezone = clientTimezone,
                         ),
                     )
                 }
@@ -541,7 +544,7 @@ class CardServiceUnitTest :
                     cardRepository.findSurvivorNoteIdsByNoteIdInExcludingCards(setOf(200L), listOf(300L))
                 } returns listOf(200L)
 
-                cardService.deleteCard(userId, DeleteCardDto(cardIds = setOf(300L)))
+                cardService.deleteCard(userId, clientTimezone, DeleteCardDto(cardIds = setOf(300L)))
 
                 card.isDeleted.shouldBeTrue()
                 sharedNote.isDeleted.shouldBeFalse()
@@ -570,7 +573,7 @@ class CardServiceUnitTest :
                     cardRepository.findSurvivorNoteIdsByNoteIdInExcludingCards(setOf(200L, 201L), listOf(300L, 301L))
                 } returns emptyList()
 
-                cardService.deleteCard(userId, DeleteCardDto(cardIds = setOf(300L, 301L)))
+                cardService.deleteCard(userId, clientTimezone, DeleteCardDto(cardIds = setOf(300L, 301L)))
 
                 deckA.cardCount shouldBe 1
                 deckB.cardCount shouldBe 1
@@ -582,6 +585,7 @@ class CardServiceUnitTest :
                             userId = userId,
                             deletedCardIds = setOf(300L),
                             deletedAt = fixedNow,
+                            clientTimezone = clientTimezone,
                         ),
                     )
                     eventPublisher.publishEvent(
@@ -591,6 +595,7 @@ class CardServiceUnitTest :
                             userId = userId,
                             deletedCardIds = setOf(301L),
                             deletedAt = fixedNow,
+                            clientTimezone = clientTimezone,
                         ),
                     )
                 }
@@ -615,7 +620,7 @@ class CardServiceUnitTest :
                     cardRepository.findSurvivorNoteIdsByNoteIdInExcludingCards(setOf(200L), listOf(300L))
                 } returns emptyList()
 
-                val result = cardService.deleteCard(userId, DeleteCardDto(cardIds = setOf(300L, 301L)))
+                val result = cardService.deleteCard(userId, clientTimezone, DeleteCardDto(cardIds = setOf(300L, 301L)))
 
                 result.deletedCardsCount shouldBe 2 // B: 300(산 것) + 301(이미 삭제) 모두 "결과적 삭제 상태"
                 aliveCard.isDeleted.shouldBeTrue()
@@ -628,6 +633,7 @@ class CardServiceUnitTest :
                             userId = userId,
                             deletedCardIds = setOf(300L),
                             deletedAt = fixedNow,
+                            clientTimezone = clientTimezone,
                         ),
                     )
                 }
@@ -641,7 +647,7 @@ class CardServiceUnitTest :
                 )
 
                 shouldThrow<CardForbiddenException> {
-                    cardService.deleteCard(userId, DeleteCardDto(cardIds = setOf(300L, 301L)))
+                    cardService.deleteCard(userId, clientTimezone, DeleteCardDto(cardIds = setOf(300L, 301L)))
                 }
                 verify(exactly = 0) { eventPublisher.publishEvent(any()) }
                 verify(exactly = 0) {
@@ -653,7 +659,7 @@ class CardServiceUnitTest :
                 val userId = 1L
                 every { cardRepository.findAllByIds(setOf(999L)) } returns emptyList()
 
-                val result = cardService.deleteCard(userId, DeleteCardDto(cardIds = setOf(999L)))
+                val result = cardService.deleteCard(userId, clientTimezone, DeleteCardDto(cardIds = setOf(999L)))
 
                 result.deletedCardsCount shouldBe 0
                 verify(exactly = 0) { eventPublisher.publishEvent(any()) }
@@ -665,7 +671,7 @@ class CardServiceUnitTest :
                     CardOwnership(id = 300L, userId = userId, deletedAt = fixedNow), // 이미 삭제됨
                 )
 
-                val result = cardService.deleteCard(userId, DeleteCardDto(cardIds = setOf(300L)))
+                val result = cardService.deleteCard(userId, clientTimezone, DeleteCardDto(cardIds = setOf(300L)))
 
                 result.deletedCardsCount shouldBe 1
                 verify(exactly = 0) { eventPublisher.publishEvent(any()) }
@@ -689,7 +695,7 @@ class CardServiceUnitTest :
                     cardRepository.findSurvivorNoteIdsByNoteIdInExcludingCards(setOf(200L), listOf(300L))
                 } returns emptyList()
 
-                cardService.deleteCard(userId, DeleteCardDto(cardIds = setOf(300L)))
+                cardService.deleteCard(userId, clientTimezone, DeleteCardDto(cardIds = setOf(300L)))
 
                 deck.cardCount shouldBe 0
             }
@@ -716,7 +722,7 @@ class CardServiceUnitTest :
                     cardRepository.findSurvivorNoteIdsByNoteIdInExcludingCards(setOf(200L, 201L), listOf(300L, 301L))
                 } returns listOf(201L)
 
-                cardService.deleteCard(userId, DeleteCardDto(cardIds = setOf(300L, 301L)))
+                cardService.deleteCard(userId, clientTimezone, DeleteCardDto(cardIds = setOf(300L, 301L)))
 
                 card1.isDeleted.shouldBeTrue()
                 card2.isDeleted.shouldBeTrue()

@@ -2,6 +2,7 @@ package com.whatever.caro.user.internal
 
 import com.whatever.caro.user.SocialProvider
 import com.whatever.caro.user.UserApi
+import com.whatever.caro.user.internal.encrypt.EmailHasher
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.DescribeSpec
 import io.kotest.matchers.shouldBe
@@ -12,9 +13,10 @@ import org.springframework.dao.DataIntegrityViolationException
 class UserServiceUnitTest :
     DescribeSpec({
 
+        val mockEmailHasher = mockk<EmailHasher>(relaxed = true)
         val mockUserRepo = mockk<UserRepository>(relaxed = true)
         val mockSocialRepo = mockk<SocialAccountRepository>(relaxed = true)
-        val userApi: UserApi = UserService(userRepository = mockUserRepo, socialAccountRepository = mockSocialRepo)
+        val userApi: UserApi = UserService(emailHasher = mockEmailHasher, userRepository = mockUserRepo, socialAccountRepository = mockSocialRepo)
 
         fun createUserWithId(
             id: Long,
