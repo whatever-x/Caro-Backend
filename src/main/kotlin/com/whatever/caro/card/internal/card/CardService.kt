@@ -209,7 +209,7 @@ class CardService(
         val anotherUserCard = cards.find { it.userId != userId }
         if (anotherUserCard != null) throw CardForbiddenException("cardId=${anotherUserCard.id} 에 대한 접근 권한이 없습니다")
 
-        val (aliveCards, alreadyDeletedCards) = cards.partition { it.deletedAt == null }
+        val (aliveCards, _) = cards.partition { it.deletedAt == null }
 
         // 삭제 되지 않은 카드들에 대해서만 조회해서 삭제처리
         // 0 개라면 이벤트, 삭제처리 없이 그대로 종료
@@ -235,17 +235,21 @@ class CardService(
         }
 
         // TODO 배치삭제로 수정 필요
-        eventPublisher.publishEvent(
-            CardsDeletedEvent(
-                deckId = deletedCards.first().deck.id,
-                deletedCount = deletedCards.count(),
-                userId = userId,
-                deletedCardIds = deletedCards.map { it.id }.toSet(),
-                deletedAt = now,
-            ),
-        )
+        // 덱 별로 삭제 이벤트 발행
+        deletedCards.groupBy { it.deck.id }
+            .forEach { (deckId, deckCards) ->
+                eventPublisher.publishEvent(
+                    CardsDeletedEvent(
+                        deckId = deckId,
+                        deletedCount = deckCards.size,
+                        userId = userId,
+                        deletedCardIds = deckCards.map { it.id }.toSet(),
+                        deletedAt = now,
+                    ),
+                )
+            }
 
-        return DeleteCardResponseDto(deletedCardsCount = aliveCards.count())
+        return DeleteCardResponseDto(deletedCardsCount = cards.size)
     }
 
     private fun projectFields(
