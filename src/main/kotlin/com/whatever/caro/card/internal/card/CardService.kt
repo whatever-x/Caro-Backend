@@ -224,15 +224,22 @@ class CardService(
             }
             ?: return DeleteCardResponseDto(deletedCardsCount = 0)
 
+        val referencedNoteIds = deletedCards.map { it.note.id }.toSet()
+        val survivorNoteIds = cardRepository.findSurvivorNoteIdsByNoteIdInExcludingCards(
+            referencedNoteIds = referencedNoteIds,
+            deletingCardIds = deletedCards.map { it.id },
+        ).toSet()
+        val orphanNoteIds = referencedNoteIds - survivorNoteIds
+
         val now = Instant.now(clock)
-        // 삭제 및 연관관계인 덱쪽의 카드카운트를 1개 빼주고, 노트 또한 삭제
+        // 삭제 및 연관관계인 덱쪽의 카드카운트를 1개 빼줌
         deletedCards.forEach { card ->
             card.softDelete(now)
             card.deck.cardCount = maxOf(0, card.deck.cardCount - 1)
-            if (cardRepository.countByNoteIdAndDeletedAtIsNullAndIdNot(card.note.id, card.id) == 0L) {
-                card.note.softDelete(deletedAt = now)
-            }
         }
+        // 노트가 더이상 참조하는 카드가 없다면 노트도 삭제
+        deletedCards.filter { it.note.id in orphanNoteIds }
+            .forEach { card -> card.note.softDelete(now) }
 
         // TODO 배치삭제로 수정 필요
         // 덱 별로 삭제 이벤트 발행

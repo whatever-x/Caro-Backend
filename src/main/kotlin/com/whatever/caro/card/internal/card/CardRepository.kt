@@ -47,6 +47,19 @@ interface CardRepository : JpaRepository<Card, Long> {
 
     @Query(
         """
+            select distinct c.note.id from Card c
+            where c.note.id in :referencedNoteIds
+            and c.deletedAt IS NULL
+            and c.id not in :deletingCardIds
+        """
+    )
+    fun findSurvivorNoteIdsByNoteIdInExcludingCards(
+        referencedNoteIds: Collection<Long>,
+        deletingCardIds: Collection<Long>,
+    ): List<Long>
+
+    @Query(
+        """
             select new com.whatever.caro.card.internal.card.CardOwnership(c.id, c.userId, c.deletedAt)
             from Card c
             where c.id in :ids
