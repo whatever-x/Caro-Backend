@@ -9,6 +9,7 @@ import com.whatever.caro.card.internal.card.dto.create.CreateCardsRequest
 import com.whatever.caro.card.internal.card.dto.create.CreateCardsResponseDto
 import com.whatever.caro.card.internal.card.dto.delete.DeleteCardDto
 import com.whatever.caro.card.internal.card.dto.delete.DeleteCardResponseDto
+import com.whatever.caro.card.internal.card.dto.delete.DeleteCardsRequest
 import com.whatever.caro.card.internal.card.dto.read.CardResponseDto
 import com.whatever.caro.card.internal.card.dto.update.UpdateCardDto
 import com.whatever.caro.card.internal.card.dto.update.UpdateCardRequest
@@ -132,18 +133,18 @@ class CardControllerUnitTest :
             }
         }
 
-        describe("deleteCard") {
-            it("DeleteCardDto 로 서비스에 위임하고 200 과 삭제된 카드 id 를 반환한다") {
-                every { cardService.deleteCard(1L, DeleteCardDto(cardId = 100L)) } returns DeleteCardResponseDto(
-                    cardId = 100L,
+        describe("deleteCards") {
+            it("DeleteCardsRequest 를 DeleteCardDto 로 변환해 서비스에 위임하고 200 과 삭제 개수를 반환한다") {
+                every { cardService.deleteCard(1L, DeleteCardDto(cardIds = setOf(100L, 101L))) } returns DeleteCardResponseDto(
+                    deletedCardsCount = 2,
                 )
 
-                val response = controller.deleteCards(100L)
+                val response = controller.deleteCards(DeleteCardsRequest(cardIds = setOf(100L, 101L)))
 
                 response.statusCode shouldBe HttpStatus.OK
                 response.body!!.success shouldBe true
-                response.body!!.data!!.cardId shouldBe 100L
-                verify { cardService.deleteCard(1L, DeleteCardDto(cardId = 100L)) }
+                response.body!!.data!!.deletedCardsCount shouldBe 2
+                verify { cardService.deleteCard(1L, DeleteCardDto(cardIds = setOf(100L, 101L))) }
             }
         }
     })

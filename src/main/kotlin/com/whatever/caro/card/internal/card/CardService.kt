@@ -222,7 +222,7 @@ class CardService(
                     userId = userId,
                 )
             }
-            ?: return DeleteCardResponseDto(deletedCardsCount = 0)
+            ?: return DeleteCardResponseDto(deletedCardsCount = cards.size)
 
         val referencedNoteIds = deletedCards.map { it.note.id }.toSet()
         val survivorNoteIds = cardRepository.findSurvivorNoteIdsByNoteIdInExcludingCards(
