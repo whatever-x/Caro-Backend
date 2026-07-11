@@ -51,7 +51,7 @@ interface CardRepository : JpaRepository<Card, Long> {
             where c.note.id in :referencedNoteIds
             and c.deletedAt IS NULL
             and c.id not in :deletingCardIds
-        """
+        """,
     )
     fun findSurvivorNoteIdsByNoteIdInExcludingCards(
         referencedNoteIds: Collection<Long>,
@@ -63,7 +63,7 @@ interface CardRepository : JpaRepository<Card, Long> {
             select new com.whatever.caro.card.internal.card.CardOwnership(c.id, c.userId, c.deletedAt)
             from Card c
             where c.id in :ids
-        """
+        """,
     )
     fun findAllByIds(
         ids: Collection<Long>,
