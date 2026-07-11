@@ -204,32 +204,48 @@ class CardService(
         userId: Long,
         dto: DeleteCardDto,
     ): DeleteCardResponseDto {
-        val card = cardRepository.findByIdAndDeletedAtIsNullWithNoteAndTemplate(dto.cardId)
-            ?: throw CardNotFoundException("cardId=${dto.cardId} 카드를 찾을 수 없습니다")
+        // 받은 카드들 중에서 내게 아닌 카드가 섞여있는지 체크. 한개라도 있다면 카드 삭제 수행 하지 않음
+        val cards = cardRepository.findAllByIds(dto.cardIds)
+        val anotherUserCard = cards.find { it.userId != userId }
+        if (anotherUserCard != null) throw CardForbiddenException("cardId=${anotherUserCard.id} 에 대한 접근 권한이 없습니다")
 
-        if (card.userId != userId) {
-            throw CardForbiddenException("cardId=${dto.cardId} 에 대한 접근 권한이 없습니다")
-        }
+        val (aliveCards, alreadyDeletedCards) = cards.partition { it.deletedAt == null }
+
+        // 삭제 되지 않은 카드들에 대해서만 조회해서 삭제처리
+        // 0 개라면 이벤트, 삭제처리 없이 그대로 종료
+        val deletedCards = aliveCards
+            .map { aliveCard -> aliveCard.id }
+            .takeIf { it.isNotEmpty() }
+            ?.let { cards ->
+                cardRepository.findAllByIdInAndUserIdAndDeletedAtIsNullWithNoteAndTemplate(
+                    ids = cards,
+                    userId = userId,
+                )
+            }
+            ?: return DeleteCardResponseDto(deletedCardsCount = 0)
 
         val now = Instant.now(clock)
-        card.softDelete(deletedAt = now)
-        card.deck.cardCount = maxOf(0, card.deck.cardCount - 1)
-
-        if (cardRepository.countByNoteIdAndDeletedAtIsNullAndIdNot(card.note.id, card.id) == 0L) {
-            card.note.softDelete(deletedAt = now)
+        // 삭제 및 연관관계인 덱쪽의 카드카운트를 1개 빼주고, 노트 또한 삭제
+        deletedCards.forEach { card ->
+            card.softDelete(now)
+            card.deck.cardCount = maxOf(0, card.deck.cardCount - 1)
+            if (cardRepository.countByNoteIdAndDeletedAtIsNullAndIdNot(card.note.id, card.id) == 0L) {
+                card.note.softDelete(deletedAt = now)
+            }
         }
-// TODO 배치삭제로 수정 필요
+
+        // TODO 배치삭제로 수정 필요
         eventPublisher.publishEvent(
             CardsDeletedEvent(
-                deckId = card.deck.id,
-                deletedCount = 1,
+                deckId = deletedCards.first().deck.id,
+                deletedCount = deletedCards.count(),
                 userId = userId,
-                deletedCardIds = setOf(card.id),
+                deletedCardIds = deletedCards.map { it.id }.toSet(),
                 deletedAt = now,
             ),
         )
 
-        return DeleteCardResponseDto(cardId = card.id)
+        return DeleteCardResponseDto(deletedCardsCount = aliveCards.count())
     }
 
     private fun projectFields(

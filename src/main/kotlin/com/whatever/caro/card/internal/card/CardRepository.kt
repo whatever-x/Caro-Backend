@@ -44,4 +44,15 @@ interface CardRepository : JpaRepository<Card, Long> {
         noteId: Long,
         id: Long,
     ): Long
+
+    @Query(
+        """
+            select new com.whatever.caro.card.internal.card.CardOwnership(c.id, c.userId, c.deletedAt)
+            from Card c
+            where c.id in :ids
+        """
+    )
+    fun findAllByIds(
+        ids: Collection<Long>,
+    ): List<CardOwnership>
 }

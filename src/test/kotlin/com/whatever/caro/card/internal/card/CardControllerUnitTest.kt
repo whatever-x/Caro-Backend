@@ -138,7 +138,7 @@ class CardControllerUnitTest :
                     cardId = 100L,
                 )
 
-                val response = controller.deleteCard(100L)
+                val response = controller.deleteCards(100L)
 
                 response.statusCode shouldBe HttpStatus.OK
                 response.body!!.success shouldBe true
