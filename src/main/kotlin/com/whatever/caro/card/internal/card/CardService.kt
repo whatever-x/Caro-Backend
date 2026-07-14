@@ -208,45 +208,46 @@ class CardService(
     ): DeleteCardResponseDto {
         // 받은 카드들 중에서 내게 아닌 카드가 섞여있는지 체크. 한개라도 있다면 카드 삭제 수행 하지 않음
         val cards = cardRepository.findAllByIds(dto.cardIds)
-        val anotherUserCard = cards.find { it.userId != userId }
-        if (anotherUserCard != null) throw CardForbiddenException("cardId=${anotherUserCard.id} 에 대한 접근 권한이 없습니다")
-
         val (aliveCards, _) = cards.partition { it.deletedAt == null }
 
-        // 삭제 되지 않은 카드들에 대해서만 조회해서 삭제처리
-        // 0 개라면 이벤트, 삭제처리 없이 그대로 종료
-        val deletedCards = aliveCards
-            .map { aliveCard -> aliveCard.id }
-            .takeIf { it.isNotEmpty() }
-            ?.let { cards ->
-                cardRepository.findAllByIdInAndUserIdAndDeletedAtIsNullWithNoteAndTemplate(
-                    ids = cards,
-                    userId = userId,
-                )
-            }
-            ?: return DeleteCardResponseDto(deletedCardsCount = cards.size)
+        val anotherUserCard = aliveCards.find { it.userId != userId }
+        if (anotherUserCard != null) {
+            throw CardForbiddenException("cardId=${anotherUserCard.id} 에 대한 접근 권한이 없습니다")
+        }
 
-        val referencedNoteIds = deletedCards.map { it.note.id }.toSet()
+        // 응답 count 는 요청 중 "내 카드"만 센다 (남의 삭제된 카드는 존재 여부 노출 방지 위해 제외)
+        val myCards = cards.filter { it.userId == userId }
+
+        // 삭제 대상(살아있는 내 카드) — 없으면 삭제/이벤트 없이 count 만 반환
+        val aliveCardIds = aliveCards.map { it.id }
+        if (aliveCardIds.isEmpty()) {
+            return DeleteCardResponseDto(deletedCardsCount = myCards.size)
+        }
+
+        val cardsToDelete = cardRepository.findAllByIdInAndUserIdAndDeletedAtIsNullWithNoteAndTemplate(
+            ids = aliveCardIds,
+            userId = userId,
+        )
+
+        val referencedNoteIds = cardsToDelete.map { it.note.id }.toSet()
         val survivorNoteIds = cardRepository.findSurvivorNoteIdsByNoteIdInExcludingCards(
             referencedNoteIds = referencedNoteIds,
-            deletingCardIds = deletedCards.map { it.id },
+            deletingCardIds = cardsToDelete.map { it.id },
         ).toSet()
         val orphanNoteIds = referencedNoteIds - survivorNoteIds
 
         val now = Instant.now(clock)
-        // 삭제 및 연관관계인 덱쪽의 카드카운트를 1개 빼줌
-        deletedCards.forEach { card ->
-            card.softDelete(now)
-            card.deck.cardCount = maxOf(0, card.deck.cardCount - 1)
-        }
+        // 카드 soft delete (덱 카드 수 감소는 아래 덱별 처리에서 수행)
+        cardsToDelete.forEach { card -> card.softDelete(now) }
         // 노트가 더이상 참조하는 카드가 없다면 노트도 삭제
-        deletedCards.filter { it.note.id in orphanNoteIds }
+        cardsToDelete.filter { it.note.id in orphanNoteIds }
             .forEach { card -> card.note.softDelete(now) }
 
         // TODO 배치삭제로 수정 필요
         // 덱 별로 삭제 이벤트 발행
-        deletedCards.groupBy { it.deck.id }
+        cardsToDelete.groupBy { it.deck.id }
             .forEach { (deckId, deckCards) ->
+                deckRepository.decreaseCardCount(deckId, deckCards.size)
                 eventPublisher.publishEvent(
                     CardsDeletedEvent(
                         deckId = deckId,
@@ -259,7 +260,7 @@ class CardService(
                 )
             }
 
-        return DeleteCardResponseDto(deletedCardsCount = cards.size)
+        return DeleteCardResponseDto(deletedCardsCount = myCards.size)
     }
 
     private fun projectFields(
