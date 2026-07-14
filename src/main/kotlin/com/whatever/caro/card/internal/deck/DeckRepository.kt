@@ -46,4 +46,11 @@ interface DeckRepository : JpaRepository<Deck, Long> {
         deckId: Long,
         amount: Int,
     ): Int
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("update Deck d set d.cardCount = d.cardCount + :amount where d.id = :deckId")
+    fun increaseCardCount(
+        deckId: Long,
+        amount: Int,
+    ): Int
 }

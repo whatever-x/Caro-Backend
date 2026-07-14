@@ -113,7 +113,10 @@ class CardService(
             )
         }
 
-        deck.cardCount += createdCards.size
+        deckRepository.increaseCardCount(
+            deckId = deck.id,
+            amount = createdCards.size,
+        )
         eventPublisher.publishEvent(
             CardsCreatedEvent(cardIds = createdCards.map { it.cardId }, deckId = deck.id, userId = userId),
         )
