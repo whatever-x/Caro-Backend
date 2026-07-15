@@ -1,10 +1,7 @@
 package com.whatever.caro.card.internal.card.dto.delete
 
 data class DeleteCardResponseDto(
-    val cardId: Long,
+    val deletedCardsCount: Int,
 )
 
-fun DeleteCardResponseDto.toResponse() =
-    DeleteCardResponse(
-        cardId = cardId,
-    )
+fun DeleteCardResponseDto.toResponse() = DeleteCardResponse(deletedCardsCount = deletedCardsCount)

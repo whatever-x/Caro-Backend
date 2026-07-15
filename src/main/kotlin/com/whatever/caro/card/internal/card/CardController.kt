@@ -7,6 +7,7 @@ import com.whatever.caro.card.internal.card.dto.create.toDto
 import com.whatever.caro.card.internal.card.dto.create.toResponse
 import com.whatever.caro.card.internal.card.dto.delete.DeleteCardDto
 import com.whatever.caro.card.internal.card.dto.delete.DeleteCardResponse
+import com.whatever.caro.card.internal.card.dto.delete.DeleteCardsRequest
 import com.whatever.caro.card.internal.card.dto.delete.toResponse
 import com.whatever.caro.card.internal.card.dto.read.CardResponse
 import com.whatever.caro.card.internal.card.dto.read.toResponse
@@ -78,18 +79,17 @@ class CardController(
         return ResponseEntity.ok(ApiResponse.ok(result))
     }
 
-    @DeleteMapping("/v1/cards/{id}")
-    fun deleteCard(
-        @Parameter(description = "카드 ID", required = true)
-        @Positive @PathVariable id: Long,
+    @DeleteMapping("/v1/cards")
+    fun deleteCards(
         @RequestHeader("Client-Timezone", required = true)
         timezone: ZoneId,
+        @RequestBody @Valid cards: DeleteCardsRequest,
     ): ResponseEntity<ApiResponse<DeleteCardResponse>> {
         val userId = SecurityUtil.currentUser().userId
         val result = cardService.deleteCard(
             userId = userId,
             timezone = timezone,
-            dto = DeleteCardDto(cardId = id),
+            dto = DeleteCardDto(cardIds = cards.cardIds),
         ).toResponse()
         return ResponseEntity.ok(ApiResponse.ok(result))
     }

@@ -9,6 +9,7 @@ import com.whatever.caro.card.internal.card.dto.create.CreateCardsRequest
 import com.whatever.caro.card.internal.card.dto.create.CreateCardsResponseDto
 import com.whatever.caro.card.internal.card.dto.delete.DeleteCardDto
 import com.whatever.caro.card.internal.card.dto.delete.DeleteCardResponseDto
+import com.whatever.caro.card.internal.card.dto.delete.DeleteCardsRequest
 import com.whatever.caro.card.internal.card.dto.read.CardResponseDto
 import com.whatever.caro.card.internal.card.dto.update.UpdateCardDto
 import com.whatever.caro.card.internal.card.dto.update.UpdateCardRequest
@@ -133,20 +134,22 @@ class CardControllerUnitTest :
             }
         }
 
-        describe("deleteCard") {
+        describe("deleteCards") {
             val clientTimezone = ZoneId.of("Asia/Seoul")
 
-            it("DeleteCardDto로 서비스에 위임하고 200과 삭제된 카드 id를 반환한다") {
+            it("DeleteCardsRequest 를 DeleteCardDto 로 변환해 서비스에 위임하고 200 과 삭제 개수를 반환한다") {
                 every {
-                    cardService.deleteCard(1L, clientTimezone, DeleteCardDto(cardId = 100L))
-                } returns DeleteCardResponseDto(cardId = 100L)
+                    cardService.deleteCard(1L, clientTimezone, DeleteCardDto(cardIds = setOf(100L, 101L)))
+                } returns DeleteCardResponseDto(
+                    deletedCardsCount = 2,
+                )
 
-                val response = controller.deleteCard(100L, clientTimezone)
+                val response = controller.deleteCards(clientTimezone, DeleteCardsRequest(cardIds = setOf(100L, 101L)))
 
                 response.statusCode shouldBe HttpStatus.OK
                 response.body!!.success shouldBe true
-                response.body!!.data!!.cardId shouldBe 100L
-                verify { cardService.deleteCard(1L, clientTimezone, DeleteCardDto(cardId = 100L)) }
+                response.body!!.data!!.deletedCardsCount shouldBe 2
+                verify { cardService.deleteCard(1L, clientTimezone, DeleteCardDto(cardIds = setOf(100L, 101L))) }
             }
         }
     })

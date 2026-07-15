@@ -1,6 +1,7 @@
 package com.whatever.caro.card.internal.deck
 
 import org.springframework.data.jpa.repository.JpaRepository
+import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
 
@@ -38,4 +39,18 @@ interface DeckRepository : JpaRepository<Deck, Long> {
     fun findByIdWithPreset(
         deckId: Long,
     ): Deck?
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("update Deck d set d.cardCount = d.cardCount - :amount where d.id = :deckId")
+    fun decreaseCardCount(
+        deckId: Long,
+        amount: Int,
+    ): Int
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("update Deck d set d.cardCount = d.cardCount + :amount where d.id = :deckId")
+    fun increaseCardCount(
+        deckId: Long,
+        amount: Int,
+    ): Int
 }
