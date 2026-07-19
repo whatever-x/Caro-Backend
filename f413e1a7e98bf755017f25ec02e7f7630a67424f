@@ -1,0 +1,38 @@
+{
+    "version": "0.1.0",
+    "id": "fcdacc25-c48c-4a25-9616-9273d8243674",
+    "timestamp": "2026-07-19T15:55:42.166517Z",
+    "vcs": {
+        "type": "git",
+        "revision": "f413e1a7e98bf755017f25ec02e7f7630a67424f",
+        "origin": "github",
+        "repository": "https://github.com/whatever-x/Caro-Backend.git"
+    },
+    "tool": {
+        "name": "chatter-cli"
+    },
+    "files": [
+        {
+            "path": "src/main/kotlin/com/whatever/caro/bff/internal/web/DeckBFFController.kt",
+            "conversations": [
+                {
+                    "url": "git+CLAUDE_CODE:blob:e6f6752456238bd15c1d3fde11079ab763076746",
+                    "contributor": {
+                        "type": "ai",
+                        "model_id": "2.1.215"
+                    },
+                    "ranges": [
+                        {
+                            "start_line": 39,
+                            "end_line": 42
+                        },
+                        {
+                            "start_line": 48,
+                            "end_line": 49
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}
