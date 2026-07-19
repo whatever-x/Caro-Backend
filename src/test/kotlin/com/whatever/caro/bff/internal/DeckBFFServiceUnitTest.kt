@@ -166,6 +166,26 @@ class DeckBFFServiceUnitTest :
                 result[1].reviewCount shouldBe states.first().totalReviews
             }
 
+            context("정렬 적용") {
+                it("sortType의 정렬 기준이 적용된 순서로 반환한다") {
+                    val cards = (1L..3L).map { i -> createCardContent(i) }
+                    val states = listOf(
+                        createCls(cardId = 1L, status = CardLearningStatus.REVIEW, totalReviews = 1, lastReviewedDate = LocalDate.parse("2026-07-10")),
+                        createCls(cardId = 2L, status = CardLearningStatus.REVIEW, totalReviews = 1, lastReviewedDate = LocalDate.parse("2026-07-18")),
+                        createCls(cardId = 3L, status = CardLearningStatus.REVIEW, totalReviews = 1, lastReviewedDate = LocalDate.parse("2026-07-01")),
+                    )
+                    stubDeckInformation(cards = cards, states = states)
+
+                    val result = service.getCardsWithLearningState(
+                        userId = userId,
+                        deckId = deckId,
+                        sortType = CardSortType.LAST_REVIEWED,
+                    )
+
+                    result.map { it.cardId } shouldContainExactly listOf(2L, 1L, 3L)
+                }
+            }
+
             context("badge 매핑 확인") {
                 data class BadgeCase(
                     val againCount: Int,
