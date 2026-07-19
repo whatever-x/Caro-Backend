@@ -9,6 +9,7 @@ import io.kotest.matchers.shouldBe
 import io.mockk.every
 import io.mockk.mockk
 import org.springframework.dao.DataIntegrityViolationException
+import java.time.Clock
 
 class UserServiceUnitTest :
     DescribeSpec({
@@ -16,7 +17,7 @@ class UserServiceUnitTest :
         val mockEmailHasher = mockk<EmailHasher>(relaxed = true)
         val mockUserRepo = mockk<UserRepository>(relaxed = true)
         val mockSocialRepo = mockk<SocialAccountRepository>(relaxed = true)
-        val userApi: UserApi = UserService(emailHasher = mockEmailHasher, userRepository = mockUserRepo, socialAccountRepository = mockSocialRepo)
+        val userApi: UserApi = UserService(clock = Clock.systemUTC(), emailHasher = mockEmailHasher, userRepository = mockUserRepo, socialAccountRepository = mockSocialRepo)
 
         fun createUserWithId(
             id: Long,
