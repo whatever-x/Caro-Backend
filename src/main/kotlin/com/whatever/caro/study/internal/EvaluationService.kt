@@ -142,6 +142,7 @@ sealed interface ValidationResult
 data class ValidItem(
     val item: EvaluatedCardDto,
 ) : ValidationResult
+
 data class InvalidItem(
     val item: EvaluatedCardDto,
 ) : ValidationResult
@@ -157,9 +158,11 @@ private fun DeckPresetDto.toSm2Params(): Sm2Params =
         leechThreshold = leechThreshold,
     )
 
-private fun List<ReviewLog>.toRatingCounts(): RatingCounts =
-    RatingCounts(
-        again = count { it.rating == Rating.AGAIN },
-        fair = count { it.rating == Rating.FAIR },
-        easy = count { it.rating == Rating.EASY },
+private fun List<ReviewLog>.toRatingCounts(): RatingCounts {
+    val counts = this.groupingBy { it.rating }.eachCount()
+    return RatingCounts(
+        again = counts[Rating.AGAIN] ?: 0,
+        fair = counts[Rating.FAIR] ?: 0,
+        easy = counts[Rating.EASY] ?: 0,
     )
+}
