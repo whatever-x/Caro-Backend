@@ -1,7 +1,6 @@
 package com.whatever.caro.bff.internal
 
 import com.whatever.caro.card.api.card.CardApi
-import com.whatever.caro.card.api.card.CardContentDto
 import com.whatever.caro.card.api.deck.DeckApi
 import com.whatever.caro.card.api.deck.DeckPresetApi
 import com.whatever.caro.study.CardLearningStateDto
@@ -23,6 +22,7 @@ class DeckBFFService(
     fun getCardsWithLearningState(
         userId: Long,
         deckId: Long,
+        sortType: CardSortType,
     ): List<DeckCardItem> {
         val cards = cardApi.getCardContentsByDeck(
             userId = userId,
@@ -35,13 +35,10 @@ class DeckBFFService(
         )
         val deckPreset = deckPresetApi.getLatestDeckPresetByUser(deckId, userId)
 
-        return cards.map { card ->
-            toDeckCardItem(
-                card = card,
-                state = learningStateByCardId[card.cardId],
-                hardBadgeThreshold = deckPreset.hardBadgeThreshold,
-            )
-        }
+        return cards
+            .map { CardWithState(card = it, state = learningStateByCardId[it.cardId]) }
+            .sortedWith(sortType.comparator())
+            .map { it.toDeckCardItem(hardBadgeThreshold = deckPreset.hardBadgeThreshold) }
     }
 
     fun getDecksWithDailyStudySession(
@@ -101,9 +98,7 @@ private fun TodayStudySessionState.toDeckProgress(): StudySessionProgress =
         )
     }
 
-private fun toDeckCardItem(
-    card: CardContentDto,
-    state: CardLearningStateDto?,
+private fun CardWithState.toDeckCardItem(
     hardBadgeThreshold: Int,
 ): DeckCardItem =
     DeckCardItem(

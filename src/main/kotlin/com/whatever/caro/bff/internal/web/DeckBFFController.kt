@@ -1,6 +1,7 @@
 package com.whatever.caro.bff.internal.web
 
 import com.whatever.caro.auth.SecurityUtil
+import com.whatever.caro.bff.internal.CardSortType
 import com.whatever.caro.bff.internal.DeckBFFService
 import com.whatever.caro.bff.internal.DeckCardItem
 import com.whatever.caro.bff.internal.DeckListItem
@@ -16,6 +17,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestHeader
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import java.time.Clock
 import java.time.Instant
@@ -33,16 +35,24 @@ class DeckBFFController(
         description = """
         덱에 있는 모든 카드를 조회한다.
         각 카드별로 학습 상태를 기반으로 NEW/REVIEW/HARD badge, 복습 수가 함께 제공된다.
+
+        sortType에 따라 정렬된다 (기본값 CREATED). 동률은 항상 cardId 역순.
+        - CREATED: 최신 생성순 (cardId 역순)
+        - LAST_REVIEWED: 최근 복습일 역순. 미복습 카드는 목록 끝에 최신 생성순으로 배치
+        - REVIEW_FREQUENCY: 복습 수(reviewCount) 많은 순
         """,
     )
     @GetMapping("/v2/decks/{deckId}/cards")
     fun getCardsByDeck(
         @Parameter(description = "덱 ID", required = true) @PathVariable deckId: Long,
+        @Parameter(description = "정렬 기준 (기본값 CREATED)")
+        @RequestParam("sortType", defaultValue = "CREATED") sortType: CardSortType,
     ): ResponseEntity<ApiResponse<List<DeckCardResponse>>> {
         val userId = SecurityUtil.currentUser().userId
         val cards = deckBFFService.getCardsWithLearningState(
             userId = userId,
             deckId = deckId,
+            sortType = sortType,
         )
         return ResponseEntity.ok(ApiResponse.ok(cards.map { it.toResponse() }))
     }
