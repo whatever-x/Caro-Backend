@@ -50,6 +50,10 @@ class DeckController(
         return ResponseEntity.ok(ApiResponse.ok(deck))
     }
 
+    @Operation(
+        summary = "덱 삭제",
+        description = "덱을 삭제한다. 덱에 속한 카드와 학습 상태도 함께 정리된다.",
+    )
     @DeleteMapping("/{deckId}")
     fun deleteDeck(
         @Parameter(description = "덱 ID", required = true)
@@ -63,6 +67,10 @@ class DeckController(
         return ResponseEntity.ok(ApiResponse.ok(deck))
     }
 
+    @Operation(
+        summary = "덱 수정",
+        description = "덱의 이름/설명 등 메타데이터를 수정한다.",
+    )
     @PatchMapping("/{deckId}")
     fun updateDeck(
         @Parameter(description = "덱 ID", required = true)

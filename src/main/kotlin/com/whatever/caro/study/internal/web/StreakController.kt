@@ -1,6 +1,7 @@
 package com.whatever.caro.study.internal.web
 
 import com.whatever.caro.auth.SecurityUtil
+import com.whatever.caro.common.response.ApiResponse
 import com.whatever.caro.study.internal.streak.StreakService
 import com.whatever.caro.study.internal.web.response.StreakResponse
 import io.swagger.v3.oas.annotations.Operation
@@ -30,7 +31,7 @@ class StreakController(
     @GetMapping
     fun getStreak(
         @RequestHeader("Client-Timezone") timezone: ZoneId,
-    ): ResponseEntity<StreakResponse> {
+    ): ResponseEntity<ApiResponse<StreakResponse>> {
         val now = Instant.now(clock)
         val currentStreak = streakService.getStreak(
             userId = SecurityUtil.currentUser().userId,
@@ -38,13 +39,20 @@ class StreakController(
             timezone = timezone,
             dayCutoffHour = 0,
         )
-        return ResponseEntity.ok(StreakResponse(currentStreak = currentStreak))
+        return ResponseEntity.ok(ApiResponse.ok(StreakResponse(currentStreak = currentStreak)))
     }
 
+    @Operation(
+        summary = "streak 동기화",
+        description = """
+        오늘까지의 학습 이력을 기준으로 휴식일 여부를 확인한 뒤 streak을 동기화한다.
+        오프라인 학습 후 재접속 시 클라이언트가 호출해 서버 streak을 최신 상태로 맞추는 용도이다.
+        """,
+    )
     @PostMapping("/sync")
     fun syncStreak(
         @RequestHeader("Client-Timezone") timezone: ZoneId,
-    ) {
+    ): ResponseEntity<ApiResponse<Unit>> {
         val now = Instant.now(clock)
         streakService.syncWithRestDayCheck(
             userId = SecurityUtil.currentUser().userId,
@@ -52,5 +60,6 @@ class StreakController(
             timezone = timezone,
             dayCutoffHour = 0,
         )
+        return ResponseEntity.ok(ApiResponse.ok(Unit))
     }
 }
