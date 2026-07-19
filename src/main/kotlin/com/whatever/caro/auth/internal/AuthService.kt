@@ -3,6 +3,7 @@ package com.whatever.caro.auth.internal
 import com.whatever.caro.auth.AuthUser
 import com.whatever.caro.auth.exception.InvalidRefreshTokenException
 import com.whatever.caro.auth.exception.InvalidSocialTokenException
+import com.whatever.caro.auth.exception.WithdrawnException
 import com.whatever.caro.auth.internal.config.JwtProperties
 import com.whatever.caro.auth.internal.social.SocialIdTokenVerifierFactory
 import com.whatever.caro.auth.internal.token.JwtTokenProvider
@@ -48,6 +49,8 @@ class AuthService(
             providerUserId = socialUserInfo.providerUserId,
             email = socialUserInfo.email,
         )
+
+        if (userInfo.isDeleted) throw WithdrawnException()
 
         val generated = jwtTokenProvider.generateAccessToken(
             userId = userInfo.id,
@@ -150,5 +153,15 @@ class AuthService(
         refreshTokenRepository.deleteByUserDevice(authUser.userId, deviceId)
 
         logger.info { "User logged out: userId=${authUser.userId}, deviceId=$deviceId" }
+    }
+
+    fun withdrawUser(
+        authUser: AuthUser,
+    ) {
+        refreshTokenRepository.deleteAllByUser(authUser.userId)
+        tokenBlacklistRepository.add(authUser.jti, jwtProperties.accessTokenExpiresIn)
+        userApi.deleteMe(authUser.userId)
+
+        logger.info { "User withdraw : userId=${authUser.userId}" }
     }
 }

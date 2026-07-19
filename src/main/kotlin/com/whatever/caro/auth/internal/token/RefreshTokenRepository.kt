@@ -2,6 +2,7 @@ package com.whatever.caro.auth.internal.token
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.data.redis.RedisConnectionFailureException
+import org.springframework.data.redis.core.ScanOptions
 import org.springframework.data.redis.core.StringRedisTemplate
 import org.springframework.data.redis.core.script.DefaultRedisScript
 import org.springframework.data.redis.core.script.RedisScript
@@ -97,6 +98,37 @@ class RefreshTokenRepository(
             redisTemplate.delete(tokenPairKey(refreshToken))
         } catch (e: RedisConnectionFailureException) {
             logger.error { "Redis unavailable during refresh token delete: userId=$userId, deviceId=$deviceId" }
+            throw e
+        }
+    }
+
+    fun deleteAllByUser(
+        userId: Long,
+    ) {
+        try {
+            // 1) refresh:{userId}:* 를 SCAN으로 논블로킹 순회 (KEYS 금지)
+            val forwardKeys = mutableListOf<String>()
+            val options = ScanOptions.scanOptions()
+                .match("$KEY_PREFIX:$userId:*")
+                .count(100)
+                .build()
+
+            redisTemplate.scan(options).use { cursor ->
+                cursor.forEach { forwardKeys.add(it) }
+            }
+            if (forwardKeys.isEmpty()) return
+
+            // 2) token_pair 고아 키까지 지우려면 값(refreshToken)이 필요 → multiGet
+            val tokenPairKeys = redisTemplate.opsForValue()
+                .multiGet(forwardKeys)
+                .orEmpty()
+                .filterNotNull()
+                .map { tokenPairKey(it) }
+
+            // 3) forward + token_pair 한 번에 삭제
+            redisTemplate.delete(forwardKeys + tokenPairKeys)
+        } catch (e: RedisConnectionFailureException) {
+            logger.error { "Redis unavailable during refresh token deleteAllByUser: userId=$userId" }
             throw e
         }
     }

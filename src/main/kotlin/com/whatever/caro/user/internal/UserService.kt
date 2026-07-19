@@ -13,12 +13,15 @@ import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.Clock
+import java.time.Instant
 import java.util.UUID
 
 private val logger = KotlinLogging.logger {}
 
 @Service
 class UserService(
+    private val clock: Clock,
     private val emailHasher: EmailHasher,
     private val userRepository: UserRepository,
     private val socialAccountRepository: SocialAccountRepository,
@@ -124,6 +127,18 @@ class UserService(
         return user.toInfo()
     }
 
+    @Transactional
+    override fun deleteMe(
+        userId: Long,
+    ) {
+        val user = userRepository.findByIdOrNull(userId)
+            ?: throw UserNotFoundException("사용자를 찾을 수 없습니다: $userId")
+
+        if (user.isDeleted) return
+        val now = Instant.now(clock)
+        user.softDelete(now)
+    }
+
     override fun isNicknameAvailable(
         nickname: String,
     ): Boolean {
@@ -139,6 +154,7 @@ private fun User.toInfo(): UserInfo =
         nickname = nickname,
         status = status,
         isTermsAgreed = isTermsAgreed,
+        isDeleted = isDeleted,
     )
 
 object NicknameValidator {
