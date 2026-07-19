@@ -19,6 +19,7 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import java.math.BigDecimal
+import java.time.LocalDate
 
 class DeckBFFServiceUnitTest :
     DescribeSpec({
@@ -45,12 +46,14 @@ class DeckBFFServiceUnitTest :
             status: CardLearningStatus = CardLearningStatus.NEW,
             totalReviews: Int = 0,
             consecutiveAgainCount: Int = 0,
+            lastReviewedDate: LocalDate? = null,
         ): CardLearningStateDto =
             CardLearningStateDto(
                 cardId = cardId,
                 status = status,
                 totalReviews = totalReviews,
                 consecutiveAgainCount = consecutiveAgainCount,
+                lastReviewedDate = lastReviewedDate,
             )
 
         fun createPreset(
@@ -96,7 +99,7 @@ class DeckBFFServiceUnitTest :
 
         describe("getCardsWithLearningState") {
 
-            it("덱 카드들을 learningState/preset과 조합해 순서를 유지하며 DeckCardItem 리스트로 매핑한다") {
+            it("덱 카드들을 learningState/preset과 조합해 DeckCardItem 리스트로 매핑한다 (기본 정렬 CREATED = cardId 역순)") {
                 val cards = (1L..3L).map { i -> createCardContent(i) }
                 val states = listOf(
                     createCls(cardId = 1L, status = CardLearningStatus.NEW, totalReviews = 0, consecutiveAgainCount = 0),
@@ -105,16 +108,22 @@ class DeckBFFServiceUnitTest :
                 )
                 stubDeckInformation(cards = cards, states = states, hardBadgeThreshold = 8)
 
-                val result = service.getCardsWithLearningState(userId, deckId)
+                val result = service.getCardsWithLearningState(
+                    userId = userId,
+                    deckId = deckId,
+                    sortType = CardSortType.CREATED,
+                )
 
-                result.map { it.cardId } shouldContainExactly cards.map { it.cardId }
-                repeat(3) { i ->
-                    when (states[i].status) {
-                        CardLearningStatus.NEW -> result[i].badge shouldBe CardLearningStateBadge.NEW
-                        CardLearningStatus.REVIEW -> result[i].badge shouldBe CardLearningStateBadge.REVIEW
+                result.map { it.cardId } shouldContainExactly listOf(3L, 2L, 1L)
+                val itemByCardId = result.associateBy { it.cardId }
+                states.forEach { state ->
+                    val item = itemByCardId.getValue(state.cardId)
+                    when (state.status) {
+                        CardLearningStatus.NEW -> item.badge shouldBe CardLearningStateBadge.NEW
+                        CardLearningStatus.REVIEW -> item.badge shouldBe CardLearningStateBadge.REVIEW
                         CardLearningStatus.SUSPENDED -> error("SUSPENDED status is not supported")
                     }
-                    result[i].reviewCount shouldBe states[i].totalReviews
+                    item.reviewCount shouldBe state.totalReviews
                 }
             }
 
@@ -122,7 +131,11 @@ class DeckBFFServiceUnitTest :
                 it("덱에 카드가 없으면 빈 리스트를 반환하고 study/preset API를 호출하지 않는다") {
                     every { cardApi.getCardContentsByDeck(userId = userId, deckId = deckId) } returns emptyList()
 
-                    val result = service.getCardsWithLearningState(userId, deckId)
+                    val result = service.getCardsWithLearningState(
+                        userId = userId,
+                        deckId = deckId,
+                        sortType = CardSortType.CREATED,
+                    )
 
                     result.shouldBeEmpty()
                     verify(exactly = 0) { studyApi.getLearningStates(any(), any()) }
@@ -140,12 +153,17 @@ class DeckBFFServiceUnitTest :
                     states = states,
                 )
 
-                val result = service.getCardsWithLearningState(userId, deckId)
+                val result = service.getCardsWithLearningState(
+                    userId = userId,
+                    deckId = deckId,
+                    sortType = CardSortType.CREATED,
+                )
 
-                result[0].badge shouldBe CardLearningStateBadge.REVIEW
-                result[0].reviewCount shouldBe states.first().totalReviews
-                result[1].badge shouldBe CardLearningStateBadge.NEW
-                result[1].reviewCount shouldBe 0
+                // CREATED 정렬(cardId 역순): [2L(state 없음), 1L]
+                result[0].badge shouldBe CardLearningStateBadge.NEW
+                result[0].reviewCount shouldBe 0
+                result[1].badge shouldBe CardLearningStateBadge.REVIEW
+                result[1].reviewCount shouldBe states.first().totalReviews
             }
 
             context("badge 매핑 확인") {
@@ -178,7 +196,7 @@ class DeckBFFServiceUnitTest :
                         hardBadgeThreshold = threshold,
                     )
 
-                    val result = service.getCardsWithLearningState(userId, deckId)
+                    val result = service.getCardsWithLearningState(userId, deckId, CardSortType.CREATED)
 
                     result.first().badge shouldBe expected
                 }
@@ -193,7 +211,7 @@ class DeckBFFServiceUnitTest :
                     )
 
                     shouldThrow<IllegalStateException> {
-                        service.getCardsWithLearningState(userId, deckId)
+                        service.getCardsWithLearningState(userId, deckId, CardSortType.CREATED)
                     }
                 }
             }
