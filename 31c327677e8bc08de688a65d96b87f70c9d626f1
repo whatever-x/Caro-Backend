@@ -1,0 +1,15 @@
+{
+    "version": "0.1.0",
+    "id": "5490e4d4-52b5-4cca-ad8d-407320ef610d",
+    "timestamp": "2026-07-19T08:49:14.762359Z",
+    "vcs": {
+        "type": "git",
+        "revision": "31c327677e8bc08de688a65d96b87f70c9d626f1",
+        "origin": "github",
+        "repository": "https://github.com/whatever-x/Caro-Backend.git"
+    },
+    "tool": {
+        "name": "chatter-cli"
+    },
+    "files": []
+}
