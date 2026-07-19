@@ -537,6 +537,106 @@ class EvaluationServiceTest(
                 studySessionRepository.findByIdOrNull(session.id)!!.newCardsStudied shouldBe 0
             }
         }
+
+        context("등급별 카운트 집계") {
+            it("혼합 등급 평가 시 ratingCounts가 등급별로 정확히 집계된다") {
+                stubPreset()
+                val session = createSession()
+                val cls1 = createCls(cardId = 1L, status = CardLearningStatus.NEW)
+                val cls2 = createCls(cardId = 2L, status = CardLearningStatus.NEW)
+                val cls3 = createCls(cardId = 3L, status = CardLearningStatus.NEW)
+                val cls4 = createCls(cardId = 4L, status = CardLearningStatus.NEW)
+
+                val result = evaluationService.evaluate(
+                    now = baseNow,
+                    timezone = kstZoneId,
+                    userId = USER_ID,
+                    sessionId = session.id,
+                    items = listOf(
+                        getEvaluatedCardDto(cardId = cls1.cardId, rating = Rating.AGAIN),
+                        getEvaluatedCardDto(cardId = cls2.cardId, rating = Rating.FAIR),
+                        getEvaluatedCardDto(cardId = cls3.cardId, rating = Rating.FAIR),
+                        getEvaluatedCardDto(cardId = cls4.cardId, rating = Rating.EASY),
+                    ),
+                )
+
+                result.ratingCounts shouldBe RatingCounts(again = 1, fair = 2, easy = 1)
+
+                val updatedSession = studySessionRepository.findByIdOrNull(session.id)!!
+                (result.ratingCounts.again + result.ratingCounts.fair + result.ratingCounts.easy) shouldBe
+                    (updatedSession.newCardsStudied + updatedSession.reviewCardsStudied)
+            }
+
+            it("중단 후 재개하여 완료한 경우 ratingCounts는 세션 전체 누적을 반환한다") {
+                stubPreset()
+                val session = createSession(newCardsGoal = 4, reviewCardsGoal = 0)
+                val cls1 = createCls(cardId = 1L, status = CardLearningStatus.NEW)
+                val cls2 = createCls(cardId = 2L, status = CardLearningStatus.NEW)
+                val cls3 = createCls(cardId = 3L, status = CardLearningStatus.NEW)
+                val cls4 = createCls(cardId = 4L, status = CardLearningStatus.NEW)
+
+                val result1 = evaluationService.evaluate(
+                    now = baseNow,
+                    timezone = kstZoneId,
+                    userId = USER_ID,
+                    sessionId = session.id,
+                    items = listOf(
+                        getEvaluatedCardDto(cardId = cls1.cardId, rating = Rating.AGAIN),
+                        getEvaluatedCardDto(cardId = cls2.cardId, rating = Rating.FAIR),
+                    ),
+                )
+                result1.ratingCounts shouldBe RatingCounts(again = 1, fair = 1, easy = 0)
+
+                val result2 = evaluationService.evaluate(
+                    now = baseNow,
+                    timezone = kstZoneId,
+                    userId = USER_ID,
+                    sessionId = session.id,
+                    items = listOf(
+                        getEvaluatedCardDto(cardId = cls3.cardId, rating = Rating.EASY),
+                        getEvaluatedCardDto(cardId = cls4.cardId, rating = Rating.EASY),
+                    ),
+                )
+
+                result2.ratingCounts shouldBe RatingCounts(again = 1, fair = 1, easy = 2)
+                result2.sessionStatus shouldBe StudySessionStatus.COMPLETED
+
+                val updatedSession = studySessionRepository.findByIdOrNull(session.id)!!
+                (result2.ratingCounts.again + result2.ratingCounts.fair + result2.ratingCounts.easy) shouldBe
+                    (updatedSession.newCardsStudied + updatedSession.reviewCardsStudied)
+            }
+
+            it("무효 항목은 ratingCounts에 반영되지 않고 기존 누적을 유지한다") {
+                stubPreset()
+                val session = createSession()
+                val cls1 = createCls(cardId = 1L, status = CardLearningStatus.NEW)
+                val cls2 = createCls(cardId = 2L, status = CardLearningStatus.NEW)
+
+                val result1 = evaluationService.evaluate(
+                    now = baseNow,
+                    timezone = kstZoneId,
+                    userId = USER_ID,
+                    sessionId = session.id,
+                    items = listOf(getEvaluatedCardDto(cardId = cls1.cardId, rating = Rating.AGAIN)),
+                )
+                result1.ratingCounts shouldBe RatingCounts(again = 1, fair = 0, easy = 0)
+
+                val result2 = evaluationService.evaluate(
+                    now = baseNow,
+                    timezone = kstZoneId,
+                    userId = USER_ID,
+                    sessionId = session.id,
+                    items = listOf(
+                        getEvaluatedCardDto(cardId = cls1.cardId, rating = Rating.EASY),
+                        getEvaluatedCardDto(cardId = cls2.cardId, rating = Rating.FAIR, timeMs = -1),
+                    ),
+                )
+
+                result2.ratingCounts shouldBe RatingCounts(again = 1, fair = 0, easy = 0)
+                result2.failedItems.size shouldBe 2
+                result2.evaluatedItems.size shouldBe 0
+            }
+        }
     }
 }) {
     companion object {
