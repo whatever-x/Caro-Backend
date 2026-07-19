@@ -21,7 +21,7 @@ import java.time.Clock
 import java.time.Instant
 import java.time.ZoneId
 
-@Tag(name = "Deck Card Information", description = "Deck card information")
+@Tag(name = "Deck", description = "단어/표현 덱 관리")
 @RestController
 class DeckBFFController(
     private val clock: Clock,

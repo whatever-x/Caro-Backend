@@ -25,6 +25,14 @@ class StudyController(
     private val studyService: StudyService,
 ) {
 
+    @Operation(
+        summary = "오늘 일일학습 요약 조회",
+        description = """
+        특정 덱의 오늘 일일학습 상태를 조회한다.
+        상태에 따라 미시작(NotStarted) / 진행중(InProgress) / 완료(Completed) / 휴식일(RestDay)로 응답하며,
+        각 상태에서 학습한 카드 수와 오늘 목표 카드 수를 함께 제공한다.
+        """,
+    )
     @GetMapping("/daily/summary")
     fun getTodayDailyStudySummary(
         @RequestHeader("Client-Timezone") timezone: ZoneId,

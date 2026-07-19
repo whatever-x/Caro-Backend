@@ -42,6 +42,13 @@ class StreakController(
         return ResponseEntity.ok(ApiResponse.ok(StreakResponse(currentStreak = currentStreak)))
     }
 
+    @Operation(
+        summary = "streak 동기화",
+        description = """
+        오늘까지의 학습 이력을 기준으로 휴식일 여부를 확인한 뒤 streak을 동기화한다.
+        오프라인 학습 후 재접속 시 클라이언트가 호출해 서버 streak을 최신 상태로 맞추는 용도이다.
+        """,
+    )
     @PostMapping("/sync")
     fun syncStreak(
         @RequestHeader("Client-Timezone") timezone: ZoneId,
