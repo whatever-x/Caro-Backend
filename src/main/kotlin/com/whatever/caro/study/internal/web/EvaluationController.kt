@@ -1,6 +1,7 @@
 package com.whatever.caro.study.internal.web
 
 import com.whatever.caro.auth.SecurityUtil
+import com.whatever.caro.common.response.ApiResponse
 import com.whatever.caro.common.web.idempotency.Idempotent
 import com.whatever.caro.study.internal.EvaluatedCardDto
 import com.whatever.caro.study.internal.EvaluationService
@@ -48,7 +49,7 @@ class EvaluationController(
         @RequestHeader("Client-Timezone", required = true) clientTimezone: ZoneId,
         @Positive @PathVariable(required = true) sessionId: Long,
         @Valid @RequestBody items: List<EvaluatedCardRequest>,
-    ): ResponseEntity<EvaluationResponse> {
+    ): ResponseEntity<ApiResponse<EvaluationResponse>> {
         val now = Instant.now(clock)
         val result = evaluationService.evaluate(
             now = now,
@@ -58,7 +59,7 @@ class EvaluationController(
             items = items.map { it.toDto() },
         )
 
-        return ResponseEntity.ok(EvaluationResponse.from(result))
+        return ResponseEntity.ok(ApiResponse.ok(EvaluationResponse.from(result)))
     }
 }
 

@@ -1,9 +1,11 @@
 package com.whatever.caro.study.internal.web
 
 import com.whatever.caro.auth.SecurityUtil
+import com.whatever.caro.common.response.ApiResponse
 import com.whatever.caro.study.TodayStudySessionState
 import com.whatever.caro.study.internal.StudyService
 import com.whatever.caro.study.internal.web.response.DailyStudySummaryResponse
+import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
@@ -27,7 +29,7 @@ class StudyController(
     fun getTodayDailyStudySummary(
         @RequestHeader("Client-Timezone") timezone: ZoneId,
         @RequestParam(value = "deckId", required = true) deckId: Long,
-    ): ResponseEntity<DailyStudySummaryResponse> {
+    ): ResponseEntity<ApiResponse<DailyStudySummaryResponse>> {
         val now = Instant.now(clock)
         val studySession = studyService.getTodaySummary(
             now = now,
@@ -36,7 +38,7 @@ class StudyController(
             deckId = deckId,
         )
 
-        return ResponseEntity.ok(studySession.toResponse())
+        return ResponseEntity.ok(ApiResponse.ok(studySession.toResponse()))
     }
 }
 
