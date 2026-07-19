@@ -1,0 +1,168 @@
+{
+    "version": "0.1.0",
+    "id": "3a1eb7b4-ce0f-4307-94ee-962b561b7112",
+    "timestamp": "2026-07-19T17:29:21.200209Z",
+    "vcs": {
+        "type": "git",
+        "revision": "e98dd1bbe647e8137f4ae42d559310feca963c89",
+        "origin": "github",
+        "repository": "https://github.com/whatever-x/Caro-Backend.git"
+    },
+    "tool": {
+        "name": "chatter-cli"
+    },
+    "files": [
+        {
+            "path": "src/test/kotlin/com/whatever/caro/bff/internal/CardSorterTest.kt",
+            "conversations": [
+                {
+                    "url": "git+CLAUDE_CODE:blob:309277d2c0468a9f5c8672d2a21fe0aaaaa3d769",
+                    "contributor": {
+                        "type": "ai",
+                        "model_id": "2.1.215"
+                    },
+                    "ranges": [
+                        {
+                            "start_line": 1,
+                            "end_line": 33
+                        },
+                        {
+                            "start_line": 41,
+                            "end_line": 43
+                        },
+                        {
+                            "start_line": 49,
+                            "end_line": 55
+                        },
+                        {
+                            "start_line": 61,
+                            "end_line": 65
+                        },
+                        {
+                            "start_line": 72,
+                            "end_line": 77
+                        },
+                        {
+                            "start_line": 83,
+                            "end_line": 89
+                        },
+                        {
+                            "start_line": 95,
+                            "end_line": 95
+                        },
+                        {
+                            "start_line": 99,
+                            "end_line": 99
+                        },
+                        {
+                            "start_line": 104,
+                            "end_line": 104
+                        },
+                        {
+                            "start_line": 109,
+                            "end_line": 109
+                        },
+                        {
+                            "start_line": 115,
+                            "end_line": 115
+                        },
+                        {
+                            "start_line": 120,
+                            "end_line": 120
+                        },
+                        {
+                            "start_line": 122,
+                            "end_line": 125
+                        },
+                        {
+                            "start_line": 131,
+                            "end_line": 131
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "path": "src/test/kotlin/com/whatever/caro/bff/internal/DeckBFFServiceUnitTest.kt",
+            "conversations": [
+                {
+                    "url": "git+CLAUDE_CODE:blob:309277d2c0468a9f5c8672d2a21fe0aaaaa3d769",
+                    "contributor": {
+                        "type": "ai",
+                        "model_id": "2.1.215"
+                    },
+                    "ranges": [
+                        {
+                            "start_line": 169,
+                            "end_line": 169
+                        },
+                        {
+                            "start_line": 171,
+                            "end_line": 185
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "path": "src/test/kotlin/com/whatever/caro/bff/internal/web/DeckBFFControllerWebMvcTest.kt",
+            "conversations": [
+                {
+                    "url": "git+CLAUDE_CODE:blob:309277d2c0468a9f5c8672d2a21fe0aaaaa3d769",
+                    "contributor": {
+                        "type": "ai",
+                        "model_id": "2.1.215"
+                    },
+                    "ranges": [
+                        {
+                            "start_line": 1,
+                            "end_line": 62
+                        },
+                        {
+                            "start_line": 64,
+                            "end_line": 68
+                        },
+                        {
+                            "start_line": 73,
+                            "end_line": 76
+                        },
+                        {
+                            "start_line": 78,
+                            "end_line": 82
+                        },
+                        {
+                            "start_line": 93,
+                            "end_line": 99
+                        },
+                        {
+                            "start_line": 110,
+                            "end_line": 113
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "path": "src/test/kotlin/com/whatever/caro/study/internal/StudyServiceTest.kt",
+            "conversations": [
+                {
+                    "url": "git+CLAUDE_CODE:blob:309277d2c0468a9f5c8672d2a21fe0aaaaa3d769",
+                    "contributor": {
+                        "type": "ai",
+                        "model_id": "2.1.215"
+                    },
+                    "ranges": [
+                        {
+                            "start_line": 569,
+                            "end_line": 569
+                        },
+                        {
+                            "start_line": 589,
+                            "end_line": 589
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}
