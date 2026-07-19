@@ -1,0 +1,84 @@
+{
+    "version": "0.1.0",
+    "id": "186033c2-12f6-4711-a097-ec90a99d4d50",
+    "timestamp": "2026-07-19T16:04:10.646857Z",
+    "vcs": {
+        "type": "git",
+        "revision": "e367e54b79014de558fcd4cbc55225edb7f414ae",
+        "origin": "github",
+        "repository": "https://github.com/whatever-x/Caro-Backend.git"
+    },
+    "tool": {
+        "name": "chatter-cli"
+    },
+    "files": [
+        {
+            "path": "src/test/kotlin/com/whatever/caro/bff/internal/DeckBFFServiceUnitTest.kt",
+            "conversations": [
+                {
+                    "url": "git+CLAUDE_CODE:blob:e6f6752456238bd15c1d3fde11079ab763076746",
+                    "contributor": {
+                        "type": "ai",
+                        "model_id": "2.1.215"
+                    },
+                    "ranges": [
+                        {
+                            "start_line": 22,
+                            "end_line": 22
+                        },
+                        {
+                            "start_line": 49,
+                            "end_line": 49
+                        },
+                        {
+                            "start_line": 56,
+                            "end_line": 56
+                        },
+                        {
+                            "start_line": 102,
+                            "end_line": 102
+                        },
+                        {
+                            "start_line": 117,
+                            "end_line": 123
+                        },
+                        {
+                            "start_line": 126,
+                            "end_line": 126
+                        },
+                        {
+                            "start_line": 162,
+                            "end_line": 166
+                        },
+                        {
+                            "start_line": 199,
+                            "end_line": 199
+                        },
+                        {
+                            "start_line": 214,
+                            "end_line": 214
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "path": "src/test/kotlin/com/whatever/caro/bff/internal/StudyBFFServiceUnitTest.kt",
+            "conversations": [
+                {
+                    "url": "git+CLAUDE_CODE:blob:e6f6752456238bd15c1d3fde11079ab763076746",
+                    "contributor": {
+                        "type": "ai",
+                        "model_id": "2.1.215"
+                    },
+                    "ranges": [
+                        {
+                            "start_line": 69,
+                            "end_line": 69
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}
