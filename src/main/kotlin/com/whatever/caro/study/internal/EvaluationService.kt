@@ -4,6 +4,7 @@ import com.whatever.caro.card.api.deck.DeckPresetApi
 import com.whatever.caro.card.api.deck.DeckPresetDto
 import com.whatever.caro.study.CardLearningStatus
 import com.whatever.caro.study.DailyStudyCompletedEvent
+import com.whatever.caro.study.Rating
 import com.whatever.caro.study.ReviewType
 import com.whatever.caro.study.StudySessionStatus
 import com.whatever.caro.study.exception.SessionExpiredException
@@ -55,7 +56,8 @@ class EvaluationService(
             cardIds = dedupedItems.map { it.cardId },
         ).associateBy { it.cardId }
 
-        val evaluatedCardIds = reviewLogRepository.findAllByStudySessionId(session.id).map { it.cardId }.toSet()
+        val existingReviewLogs = reviewLogRepository.findAllByStudySessionId(session.id)
+        val evaluatedCardIds = existingReviewLogs.map { it.cardId }.toSet()
         val validationResults = dedupedItems.map {
             EvaluationItemValidator.validate(
                 item = it,
@@ -110,6 +112,7 @@ class EvaluationService(
             evaluatedItems = validItems,
             failedItems = invalidItems,
             sessionStatus = session.status,
+            ratingCounts = (existingReviewLogs + newReviewLogs).toRatingCounts(),
         )
     }
 }
@@ -152,4 +155,11 @@ private fun DeckPresetDto.toSm2Params(): Sm2Params =
         lapseIntervalMultiplier = lapseIntervalMultiplier,
         lapseMinInterval = lapseMinInterval,
         leechThreshold = leechThreshold,
+    )
+
+private fun List<ReviewLog>.toRatingCounts(): RatingCounts =
+    RatingCounts(
+        again = count { it.rating == Rating.AGAIN },
+        fair = count { it.rating == Rating.FAIR },
+        easy = count { it.rating == Rating.EASY },
     )
