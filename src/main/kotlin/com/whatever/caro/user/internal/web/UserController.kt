@@ -2,10 +2,13 @@ package com.whatever.caro.user.internal.web
 
 import com.whatever.caro.common.response.ApiResponse
 import com.whatever.caro.user.UserApi
+import com.whatever.caro.user.exception.UserNotFoundException
 import com.whatever.caro.user.internal.UserService
 import com.whatever.caro.user.internal.web.request.UpdateNicknameRequest
+import com.whatever.caro.user.internal.web.response.MyNicknameResponse
 import com.whatever.caro.user.internal.web.response.NicknameCheckResponse
 import com.whatever.caro.user.internal.web.response.UpdateNicknameResponse
+import com.whatever.caro.user.internal.web.response.toMyNicknameResponse
 import com.whatever.caro.user.internal.web.response.toUpdateNicknameResponse
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
@@ -44,6 +47,20 @@ class UserController(
     ): ResponseEntity<ApiResponse<NicknameCheckResponse>> {
         val available = userApi.isNicknameAvailable(nickname)
         return ResponseEntity.ok(ApiResponse.ok(NicknameCheckResponse(nickname, available)))
+    }
+
+    @Operation(
+        summary = "내 닉네임 조회",
+        description = "현재 로그인한 사용자의 닉네임을 반환한다.",
+    )
+    @GetMapping("/me/nickname")
+    fun getMyNickname(
+        @AuthenticationPrincipal(expression = "userId")
+        userId: Long,
+    ): ResponseEntity<ApiResponse<MyNicknameResponse>> {
+        val user = userApi.findById(userId)
+            ?: throw UserNotFoundException("사용자를 찾을 수 없습니다: $userId")
+        return ResponseEntity.ok(ApiResponse.ok(user.toMyNicknameResponse()))
     }
 
     @Operation(
