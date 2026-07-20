@@ -27,6 +27,7 @@ class UserControllerUnitTest :
                     nickname = "다정한 고슴도치",
                     status = UserStatus.ACTIVE,
                     isTermsAgreed = true,
+                    isDeleted = false,
                 )
 
                 val response = controller.getMyNickname(userId)
