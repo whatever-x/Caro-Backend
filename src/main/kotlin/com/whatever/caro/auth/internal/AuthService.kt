@@ -130,6 +130,8 @@ class AuthService(
         val userInfo = userApi.findById(claims.userId)
             ?: throw InvalidRefreshTokenException("사용자를 찾을 수 없습니다")
 
+        if (userInfo.isDeleted) throw WithdrawnException()
+
         val generated = jwtTokenProvider.generateAccessToken(claims.userId, userInfo.status.name)
         val newRefreshToken = jwtTokenProvider.generateRefreshToken()
         refreshTokenRepository.save(
@@ -158,7 +160,7 @@ class AuthService(
     fun withdrawUser(
         authUser: AuthUser,
     ) {
-        refreshTokenRepository.deleteAllByUser(authUser.userId)
+        refreshTokenRepository.deleteAllByUserId(authUser.userId)
         tokenBlacklistRepository.add(authUser.jti, jwtProperties.accessTokenExpiresIn)
         userApi.deleteMe(authUser.userId)
 

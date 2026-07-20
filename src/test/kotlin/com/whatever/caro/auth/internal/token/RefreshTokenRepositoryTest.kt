@@ -289,7 +289,7 @@ class RefreshTokenRepositoryTest(
         }
     }
 
-    describe("deleteAllByUser") {
+    describe("deleteAllByUserId") {
         it("해당 유저의 모든 디바이스 forward key와 token_pair key를 삭제한다") {
             val userId = 1L
             val tokenA = "token-a"
@@ -309,7 +309,7 @@ class RefreshTokenRepositoryTest(
                 expiresIn = Duration.ofMinutes(30),
             )
 
-            refreshTokenRepository.deleteAllByUser(userId)
+            refreshTokenRepository.deleteAllByUserId(userId)
 
             redisTemplate.hasKey("refresh:$userId:device-1") shouldBe false
             redisTemplate.hasKey("refresh:$userId:device-2") shouldBe false
@@ -336,7 +336,7 @@ class RefreshTokenRepositoryTest(
                 expiresIn = Duration.ofMinutes(30),
             )
 
-            refreshTokenRepository.deleteAllByUser(targetUserId)
+            refreshTokenRepository.deleteAllByUserId(targetUserId)
 
             redisTemplate.hasKey("refresh:$targetUserId:device-1") shouldBe false
             redisTemplate.opsForValue().get("refresh:$otherUserId:device-1") shouldBe otherToken
@@ -344,7 +344,7 @@ class RefreshTokenRepositoryTest(
         }
 
         it("삭제할 토큰이 없어도 예외 없이 정상 종료한다") {
-            refreshTokenRepository.deleteAllByUser(999L)
+            refreshTokenRepository.deleteAllByUserId(999L)
         }
     }
 })

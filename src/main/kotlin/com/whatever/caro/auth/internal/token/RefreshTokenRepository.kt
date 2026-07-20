@@ -102,7 +102,7 @@ class RefreshTokenRepository(
         }
     }
 
-    fun deleteAllByUser(
+    fun deleteAllByUserId(
         userId: Long,
     ) {
         try {
@@ -128,7 +128,7 @@ class RefreshTokenRepository(
             // 3) forward + token_pair 한 번에 삭제
             redisTemplate.delete(forwardKeys + tokenPairKeys)
         } catch (e: RedisConnectionFailureException) {
-            logger.error { "Redis unavailable during refresh token deleteAllByUser: userId=$userId" }
+            logger.error { "Redis unavailable during refresh token deleteAllByUserId: userId=$userId" }
             throw e
         }
     }

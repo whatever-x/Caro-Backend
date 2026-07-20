@@ -343,6 +343,29 @@ class AuthServiceTest(
                 )
             }
         }
+
+        it("탈퇴한 유저의 살아있는 refresh token으로 재발급 시 WithdrawnException을 던진다") {
+            stubSocialVerifier(providerUserId = "reissue-withdrawn-user")
+            val deviceId = "device-1"
+            val login = authService.socialLogin(
+                SocialLoginRequest(provider = SocialProvider.GOOGLE, idToken = TEST_ID_TOKEN),
+                deviceId,
+            )
+            val claims = jwtTokenProvider.parseAccessToken(login.accessToken)
+
+            // refresh token은 살려둔 채 유저만 soft delete → 탈퇴 처리와 토큰 폐기 사이의 레이스/부분실패 상황 재현
+            userApi.deleteMe(claims.userId)
+
+            shouldThrow<WithdrawnException> {
+                authService.reissueToken(
+                    RefreshTokenRequest(
+                        refreshToken = login.refreshToken,
+                        accessToken = login.accessToken,
+                    ),
+                    deviceId,
+                )
+            }
+        }
     }
 
     describe("logout") {
