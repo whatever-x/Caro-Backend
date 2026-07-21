@@ -14,6 +14,7 @@ import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestHeader
@@ -82,6 +83,17 @@ class AuthController(
     ): ResponseEntity<ApiResponse<Unit>> {
         val authUser = SecurityUtil.currentUser()
         authService.logout(authUser, deviceId)
+        return ResponseEntity.ok(ApiResponse.ok(Unit))
+    }
+
+    @Operation(
+        summary = "탈퇴",
+        description = "유저를 탈퇴처리 하고, 현재 access token 을 블랙리스트 처리하고 유저의 모든 refresh token 을 폐기한다.",
+    )
+    @DeleteMapping("/withdraw")
+    fun withdraw(): ResponseEntity<ApiResponse<Unit>> {
+        val authUser = SecurityUtil.currentUser()
+        authService.withdrawUser(authUser)
         return ResponseEntity.ok(ApiResponse.ok(Unit))
     }
 }

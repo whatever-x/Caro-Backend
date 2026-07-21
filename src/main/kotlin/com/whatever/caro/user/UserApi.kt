@@ -25,4 +25,8 @@ interface UserApi {
     fun isNicknameAvailable(
         nickname: String,
     ): Boolean
+
+    fun deleteMe(
+        userId: Long,
+    )
 }

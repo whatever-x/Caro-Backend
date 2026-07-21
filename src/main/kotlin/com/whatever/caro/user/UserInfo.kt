@@ -5,4 +5,5 @@ data class UserInfo(
     val nickname: String,
     val status: UserStatus,
     val isTermsAgreed: Boolean,
+    val isDeleted: Boolean,
 )

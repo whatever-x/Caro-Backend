@@ -288,4 +288,63 @@ class RefreshTokenRepositoryTest(
             )
         }
     }
+
+    describe("deleteAllByUserId") {
+        it("해당 유저의 모든 디바이스 forward key와 token_pair key를 삭제한다") {
+            val userId = 1L
+            val tokenA = "token-a"
+            val tokenB = "token-b"
+            refreshTokenRepository.save(
+                userId = userId,
+                deviceId = "device-1",
+                refreshToken = tokenA,
+                accessTokenJti = "jti-a",
+                expiresIn = Duration.ofMinutes(30),
+            )
+            refreshTokenRepository.save(
+                userId = userId,
+                deviceId = "device-2",
+                refreshToken = tokenB,
+                accessTokenJti = "jti-b",
+                expiresIn = Duration.ofMinutes(30),
+            )
+
+            refreshTokenRepository.deleteAllByUserId(userId)
+
+            redisTemplate.hasKey("refresh:$userId:device-1") shouldBe false
+            redisTemplate.hasKey("refresh:$userId:device-2") shouldBe false
+            redisTemplate.hasKey("token_pair:$tokenA") shouldBe false
+            redisTemplate.hasKey("token_pair:$tokenB") shouldBe false
+        }
+
+        it("다른 유저의 토큰에는 영향을 주지 않는다") {
+            val targetUserId = 1L
+            val otherUserId = 2L
+            val otherToken = "token-other"
+            refreshTokenRepository.save(
+                userId = targetUserId,
+                deviceId = "device-1",
+                refreshToken = "token-target",
+                accessTokenJti = "jti-target",
+                expiresIn = Duration.ofMinutes(30),
+            )
+            refreshTokenRepository.save(
+                userId = otherUserId,
+                deviceId = "device-1",
+                refreshToken = otherToken,
+                accessTokenJti = "jti-other",
+                expiresIn = Duration.ofMinutes(30),
+            )
+
+            refreshTokenRepository.deleteAllByUserId(targetUserId)
+
+            redisTemplate.hasKey("refresh:$targetUserId:device-1") shouldBe false
+            redisTemplate.opsForValue().get("refresh:$otherUserId:device-1") shouldBe otherToken
+            redisTemplate.opsForValue().get("token_pair:$otherToken") shouldBe "jti-other"
+        }
+
+        it("삭제할 토큰이 없어도 예외 없이 정상 종료한다") {
+            refreshTokenRepository.deleteAllByUserId(999L)
+        }
+    }
 })

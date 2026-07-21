@@ -4,6 +4,7 @@ import com.whatever.caro.TestcontainersConfiguration
 import com.whatever.caro.auth.AuthUser
 import com.whatever.caro.auth.exception.InvalidRefreshTokenException
 import com.whatever.caro.auth.exception.InvalidSocialTokenException
+import com.whatever.caro.auth.exception.WithdrawnException
 import com.whatever.caro.auth.internal.config.JwtProperties
 import com.whatever.caro.auth.internal.social.SocialIdTokenVerifier
 import com.whatever.caro.auth.internal.social.SocialIdTokenVerifierFactory
@@ -342,6 +343,29 @@ class AuthServiceTest(
                 )
             }
         }
+
+        it("탈퇴한 유저의 살아있는 refresh token으로 재발급 시 WithdrawnException을 던진다") {
+            stubSocialVerifier(providerUserId = "reissue-withdrawn-user")
+            val deviceId = "device-1"
+            val login = authService.socialLogin(
+                SocialLoginRequest(provider = SocialProvider.GOOGLE, idToken = TEST_ID_TOKEN),
+                deviceId,
+            )
+            val claims = jwtTokenProvider.parseAccessToken(login.accessToken)
+
+            // refresh token은 살려둔 채 유저만 soft delete → 탈퇴 처리와 토큰 폐기 사이의 레이스/부분실패 상황 재현
+            userApi.deleteMe(claims.userId)
+
+            shouldThrow<WithdrawnException> {
+                authService.reissueToken(
+                    RefreshTokenRequest(
+                        refreshToken = login.refreshToken,
+                        accessToken = login.accessToken,
+                    ),
+                    deviceId,
+                )
+            }
+        }
     }
 
     describe("logout") {
@@ -369,6 +393,62 @@ class AuthServiceTest(
             redisTemplate.hasKey("blacklist:${loginClaims.jti}") shouldBe true
             redisTemplate.hasKey("refresh:${loginClaims.userId}:$deviceId") shouldBe false
             redisTemplate.hasKey("token_pair:${loginResult.refreshToken}") shouldBe false
+        }
+    }
+
+    describe("withdrawUser") {
+        it("탈퇴 시 전 디바이스 refresh token이 폐기되고 현재 access token이 블랙리스트에 추가되며 유저가 soft delete 된다") {
+            stubSocialVerifier(providerUserId = "withdraw-user")
+            val device1 = "device-1"
+            val device2 = "device-2"
+
+            val login1 = authService.socialLogin(
+                SocialLoginRequest(provider = SocialProvider.GOOGLE, idToken = TEST_ID_TOKEN),
+                device1,
+            )
+            val login2 = authService.socialLogin(
+                SocialLoginRequest(provider = SocialProvider.GOOGLE, idToken = TEST_ID_TOKEN),
+                device2,
+            )
+            val claims1 = jwtTokenProvider.parseAccessToken(login1.accessToken)
+
+            authService.withdrawUser(
+                AuthUser(userId = claims1.userId, jti = claims1.jti, status = claims1.status),
+            )
+
+            // 전 디바이스 refresh token 폐기 (forward + token_pair)
+            redisTemplate.hasKey("refresh:${claims1.userId}:$device1") shouldBe false
+            redisTemplate.hasKey("refresh:${claims1.userId}:$device2") shouldBe false
+            redisTemplate.hasKey("token_pair:${login1.refreshToken}") shouldBe false
+            redisTemplate.hasKey("token_pair:${login2.refreshToken}") shouldBe false
+
+            // 현재 access token 블랙리스트
+            redisTemplate.hasKey("blacklist:${claims1.jti}") shouldBe true
+
+            // soft delete
+            userApi.findById(claims1.userId).shouldNotBeNull().isDeleted shouldBe true
+        }
+
+        it("탈퇴한 유저가 재로그인 시 WithdrawnException을 던진다") {
+            stubSocialVerifier(providerUserId = "withdraw-relogin-user")
+            val deviceId = "device-1"
+
+            val login = authService.socialLogin(
+                SocialLoginRequest(provider = SocialProvider.GOOGLE, idToken = TEST_ID_TOKEN),
+                deviceId,
+            )
+            val claims = jwtTokenProvider.parseAccessToken(login.accessToken)
+
+            authService.withdrawUser(
+                AuthUser(userId = claims.userId, jti = claims.jti, status = claims.status),
+            )
+
+            shouldThrow<WithdrawnException> {
+                authService.socialLogin(
+                    SocialLoginRequest(provider = SocialProvider.GOOGLE, idToken = TEST_ID_TOKEN),
+                    deviceId,
+                )
+            }
         }
     }
 })

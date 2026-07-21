@@ -405,4 +405,35 @@ class UserServiceTest(
             }
         }
     }
+
+    describe("deleteMe") {
+        it("soft delete 처리되어 deletedAt이 설정된다") {
+            val user = createActiveUser()
+
+            userService.deleteMe(user.id)
+
+            val deleted = userRepository.findByIdOrNull(user.id).shouldNotBeNull()
+            deleted.isDeleted.shouldBeTrue()
+        }
+
+        it("이미 탈퇴한 유저를 다시 호출해도 deletedAt이 갱신되지 않는다 (멱등)") {
+            val user = createActiveUser()
+
+            userService.deleteMe(user.id)
+            val firstDeletedAt = userRepository.findByIdOrNull(user.id).shouldNotBeNull().deletedAt
+
+            userService.deleteMe(user.id)
+            val secondDeletedAt = userRepository.findByIdOrNull(user.id).shouldNotBeNull().deletedAt
+
+            secondDeletedAt shouldBe firstDeletedAt
+        }
+
+        it("존재하지 않는 userId이면 UserNotFoundException을 던진다") {
+            userRepository.findByIdOrNull(0L) shouldBe null
+
+            shouldThrow<UserNotFoundException> {
+                userService.deleteMe(0L)
+            }
+        }
+    }
 })

@@ -14,4 +14,5 @@ enum class AuthErrorCode(
     INVALID_TOKEN("A003", HttpStatus.UNAUTHORIZED, "유효하지 않은 토큰입니다", "error.auth.invalid_token"),
     SOCIAL_FAILED("A004", HttpStatus.UNAUTHORIZED, "소셜 인증에 실패했습니다", "error.auth.social_failed"),
     INVALID_REFRESH_TOKEN("A005", HttpStatus.UNAUTHORIZED, "유효하지 않은 리프레시 토큰입니다", "error.auth.invalid_refresh_token"),
+    WITHDRAWN("A006", HttpStatus.GONE, "탈퇴한 회원입니다", "error.auth.withdrawn"),
 }
