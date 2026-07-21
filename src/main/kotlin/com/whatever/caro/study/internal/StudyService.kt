@@ -296,6 +296,7 @@ private fun CardLearningState.toDto(): CardLearningStateDto =
         status = status,
         totalReviews = totalReviews,
         consecutiveAgainCount = consecutiveAgainCount,
+        lastReviewedDate = lastReviewedDate,
     )
 
 private fun StudySession.toDto(): StudySessionDto =

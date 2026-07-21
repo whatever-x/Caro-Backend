@@ -279,13 +279,15 @@ class StudyServiceTest(
         it("다른 유저나, 덱에 속한 세션은 결과에 영향을 주지 않는다") {
             every { deckPresetApi.getLatestDeckPresetByUser(any(), any()) } returns
                 Sm2ParamsFixture.DECK_PRESET_DTO_FIXTURE.copy(newPerDay = 0, reviewPerDay = 0)
-            createSession( // 다른 user의 오늘 ACTIVE 세션
+            createSession(
+                // 다른 user의 오늘 ACTIVE 세션
                 userId = 2L,
                 deckId = DECK_ID,
                 status = StudySessionStatus.ACTIVE,
                 startedAt = baseNow,
             )
-            createSession( // 다른 deck의 오늘 ACTIVE 세션
+            createSession(
+                // 다른 deck의 오늘 ACTIVE 세션
                 userId = USER_ID,
                 deckId = 2L,
                 status = StudySessionStatus.ACTIVE,
@@ -564,6 +566,7 @@ class StudyServiceTest(
                     cardId = 1L,
                     totalReviews = 3,
                     consecutiveAgainCount = 1,
+                    lastReviewedDate = baseDate,
                 ),
                 createCls(
                     cardId = 2L,
@@ -583,6 +586,7 @@ class StudyServiceTest(
             val firstId = cardIds.first()
             result[firstId]?.totalReviews shouldBe 3
             result[firstId]?.consecutiveAgainCount shouldBe 1
+            result[firstId]?.lastReviewedDate shouldBe baseDate
 
             val secondId = cardIds.last()
             result[secondId]?.totalReviews shouldBe 0

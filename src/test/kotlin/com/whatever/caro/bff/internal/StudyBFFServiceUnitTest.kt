@@ -66,6 +66,7 @@ class StudyBFFServiceUnitTest :
                 status = CardLearningStatus.NEW,
                 totalReviews = 0,
                 consecutiveAgainCount = 0,
+                lastReviewedDate = null,
             )
 
         fun content(
