@@ -6,6 +6,7 @@ import com.whatever.caro.study.internal.MockDeckPresetApiConfig
 import io.kotest.core.spec.style.DescribeSpec
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.types.shouldBeTypeOf
 import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.verify
@@ -298,17 +299,17 @@ class StreakServiceTest(
     }
 
     describe("getStreak") {
-        it("학습 이력이 없으면 0을 반환한다") {
+        it("학습 이력이 없으면 `NotStarted`을 반환한다") {
             val result = streakService.getStreak(
                 userId = USER_ID,
                 now = instantOn(d16),
                 timezone = kst,
                 dayCutoffHour = 0,
             )
-            result shouldBe 0
+            result shouldBe StreakStatusResult.NotStarted
         }
 
-        it("오늘이 마지막 기록일이면 저장된 streak을 반환한다") {
+        it("오늘이 마지막 기록일이면 저장된 streak이 포함된 `Active`를 반환한다") {
             streakService.recordStudied(userId = USER_ID, studyDate = d15)
             streakService.recordStudied(userId = USER_ID, studyDate = d16)
 
@@ -318,10 +319,12 @@ class StreakServiceTest(
                 timezone = kst,
                 dayCutoffHour = 0,
             )
-            result shouldBe 2
+
+            result.shouldBeTypeOf<StreakStatusResult.Active>()
+            result.currentStreak shouldBe 2
         }
 
-        it("마지막 기록일이 어제이면 streak이 깨지지 않았으므로 저장된 streak을 반환한다") {
+        it("마지막 기록일이 어제이면 streak이 깨지지 않았으므로 저장된 streak이 포함된 `Active`를 반환한다") {
             streakService.recordStudied(userId = USER_ID, studyDate = d15)
             streakService.recordStudied(userId = USER_ID, studyDate = d16)
 
@@ -331,10 +334,12 @@ class StreakServiceTest(
                 timezone = kst,
                 dayCutoffHour = 0,
             )
-            result shouldBe 2
+
+            result.shouldBeTypeOf<StreakStatusResult.Active>()
+            result.currentStreak shouldBe 2
         }
 
-        it("마지막 기록일로부터 이틀 이상 지나면 0을 반환한다") {
+        it("마지막 기록일로부터 이틀 이상 지나면 `Broken`을 반환한다") {
             streakService.recordStudied(userId = USER_ID, studyDate = d15)
             streakService.recordStudied(userId = USER_ID, studyDate = d16)
 
@@ -344,10 +349,10 @@ class StreakServiceTest(
                 timezone = kst,
                 dayCutoffHour = 0,
             )
-            result shouldBe 0
+            result shouldBe StreakStatusResult.Broken
         }
 
-        it("오늘이 마지막 기록보다 과거여도 streak이 살아있는 것으로 보고 저장된 streak을 반환한다") {
+        it("오늘이 마지막 기록보다 과거여도 streak이 살아있는 것으로 보고 저장된 streak이 포함된 `Active`를 반환한다") {
             streakService.recordStudied(userId = USER_ID, studyDate = d15)
             streakService.recordStudied(userId = USER_ID, studyDate = d16)
 
@@ -358,7 +363,9 @@ class StreakServiceTest(
                 timezone = kst,
                 dayCutoffHour = 0,
             )
-            result shouldBe 2
+
+            result.shouldBeTypeOf<StreakStatusResult.Active>()
+            result.currentStreak shouldBe 2
         }
 
         it("끊긴 상태를 조회해도 저장된 current_streak을 변경하지 않는다") {
@@ -372,7 +379,7 @@ class StreakServiceTest(
                 dayCutoffHour = 0,
             )
 
-            result shouldBe 0
+            result shouldBe StreakStatusResult.Broken
             val streakState = streakStateRepository.findByUserId(userId = USER_ID)!!
             streakState.currentStreak shouldBe 2
         }
@@ -388,7 +395,8 @@ class StreakServiceTest(
                 timezone = kst,
                 dayCutoffHour = 4,
             )
-            result shouldBe 2
+            result.shouldBeTypeOf<StreakStatusResult.Active>()
+            result.currentStreak shouldBe 2
         }
 
         it("같은 시간에 요청을 보내도 timezone에 따라 날짜가 변경된다면 streak 판정이 바뀐다") {
@@ -403,7 +411,8 @@ class StreakServiceTest(
                 timezone = ZoneOffset.ofHours(-12),
                 dayCutoffHour = 0,
             )
-            result1 shouldBe 2 // 클라이언트는 날짜는 16일이므로 streak이 이어짐
+            result1.shouldBeTypeOf<StreakStatusResult.Active>()
+            result1.currentStreak shouldBe 2 // 클라이언트는 날짜는 16일이므로 streak이 이어짐
 
             // UTC+14 → 오늘 d18
             val result2 = streakService.getStreak(
@@ -412,7 +421,7 @@ class StreakServiceTest(
                 timezone = ZoneOffset.ofHours(14),
                 dayCutoffHour = 0,
             )
-            result2 shouldBe 0 // 클라이언트 날짜는 18일이므로 streak이 끊김
+            result2 shouldBe StreakStatusResult.Broken // 클라이언트 날짜는 18일이므로 streak이 끊김
         }
     }
 
