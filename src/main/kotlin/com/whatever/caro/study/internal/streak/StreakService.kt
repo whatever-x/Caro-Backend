@@ -63,16 +63,16 @@ class StreakService(
         now: Instant,
         timezone: ZoneId,
         dayCutoffHour: Int,
-    ): Int {
+    ): StreakStatusResult {
         val streakState = streakStateRepository.findByUserId(userId = userId)
-            ?: return 0
+            ?: return StreakStatusResult.NotStarted
 
         val currentDate = toStreakDate(now, timezone, dayCutoffHour)
         if (isStreakAlive(streakState.lastRecordedDate, currentDate)) {
-            return streakState.currentStreak
+            return StreakStatusResult.Active(currentStreak = streakState.currentStreak)
         }
 
-        return 0
+        return StreakStatusResult.Broken
     }
 
     /**

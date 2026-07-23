@@ -3,7 +3,9 @@ package com.whatever.caro.study.internal.web
 import com.whatever.caro.auth.SecurityUtil
 import com.whatever.caro.common.response.ApiResponse
 import com.whatever.caro.study.internal.streak.StreakService
+import com.whatever.caro.study.internal.streak.StreakStatusResult
 import com.whatever.caro.study.internal.web.response.StreakResponse
+import com.whatever.caro.study.internal.web.response.StreakStatus
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.http.ResponseEntity
@@ -33,13 +35,30 @@ class StreakController(
         @RequestHeader("Client-Timezone") timezone: ZoneId,
     ): ResponseEntity<ApiResponse<StreakResponse>> {
         val now = Instant.now(clock)
-        val currentStreak = streakService.getStreak(
+        val streakStatus = streakService.getStreak(
             userId = SecurityUtil.currentUser().userId,
             now = now,
             timezone = timezone,
             dayCutoffHour = 0,
         )
-        return ResponseEntity.ok(ApiResponse.ok(StreakResponse(currentStreak = currentStreak)))
+
+        val response = when (streakStatus) {
+            is StreakStatusResult.Active -> StreakResponse(
+                status = StreakStatus.ACTIVE,
+                currentStreak = streakStatus.currentStreak,
+            )
+
+            StreakStatusResult.NotStarted -> StreakResponse(
+                status = StreakStatus.NOT_STARTED,
+                currentStreak = 0,
+            )
+
+            StreakStatusResult.Broken -> StreakResponse(
+                status = StreakStatus.BROKEN,
+                currentStreak = 0,
+            )
+        }
+        return ResponseEntity.ok(ApiResponse.ok(response))
     }
 
     @Operation(
