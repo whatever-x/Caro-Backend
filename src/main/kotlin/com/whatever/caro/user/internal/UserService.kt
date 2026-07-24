@@ -27,6 +27,29 @@ class UserService(
     private val socialAccountRepository: SocialAccountRepository,
 ) : UserApi {
 
+    @Transactional(readOnly = true)
+    fun getUserInfo(
+        userId: Long,
+    ): MyInfo {
+        val user = userRepository.findByIdOrNull(userId)
+            ?: throw UserNotFoundException("사용자를 찾을 수 없습니다: $userId")
+        if (user.isDeleted) {
+            throw UserNotFoundException("사용자를 찾을 수 없습니다: $userId")
+        }
+
+        val socialAccount = socialAccountRepository.findByUserId(userId)
+            ?: run {
+                logger.error { "Social account not found for userId=$userId" }
+                throw IllegalStateException("소셜 계정이 없는 사용자: $userId") // TODO CustomException
+            }
+
+        return MyInfo(
+            nickname = user.nickname,
+            email = user.encryptedPrimaryEmail,
+            socialProvider = socialAccount.provider,
+        )
+    }
+
     override fun findById(
         userId: Long,
     ): UserInfo? {
