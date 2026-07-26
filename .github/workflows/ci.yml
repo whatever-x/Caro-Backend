@@ -124,10 +124,10 @@ jobs:
           cache-from: type=gha
           cache-to: type-gha,mode=max
 
-  notify-main-failure:
-    name: Notify Main Failure
+  notify-ci-failure:
+    name: Notify CI Failure
     needs: [ format-check, test, docker-build-check ]
-    if: failure() && github.ref == 'refs/heads/main'
+    if: failure() && github.event_name == 'push'
     runs-on: ubuntu-latest
 
     steps:
@@ -154,16 +154,16 @@ jobs:
           token: ${{ secrets.SLACK_BOT_TOKEN }}
           payload: |
             channel: ${{ secrets.SLACK_GIT_NOTIFY_CHANNEL_ID }}
-            text: "main 브랜치 CI 실패"
+            text: "${{ github.ref_name }} 브랜치 CI 실패"
             blocks:
               - type: header
                 text:
                   type: plain_text
-                  text: "Production 배포 차단"
+                  text: "${{ github.ref_name }} 브랜치 CI 실패"
               - type: section
                 text:
                   type: mrkdwn
-                  text: "<!channel> *main* 브랜치 CI 실패"
+                  text: "<!channel> *${{ github.ref_name }}* 브랜치 CI 실패"
               - type: section
                 fields:
                   - type: mrkdwn
