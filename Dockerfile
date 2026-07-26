@@ -7,10 +7,15 @@ COPY gradlew settings.gradle.kts build.gradle.kts ./
 COPY gradle ./gradle
 RUN chmod +x ./gradlew
 
+ARG RELEASE_VERSION=0.0.1-SNAPSHOT
+ARG GIT_COMMIT=unknown
+ARG BUILD_TIME=unknown
+
 COPY src ./src
 RUN --mount=type=cache,target=/root/.gradle \
     ./gradlew --no-daemon bootJar -x test \
- && mv build/libs/caro-*-SNAPSHOT.jar build/libs/app.jar
+    -Pversion=$RELEASE_VERSION -PgitCommit=$GIT_COMMIT -PbuildTime=$BUILD_TIME \
+ && grep -q "^build.version=$RELEASE_VERSION$" build/resources/main/META-INF/build-info.properties
 
 RUN java -Djarmode=tools -jar build/libs/app.jar \
         extract --layers --destination application

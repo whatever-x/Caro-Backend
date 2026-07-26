@@ -198,6 +198,22 @@ kover {
     }
 }
 
+springBoot {
+    buildInfo {
+        // actuator에 노출하기 위한 META-INF/build-info.properties 생성
+        excludes.add("time")
+        properties {
+            additional.put("commit", providers.gradleProperty("gitCommit").orElse("unknown"))
+            // 빌드 시점마다 가변적인 time 대신, 명시적인 값을 주입받아 사용
+            additional.put("buildTime", providers.gradleProperty("buildTime").orElse("unknown"))
+        }
+    }
+}
+
+tasks.bootJar {
+    archiveFileName = "app.jar" // entrypoint.sh에서 app.jar를 사용하므로 fix
+}
+
 // check 태스크에 연결
 tasks.named("check") {
     dependsOn("spotlessCheck")
