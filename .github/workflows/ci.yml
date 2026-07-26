@@ -122,7 +122,7 @@ jobs:
           context: .
           push: false
           cache-from: type=gha
-          cache-to: type-gha,mode=max
+          cache-to: type=gha,mode=max
 
   notify-ci-failure:
     name: Notify CI Failure
