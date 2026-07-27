@@ -55,4 +55,10 @@ interface StudySessionRepository : JpaRepository<StudySession, Long> {
     fun stopStaledActiveBefore(
         before: LocalDate,
     ): Int
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("delete from StudySession ss where ss.userId = :userId")
+    fun hardDeleteAllByUserId(
+        userId: Long,
+    ): Int
 }

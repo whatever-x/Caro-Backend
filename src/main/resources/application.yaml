@@ -63,6 +63,7 @@ app:
   schedule:
     cron:
       stale-session-sweep: "0 0 4 * * *"
+      withdrawn-user-purge: "0 0 5 * * *"
 
 server:
   port: 8080

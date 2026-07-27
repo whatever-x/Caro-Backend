@@ -8,4 +8,8 @@ interface DeckApi {
     fun getDeck(
         deckId: Long,
     ): DeckInfoResponse
+
+    fun deleteAllByUserId(
+        userId: Long,
+    )
 }

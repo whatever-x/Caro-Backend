@@ -29,4 +29,12 @@ interface UserApi {
     fun deleteMe(
         userId: Long,
     )
+
+    fun findWithdrawnUserIds(
+        limit: Int,
+    ): List<Long>
+
+    fun hardDeleteUser(
+        userId: Long,
+    )
 }

@@ -4,6 +4,7 @@ import com.whatever.caro.card.api.deck.DeckApi
 import com.whatever.caro.card.api.deck.DeckDeletedEvent
 import com.whatever.caro.card.api.deck.DeckInfoResponse
 import com.whatever.caro.card.internal.deck.Deck
+import com.whatever.caro.card.internal.deck.DeckPresetRepository
 import com.whatever.caro.card.internal.deck.DeckRepository
 import com.whatever.caro.card.internal.deck.dto.create.CreateDeckDto
 import com.whatever.caro.card.internal.deck.dto.create.CreateDeckResponseDto
@@ -23,6 +24,7 @@ import java.time.Instant
 @Service
 class DeckService(
     private val deckRepository: DeckRepository,
+    private val deckPresetRepository: DeckPresetRepository,
     private val eventPublisher: ApplicationEventPublisher,
 ) : DeckApi {
     override fun getDecks(
@@ -36,6 +38,15 @@ class DeckService(
             deckRepository.findByIdAndDeletedAtIsNull(deckId)
                 ?: throw DeckNotFoundException("deckId=$deckId 덱을 찾을 수 없습니다")
             ).toInfo()
+
+    @Transactional
+    override fun deleteAllByUserId(
+        userId: Long,
+    ) {
+        // FK 순서: decks(자식, deck_preset_id) → deck_presets(부모).
+        deckRepository.hardDeleteAllByUserId(userId)
+        deckPresetRepository.hardDeleteAllByUserId(userId)
+    }
 
     @Transactional
     fun createDeck(

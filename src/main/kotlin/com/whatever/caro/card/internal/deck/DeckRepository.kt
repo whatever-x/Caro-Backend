@@ -53,4 +53,10 @@ interface DeckRepository : JpaRepository<Deck, Long> {
         deckId: Long,
         amount: Int,
     ): Int
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("delete from Deck d where d.userId = :userId")
+    fun hardDeleteAllByUserId(
+        userId: Long,
+    ): Int
 }

@@ -2,6 +2,7 @@ package com.whatever.caro.user.internal
 
 import com.whatever.caro.user.SocialProvider
 import org.springframework.data.jpa.repository.JpaRepository
+import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
 
 interface SocialAccountRepository : JpaRepository<SocialAccount, Long> {
@@ -12,4 +13,10 @@ interface SocialAccountRepository : JpaRepository<SocialAccount, Long> {
         provider: SocialProvider,
         providerUserId: String,
     ): SocialAccount?
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("delete from SocialAccount sa where sa.user.id = :userId")
+    fun hardDeleteAllByUserId(
+        userId: Long,
+    ): Int
 }

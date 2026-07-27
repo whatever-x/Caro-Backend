@@ -13,6 +13,9 @@ import com.whatever.caro.study.exception.SessionExpiredException
 import com.whatever.caro.study.exception.SessionNotFoundException
 import com.whatever.caro.study.internal.cardlearningstate.CardLearningState
 import com.whatever.caro.study.internal.cardlearningstate.CardLearningStateRepository
+import com.whatever.caro.study.internal.streak.StreakStateRepository
+import com.whatever.caro.study.internal.streak.StudyDayRepository
+import com.whatever.caro.study.internal.studysession.ReviewLogRepository
 import com.whatever.caro.study.internal.studysession.StudySession
 import com.whatever.caro.study.internal.studysession.StudySessionRepository
 import org.springframework.data.domain.PageRequest
@@ -25,9 +28,24 @@ import java.time.ZoneId
 class StudyService(
     private val studySessionRepository: StudySessionRepository,
     private val cardLearningStateRepository: CardLearningStateRepository,
+    private val reviewLogRepository: ReviewLogRepository,
+    private val studyDayRepository: StudyDayRepository,
+    private val streakStateRepository: StreakStateRepository,
     private val deckPresetApi: DeckPresetApi,
     private val studyTargetPoolCalculator: StudyTargetPoolCalculator,
 ) : StudyApi {
+
+    @Transactional
+    override fun deleteAllByUserId(
+        userId: Long,
+    ) {
+        // FK 순서: review_logs(자식, study_session_id) → study_sessions(부모). 나머지는 독립.
+        reviewLogRepository.hardDeleteAllByUserId(userId)
+        studySessionRepository.hardDeleteAllByUserId(userId)
+        cardLearningStateRepository.hardDeleteAllByUserId(userId)
+        studyDayRepository.hardDeleteAllByUserId(userId)
+        streakStateRepository.hardDeleteAllByUserId(userId)
+    }
 
     @Transactional
     override fun startOrResumeDailyStudySession(

@@ -35,4 +35,8 @@ interface StudyApi {
         userId: Long,
         deckIds: Set<Long>,
     ): Map<Long, TodayStudySessionState>
+
+    fun deleteAllByUserId(
+        userId: Long,
+    )
 }

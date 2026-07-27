@@ -10,4 +10,8 @@ interface CardApi {
         userId: Long,
         deckId: Long,
     ): List<CardContentDto>
+
+    fun deleteAllByUserId(
+        userId: Long,
+    )
 }

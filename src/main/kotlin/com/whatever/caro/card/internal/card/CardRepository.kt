@@ -1,6 +1,7 @@
 package com.whatever.caro.card.internal.card
 
 import org.springframework.data.jpa.repository.JpaRepository
+import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
 
 interface CardRepository : JpaRepository<Card, Long> {
@@ -68,4 +69,10 @@ interface CardRepository : JpaRepository<Card, Long> {
     fun findAllByIds(
         ids: Collection<Long>,
     ): List<CardOwnership>
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("delete from Card c where c.userId = :userId")
+    fun hardDeleteAllByUserId(
+        userId: Long,
+    ): Int
 }

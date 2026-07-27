@@ -58,6 +58,15 @@ class CardService(
     }
 
     @Transactional
+    override fun deleteAllByUserId(
+        userId: Long,
+    ) {
+        // FK 순서: cards(자식) → notes(부모). note_id NOT NULL 제약 위반 방지.
+        cardRepository.hardDeleteAllByUserId(userId)
+        noteRepository.hardDeleteAllByUserId(userId)
+    }
+
+    @Transactional
     fun createCards(
         userId: Long,
         dto: CreateCardsDto,
