@@ -12,4 +12,14 @@ interface SocialAccountRepository : JpaRepository<SocialAccount, Long> {
         provider: SocialProvider,
         providerUserId: String,
     ): SocialAccount?
+
+    @Query(
+        """
+        select sa from SocialAccount sa
+        where sa.user.id = :userId
+        """,
+    )
+    fun findByUserId(
+        userId: Long,
+    ): SocialAccount?
 }
