@@ -112,4 +112,3 @@ jobs:
             GIT_COMMIT=${{ steps.vars.outputs.short_sha }}
             BUILD_TIME=${{ steps.vars.outputs.build_time }}
           cache-from: type=gha
-          cache-to: type=gha,mode=max
