@@ -14,6 +14,16 @@ interface SocialAccountRepository : JpaRepository<SocialAccount, Long> {
         providerUserId: String,
     ): SocialAccount?
 
+    @Query(
+        """
+        select sa from SocialAccount sa
+        where sa.user.id = :userId
+        """,
+    )
+    fun findByUserId(
+        userId: Long,
+    ): SocialAccount?
+
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("delete from SocialAccount sa where sa.user.id = :userId")
     fun hardDeleteAllByUserId(

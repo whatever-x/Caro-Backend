@@ -2,13 +2,12 @@ package com.whatever.caro.user.internal.web
 
 import com.whatever.caro.common.response.ApiResponse
 import com.whatever.caro.user.UserApi
-import com.whatever.caro.user.exception.UserNotFoundException
 import com.whatever.caro.user.internal.UserService
 import com.whatever.caro.user.internal.web.request.UpdateNicknameRequest
-import com.whatever.caro.user.internal.web.response.MyNicknameResponse
+import com.whatever.caro.user.internal.web.response.MyInfoResponse
 import com.whatever.caro.user.internal.web.response.NicknameCheckResponse
 import com.whatever.caro.user.internal.web.response.UpdateNicknameResponse
-import com.whatever.caro.user.internal.web.response.toMyNicknameResponse
+import com.whatever.caro.user.internal.web.response.toResponse
 import com.whatever.caro.user.internal.web.response.toUpdateNicknameResponse
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
@@ -50,17 +49,16 @@ class UserController(
     }
 
     @Operation(
-        summary = "내 닉네임 조회",
-        description = "현재 로그인한 사용자의 닉네임을 반환한다.",
+        summary = "내 정보 조회",
+        description = "현재 로그인한 사용자의 정보를 반환한다.",
     )
-    @GetMapping("/me/nickname")
-    fun getMyNickname(
+    @GetMapping("/me/info")
+    fun getMyInfo(
         @AuthenticationPrincipal(expression = "userId")
         userId: Long,
-    ): ResponseEntity<ApiResponse<MyNicknameResponse>> {
-        val user = userApi.findById(userId)
-            ?: throw UserNotFoundException("사용자를 찾을 수 없습니다: $userId")
-        return ResponseEntity.ok(ApiResponse.ok(user.toMyNicknameResponse()))
+    ): ResponseEntity<ApiResponse<MyInfoResponse>> {
+        val myInfo = userService.getUserInfo(userId = userId)
+        return ResponseEntity.ok(ApiResponse.ok(myInfo.toResponse()))
     }
 
     @Operation(
