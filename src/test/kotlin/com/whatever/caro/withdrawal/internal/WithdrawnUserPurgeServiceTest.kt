@@ -53,6 +53,7 @@ import java.time.ZoneId
 @Import(TestcontainersConfiguration::class)
 class WithdrawnUserPurgeServiceTest(
     private val purgeService: WithdrawnUserPurgeService,
+    private val sweeper: WithdrawnUserPurgeSweeper,
     private val userRepository: UserRepository,
     private val socialAccountRepository: SocialAccountRepository,
     private val noteTypeRepository: NoteTypeRepository,
@@ -223,6 +224,40 @@ class WithdrawnUserPurgeServiceTest(
             purgeService.purge(user.id)
 
             userRepository.existsById(user.id).shouldBeFalse()
+        }
+    }
+
+    describe("purgeWithdrawnUsers (sweeper 선택 안전성)") {
+        it("탈퇴 유저만 파기하고 활성 유저는 대상에서 제외한다") {
+            val noteType = noteTypeRepository.save(NoteType(name = "basic"))
+            val cardTemplate = cardTemplateRepository.save(
+                CardTemplate(
+                    noteType = noteType,
+                    requiredFields = listOf("front", "back"),
+                    template = mapOf("front" to "{{front}}"),
+                    position = 0,
+                ),
+            )
+
+            val withdrawnUser = userRepository.save(User(nickname = "withdrawn-user", status = UserStatus.ACTIVE))
+            withdrawnUser.softDelete(Instant.now())
+            userRepository.save(withdrawnUser)
+            val activeUser = userRepository.save(User(nickname = "active-user", status = UserStatus.ACTIVE))
+
+            val purged = seed(withdrawnUser, "w", cardTemplate)
+            val kept = seed(activeUser, "a", cardTemplate)
+
+            sweeper.purgeWithdrawnUsers()
+
+            // 탈퇴 유저: 대상으로 선택되어 파기됨
+            userRepository.existsById(withdrawnUser.id).shouldBeFalse()
+            cardRepository.existsById(purged.cardId).shouldBeFalse()
+            studySessionRepository.existsById(purged.studySessionId).shouldBeFalse()
+
+            // 활성 유저(deletedAt IS NULL): 애초에 대상에서 제외되어 온전히 보존
+            userRepository.existsById(activeUser.id).shouldBeTrue()
+            cardRepository.existsById(kept.cardId).shouldBeTrue()
+            studySessionRepository.existsById(kept.studySessionId).shouldBeTrue()
         }
     }
 })
