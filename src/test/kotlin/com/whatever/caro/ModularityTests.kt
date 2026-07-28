@@ -26,7 +26,7 @@ class ModularityTests :
 
             it("모듈이 올바르게 감지되었는지 확인한다") {
                 val moduleCount = modules.stream().count()
-                moduleCount shouldBe 7
+                moduleCount shouldBe 8
             }
         }
 

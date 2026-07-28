@@ -4,6 +4,7 @@ import com.whatever.caro.study.CardLearningStatus
 import com.whatever.caro.study.internal.DeckCardCount
 import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository
+import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
 import java.time.LocalDate
 
@@ -169,4 +170,10 @@ interface CardLearningStateRepository : JpaRepository<CardLearningState, Long> {
         status: CardLearningStatus,
         nextReviewDate: LocalDate,
     ): Boolean
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("delete from CardLearningState cls where cls.userId = :userId")
+    fun hardDeleteAllByUserId(
+        userId: Long,
+    ): Int
 }

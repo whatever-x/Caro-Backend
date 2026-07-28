@@ -10,6 +10,7 @@ import com.whatever.caro.user.exception.UserNotFoundException
 import com.whatever.caro.user.internal.encrypt.EmailHasher
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.dao.DataIntegrityViolationException
+import org.springframework.data.domain.PageRequest
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -160,6 +161,20 @@ class UserService(
         if (user.isDeleted) return
         val now = Instant.now(clock)
         user.softDelete(now)
+    }
+
+    @Transactional(readOnly = true)
+    override fun findWithdrawnUserIds(
+        limit: Int,
+    ): List<Long> = userRepository.findWithdrawnUserIds(PageRequest.of(0, limit))
+
+    @Transactional
+    override fun hardDeleteUser(
+        userId: Long,
+    ) {
+        // FK 순서: social_accounts(자식, user_id) → users(부모).
+        socialAccountRepository.hardDeleteAllByUserId(userId)
+        userRepository.hardDeleteById(userId)
     }
 
     override fun isNicknameAvailable(

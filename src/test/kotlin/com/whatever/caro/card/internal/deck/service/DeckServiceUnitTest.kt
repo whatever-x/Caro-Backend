@@ -2,6 +2,7 @@ package com.whatever.caro.card.internal.deck.service
 
 import com.whatever.caro.card.api.deck.DeckDeletedEvent
 import com.whatever.caro.card.internal.deck.Deck
+import com.whatever.caro.card.internal.deck.DeckPresetRepository
 import com.whatever.caro.card.internal.deck.DeckRepository
 import com.whatever.caro.card.internal.deck.dto.create.CreateDeckDto
 import com.whatever.caro.card.internal.deck.dto.delete.DeleteDeckDto
@@ -26,8 +27,9 @@ class DeckServiceUnitTest :
     DescribeSpec({
 
         val deckRepository = mockk<DeckRepository>()
+        val deckPresetRepository = mockk<DeckPresetRepository>(relaxed = true)
         val eventPublisher = mockk<ApplicationEventPublisher>(relaxed = true)
-        val deckService = DeckService(deckRepository, eventPublisher)
+        val deckService = DeckService(deckRepository, deckPresetRepository, eventPublisher)
 
         fun createDeckWithId(
             id: Long,

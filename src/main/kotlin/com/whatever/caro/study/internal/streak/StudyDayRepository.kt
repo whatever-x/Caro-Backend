@@ -51,4 +51,10 @@ interface StudyDayRepository : JpaRepository<StudyDay, Long> {
         userId: Long,
         studyDate: LocalDate,
     ): Boolean
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("delete from StudyDay sd where sd.userId = :userId")
+    fun hardDeleteAllByUserId(
+        userId: Long,
+    ): Int
 }
