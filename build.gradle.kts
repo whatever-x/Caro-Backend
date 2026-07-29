@@ -223,28 +223,9 @@ tasks.withType<Test> {
     useJUnitPlatform()
     systemProperty("user.timezone", "UTC")
 
-//    // ===== OOM 재현 실습용 임시 설정 시작 (실습 후 제거 또는 영구안으로 교체) =====
-//    // 사용: ./gradlew test --rerun -PtestHeap=256m
-//    // -PtestHeap 미지정 시 512m = Gradle 기본값이자 CI에서 터진 조건
-//    maxHeapSize = (findProperty("testHeap") as String?) ?: "512m"
-//
-//    val oomReportDir = layout.buildDirectory.dir("reports/oom-repro").get().asFile
-//    doFirst { oomReportDir.mkdirs() }
-//
-//    jvmArgs(
-//        "-XX:+HeapDumpOnOutOfMemoryError",
-//        "-XX:HeapDumpPath=${oomReportDir.absolutePath}",
-//        "-Xlog:gc*:file=${oomReportDir.absolutePath}/gc.log:time,uptime,level,tags",
-//    )
-//
-//    // Spring 컨텍스트 캐시 통계(size / hitCount / missCount)를 남긴다
-//    systemProperty("logging.level.org.springframework.test.context.cache", "DEBUG")
-//
-//    testLogging {
-//        events("failed")
-//        exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
-//        showStackTraces = true
-//        showCauses = true
-//    }
-//    // ===== 임시 설정 끝 =====
+    maxHeapSize = "1g"
+    jvmArgs(
+        "-XX:+ExitOnOutOfMemoryError",
+        "-Xlog:gc*:file=build/test-gc.log:time,uptime",
+    )
 }

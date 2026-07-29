@@ -12,7 +12,7 @@ import org.springframework.context.annotation.Import
  * PublicEndpointsOpenApiConsistencyTest 와 동일한 TestContext 캐시 키를 만들어
  * 전체 앱 컨텍스트가 중복으로 뜨는 것을 막기 위해 유지
  */
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
+@SpringBootTest
 @AutoConfigureMockMvc
 @Import(TestcontainersConfiguration::class)
 class CaroApplicationTests {
