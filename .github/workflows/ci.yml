@@ -104,10 +104,30 @@ jobs:
           path: build/reports/tests/
           retention-days: 7
 
-  notify-main-failure:
-    name: Notify Main Failure
+  docker-build-check:
+    name: Docker build check
     needs: [ format-check, test ]
-    if: failure() && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v7
+      - uses: docker/setup-buildx-action@v4
+        with:
+          driver-opts: env.BUILDKIT_STEP_LOG_MAX_SIZE=-1
+      - uses: docker/build-push-action@v7
+        with:
+          context: .
+          push: false
+          cache-from: type=gha
+          cache-to: ${{ github.event_name == 'push' && 'type=gha,mode=max' || '' }}  # PR merge시에만 cache write
+
+  notify-ci-failure:
+    name: Notify CI Failure
+    needs: [ format-check, test, docker-build-check ]
+    if: failure() && github.event_name == 'push'
     runs-on: ubuntu-latest
 
     steps:
@@ -134,16 +154,16 @@ jobs:
           token: ${{ secrets.SLACK_BOT_TOKEN }}
           payload: |
             channel: ${{ secrets.SLACK_GIT_NOTIFY_CHANNEL_ID }}
-            text: "main 브랜치 CI 실패"
+            text: "${{ github.ref_name }} 브랜치 CI 실패"
             blocks:
               - type: header
                 text:
                   type: plain_text
-                  text: "Production 배포 차단"
+                  text: "${{ github.ref_name }} 브랜치 CI 실패"
               - type: section
                 text:
                   type: mrkdwn
-                  text: "<!channel> *main* 브랜치 CI 실패"
+                  text: "<!channel> *${{ github.ref_name }}* 브랜치 CI 실패"
               - type: section
                 fields:
                   - type: mrkdwn

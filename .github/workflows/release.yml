@@ -2,7 +2,7 @@ name: Release
 
 on:
   push:
-    tags: ['v*']
+    tags: [ 'v*' ]
 
 concurrency:
   group: release-${{ github.ref }}
@@ -106,9 +106,9 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          platforms: linux/amd64
           build-args: |
             RELEASE_VERSION=${{ steps.meta.outputs.version }}
             GIT_COMMIT=${{ steps.vars.outputs.short_sha }}
             BUILD_TIME=${{ steps.vars.outputs.build_time }}
           cache-from: type=gha
-          cache-to: type=gha,mode=max

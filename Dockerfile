@@ -1,19 +1,23 @@
 # ===== Build stage =====
 FROM eclipse-temurin:25-jdk AS builder
 WORKDIR /workspace
+ENV GRADLE_USER_HOME=/workspace/.gradlehome
 
 # Cache dependencies first
 COPY gradlew settings.gradle.kts build.gradle.kts ./
 COPY gradle ./gradle
+COPY docker/resolve-deps.init.gradle.kts ./
 RUN chmod +x ./gradlew
+
+RUN ./gradlew --no-daemon \
+    -I /workspace/resolve-deps.init.gradle.kts resolveAllDependencies
 
 ARG RELEASE_VERSION=0.0.1-SNAPSHOT
 ARG GIT_COMMIT=unknown
 ARG BUILD_TIME=unknown
 
 COPY src ./src
-RUN --mount=type=cache,target=/root/.gradle \
-    ./gradlew --no-daemon bootJar -x test \
+RUN ./gradlew --no-daemon bootJar -x test \
     -Pversion=$RELEASE_VERSION -PgitCommit=$GIT_COMMIT -PbuildTime=$BUILD_TIME \
  && grep -q "^build.version=$RELEASE_VERSION$" build/resources/main/META-INF/build-info.properties
 
