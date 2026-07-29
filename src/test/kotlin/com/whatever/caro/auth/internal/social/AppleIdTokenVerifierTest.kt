@@ -8,7 +8,7 @@ import com.nimbusds.jose.jwk.KeyUse
 import com.nimbusds.jose.jwk.RSAKey
 import com.nimbusds.jwt.JWTClaimsSet
 import com.nimbusds.jwt.SignedJWT
-import com.whatever.caro.TestcontainersConfiguration
+import com.whatever.caro.CaroModuleTest
 import com.whatever.caro.auth.exception.InvalidSocialTokenException
 import com.whatever.caro.auth.internal.config.OAuth2Properties
 import com.whatever.caro.user.SocialProvider
@@ -16,11 +16,9 @@ import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.DescribeSpec
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
-import org.springframework.context.annotation.Import
 import org.springframework.data.redis.core.StringRedisTemplate
 import org.springframework.http.HttpMethod
 import org.springframework.http.MediaType
-import org.springframework.modulith.test.ApplicationModuleTest
 import org.springframework.test.web.client.MockRestServiceServer
 import org.springframework.test.web.client.match.MockRestRequestMatchers.method
 import org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo
@@ -37,8 +35,7 @@ private const val DEFAULT_PROVIDER_USER_ID = "000851.test-user-id.0747"
 
 private const val APPLE_PROVIDER = "apple"
 
-@ApplicationModuleTest(extraIncludes = ["common", "user"])
-@Import(TestcontainersConfiguration::class)
+@CaroModuleTest(extraIncludes = ["common", "user"])
 class AppleIdTokenVerifierTest(
     private val oidcPublicKeyCacheRepository: OidcPublicKeyCacheRepository,
     private val redisTemplate: StringRedisTemplate,

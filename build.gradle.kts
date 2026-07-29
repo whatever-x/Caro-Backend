@@ -222,4 +222,10 @@ tasks.named("check") {
 tasks.withType<Test> {
     useJUnitPlatform()
     systemProperty("user.timezone", "UTC")
+
+    maxHeapSize = "1g"
+    jvmArgs(
+        "-XX:+ExitOnOutOfMemoryError",
+        "-Xlog:gc*:file=build/test-gc.log:time,uptime",
+    )
 }

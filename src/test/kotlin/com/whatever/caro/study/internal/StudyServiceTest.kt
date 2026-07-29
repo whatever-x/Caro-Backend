@@ -1,6 +1,6 @@
 package com.whatever.caro.study.internal
 
-import com.whatever.caro.TestcontainersConfiguration
+import com.whatever.caro.CaroModuleTest
 import com.whatever.caro.card.api.deck.DeckPresetApi
 import com.whatever.caro.study.CardLearningStatus
 import com.whatever.caro.study.StudySessionStatus
@@ -26,15 +26,14 @@ import io.mockk.every
 import io.mockk.verify
 import org.springframework.context.annotation.Import
 import org.springframework.data.repository.findByIdOrNull
-import org.springframework.modulith.test.ApplicationModuleTest
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.temporal.ChronoUnit
 
-@ApplicationModuleTest(extraIncludes = ["common"])
-@Import(TestcontainersConfiguration::class, MockDeckPresetApiConfig::class)
+@CaroModuleTest(extraIncludes = ["common"])
+@Import(MockDeckPresetApiConfig::class)
 class StudyServiceTest(
     private val studyService: StudyService,
     private val studySessionRepository: StudySessionRepository,

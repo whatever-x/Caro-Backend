@@ -1,6 +1,6 @@
 package com.whatever.caro.study.internal.event
 
-import com.whatever.caro.TestcontainersConfiguration
+import com.whatever.caro.CaroModuleTest
 import com.whatever.caro.card.api.event.CardsDeletedEvent
 import com.whatever.caro.study.CardLearningStatus
 import com.whatever.caro.study.StudySessionStatus
@@ -19,7 +19,6 @@ import org.awaitility.Awaitility.await
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.context.annotation.Import
 import org.springframework.data.repository.findByIdOrNull
-import org.springframework.modulith.test.ApplicationModuleTest
 import org.springframework.transaction.support.TransactionTemplate
 import java.math.BigDecimal
 import java.time.Clock
@@ -28,8 +27,8 @@ import java.time.LocalDate
 import java.time.ZoneId
 import java.util.concurrent.TimeUnit
 
-@ApplicationModuleTest(extraIncludes = ["common"])
-@Import(TestcontainersConfiguration::class, MockDeckPresetApiConfig::class)
+@CaroModuleTest(extraIncludes = ["common"])
+@Import(MockDeckPresetApiConfig::class)
 class CardLearningStateEventListenerTest(
     private val transactionTemplate: TransactionTemplate,
     private val publisher: ApplicationEventPublisher,

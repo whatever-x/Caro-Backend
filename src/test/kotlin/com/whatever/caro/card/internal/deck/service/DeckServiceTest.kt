@@ -1,6 +1,6 @@
 package com.whatever.caro.card.internal.deck.service
 
-import com.whatever.caro.TestcontainersConfiguration
+import com.whatever.caro.CaroModuleTest
 import com.whatever.caro.card.internal.deck.Deck
 import com.whatever.caro.card.internal.deck.DeckRepository
 import com.whatever.caro.card.internal.deck.dto.create.CreateDeckDto
@@ -13,11 +13,8 @@ import io.kotest.core.spec.style.DescribeSpec
 import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.shouldBe
-import org.springframework.context.annotation.Import
-import org.springframework.modulith.test.ApplicationModuleTest
 
-@ApplicationModuleTest(extraIncludes = ["common"])
-@Import(TestcontainersConfiguration::class)
+@CaroModuleTest(extraIncludes = ["common"])
 class DeckServiceTest(
     private val deckService: DeckService,
     private val deckRepository: DeckRepository,

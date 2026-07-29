@@ -1,6 +1,6 @@
 package com.whatever.caro.withdrawal.internal
 
-import com.whatever.caro.TestcontainersConfiguration
+import com.whatever.caro.CaroModuleTest
 import com.whatever.caro.card.internal.card.Card
 import com.whatever.caro.card.internal.card.CardRepository
 import com.whatever.caro.card.internal.deck.Deck
@@ -37,7 +37,6 @@ import com.whatever.caro.user.internal.UserRepository
 import io.kotest.core.spec.style.DescribeSpec
 import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.booleans.shouldBeTrue
-import org.springframework.context.annotation.Import
 import org.springframework.modulith.test.ApplicationModuleTest
 import java.math.BigDecimal
 import java.time.Instant
@@ -49,8 +48,7 @@ import java.time.ZoneId
  * user/study/card 모듈의 실제 빈을 함께 띄워(ALL_DEPENDENCIES) 11개 테이블이 실제로 비워지는지,
  * 그리고 다른 유저 데이터/시스템 프리셋/공유 템플릿은 보존되는지 검증한다.
  */
-@ApplicationModuleTest(mode = ApplicationModuleTest.BootstrapMode.ALL_DEPENDENCIES, extraIncludes = ["common"])
-@Import(TestcontainersConfiguration::class)
+@CaroModuleTest(mode = ApplicationModuleTest.BootstrapMode.ALL_DEPENDENCIES, extraIncludes = ["common"])
 class WithdrawnUserPurgeServiceTest(
     private val purgeService: WithdrawnUserPurgeService,
     private val sweeper: WithdrawnUserPurgeSweeper,
