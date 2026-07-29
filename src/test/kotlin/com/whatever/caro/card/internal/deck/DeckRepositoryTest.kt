@@ -1,20 +1,17 @@
 package com.whatever.caro.card.internal.deck
 
-import com.whatever.caro.TestcontainersConfiguration
+import com.whatever.caro.CaroModuleTest
 import io.kotest.core.spec.style.DescribeSpec
 import io.kotest.matchers.shouldBe
-import org.springframework.context.annotation.Import
-import org.springframework.modulith.test.ApplicationModuleTest
 import org.springframework.transaction.annotation.Transactional
 
-@ApplicationModuleTest(extraIncludes = ["common"])
-@Import(TestcontainersConfiguration::class)
+@CaroModuleTest(extraIncludes = ["common"])
 @Transactional
 class DeckRepositoryTest(
     private val deckRepository: DeckRepository,
 ) : DescribeSpec({
 
-    afterEach { deckRepository.deleteAllInBatch() }
+    afterTest { deckRepository.deleteAllInBatch() }
 
     fun saveDeck(
         cardCount: Int,

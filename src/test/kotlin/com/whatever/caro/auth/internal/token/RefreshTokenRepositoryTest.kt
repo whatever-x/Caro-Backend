@@ -1,20 +1,17 @@
 package com.whatever.caro.auth.internal.token
 
-import com.whatever.caro.TestcontainersConfiguration
+import com.whatever.caro.CaroModuleTest
 import io.kotest.core.spec.style.DescribeSpec
 import io.kotest.matchers.comparables.shouldBeBetween
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
-import org.springframework.context.annotation.Import
 import org.springframework.data.redis.core.StringRedisTemplate
-import org.springframework.modulith.test.ApplicationModuleTest
 import java.time.Duration
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
-@ApplicationModuleTest(extraIncludes = ["common", "user"])
-@Import(TestcontainersConfiguration::class)
+@CaroModuleTest(extraIncludes = ["common", "user"])
 class RefreshTokenRepositoryTest(
     private val refreshTokenRepository: RefreshTokenRepository,
     private val redisTemplate: StringRedisTemplate,

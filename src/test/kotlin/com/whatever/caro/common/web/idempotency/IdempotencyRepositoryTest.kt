@@ -1,6 +1,6 @@
 package com.whatever.caro.common.web.idempotency
 
-import com.whatever.caro.TestcontainersConfiguration
+import com.whatever.caro.CaroModuleTest
 import io.kotest.core.spec.style.DescribeSpec
 import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.booleans.shouldBeTrue
@@ -9,14 +9,11 @@ import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.ranges.shouldBeIn
 import io.kotest.matchers.shouldBe
 import org.awaitility.Awaitility.await
-import org.springframework.context.annotation.Import
 import org.springframework.data.redis.core.StringRedisTemplate
-import org.springframework.modulith.test.ApplicationModuleTest
 import java.time.Duration
 import java.util.concurrent.TimeUnit
 
-@ApplicationModuleTest
-@Import(TestcontainersConfiguration::class)
+@CaroModuleTest
 class IdempotencyRepositoryTest(
     private val repository: IdempotencyRepository,
     private val redisTemplate: StringRedisTemplate,

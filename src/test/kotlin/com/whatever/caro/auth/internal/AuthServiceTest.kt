@@ -1,6 +1,6 @@
 package com.whatever.caro.auth.internal
 
-import com.whatever.caro.TestcontainersConfiguration
+import com.whatever.caro.CaroModuleTest
 import com.whatever.caro.auth.AuthUser
 import com.whatever.caro.auth.exception.InvalidRefreshTokenException
 import com.whatever.caro.auth.exception.InvalidSocialTokenException
@@ -31,7 +31,6 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Import
 import org.springframework.context.annotation.Primary
 import org.springframework.data.redis.core.StringRedisTemplate
-import org.springframework.modulith.test.ApplicationModuleTest
 import java.time.Duration
 
 private const val TEST_ID_TOKEN = "test-id-token"
@@ -49,8 +48,8 @@ class MockSocialVerifierConfig {
     fun socialIdTokenVerifierFactory(): SocialIdTokenVerifierFactory = mockk(relaxed = true)
 }
 
-@ApplicationModuleTest(extraIncludes = ["common", "user"])
-@Import(TestcontainersConfiguration::class, MockSocialVerifierConfig::class)
+@CaroModuleTest(extraIncludes = ["common", "user"])
+@Import(MockSocialVerifierConfig::class)
 class AuthServiceTest(
     private val authService: AuthService,
     private val socialIdTokenVerifierFactory: SocialIdTokenVerifierFactory,

@@ -1,6 +1,6 @@
 package com.whatever.caro.study.internal
 
-import com.whatever.caro.TestcontainersConfiguration
+import com.whatever.caro.CaroModuleTest
 import com.whatever.caro.card.api.deck.DeckPresetApi
 import com.whatever.caro.study.CardLearningStatus
 import com.whatever.caro.study.Rating
@@ -33,7 +33,6 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Import
 import org.springframework.context.annotation.Primary
 import org.springframework.data.repository.findByIdOrNull
-import org.springframework.modulith.test.ApplicationModuleTest
 import java.math.BigDecimal
 import java.time.Instant
 import java.time.LocalDate
@@ -54,8 +53,8 @@ class MockDeckPresetApiConfig {
     fun restDayCheckService(): RestDayCheckService = mockk(relaxed = true)
 }
 
-@ApplicationModuleTest(extraIncludes = ["common"])
-@Import(TestcontainersConfiguration::class, MockDeckPresetApiConfig::class)
+@CaroModuleTest(extraIncludes = ["common"])
+@Import(MockDeckPresetApiConfig::class)
 class EvaluationServiceTest(
     private val evaluationService: EvaluationService,
     private val deckPresetApi: DeckPresetApi,

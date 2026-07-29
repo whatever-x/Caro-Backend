@@ -1,6 +1,6 @@
 package com.whatever.caro.study.internal.streak
 
-import com.whatever.caro.TestcontainersConfiguration
+import com.whatever.caro.CaroModuleTest
 import com.whatever.caro.study.StreakType
 import com.whatever.caro.study.internal.MockDeckPresetApiConfig
 import io.kotest.core.spec.style.DescribeSpec
@@ -11,14 +11,13 @@ import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.verify
 import org.springframework.context.annotation.Import
-import org.springframework.modulith.test.ApplicationModuleTest
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.ZoneOffset
 
-@ApplicationModuleTest(extraIncludes = ["common"])
-@Import(TestcontainersConfiguration::class, MockDeckPresetApiConfig::class)
+@CaroModuleTest(extraIncludes = ["common"])
+@Import(MockDeckPresetApiConfig::class)
 class StreakServiceTest(
     private val streakService: StreakService,
     private val streakStateRepository: StreakStateRepository,

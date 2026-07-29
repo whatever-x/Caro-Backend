@@ -1,6 +1,6 @@
 package com.whatever.caro.user.internal
 
-import com.whatever.caro.TestcontainersConfiguration
+import com.whatever.caro.CaroModuleTest
 import com.whatever.caro.user.SocialProvider
 import com.whatever.caro.user.UserStatus
 import com.whatever.caro.user.exception.AlreadyCompletedException
@@ -14,14 +14,11 @@ import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
-import org.springframework.context.annotation.Import
 import org.springframework.data.repository.findByIdOrNull
-import org.springframework.modulith.test.ApplicationModuleTest
 import java.time.Instant
 import java.util.UUID
 
-@ApplicationModuleTest(extraIncludes = ["common"])
-@Import(TestcontainersConfiguration::class)
+@CaroModuleTest(extraIncludes = ["common"])
 class UserServiceTest(
     private val userService: UserService,
     private val userRepository: UserRepository,

@@ -1,18 +1,17 @@
 package com.whatever.caro.study.internal.cardlearningstate
 
-import com.whatever.caro.TestcontainersConfiguration
+import com.whatever.caro.CaroModuleTest
 import com.whatever.caro.study.CardLearningStatus
 import com.whatever.caro.study.internal.MockDeckPresetApiConfig
 import io.kotest.core.spec.style.DescribeSpec
 import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
 import io.kotest.matchers.shouldBe
 import org.springframework.context.annotation.Import
-import org.springframework.modulith.test.ApplicationModuleTest
 import java.time.Instant
 import java.time.LocalDate
 
-@ApplicationModuleTest(extraIncludes = ["common"])
-@Import(TestcontainersConfiguration::class, MockDeckPresetApiConfig::class)
+@CaroModuleTest(extraIncludes = ["common"])
+@Import(MockDeckPresetApiConfig::class)
 class CardLearningStateRepositoryTest(
     private val cardLearningStateRepository: CardLearningStateRepository,
 ) : DescribeSpec({
