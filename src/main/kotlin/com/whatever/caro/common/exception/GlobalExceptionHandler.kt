@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.HttpStatusCode
 import org.springframework.http.ResponseEntity
 import org.springframework.http.converter.HttpMessageNotReadableException
+import org.springframework.validation.method.ParameterErrors
 import org.springframework.web.HttpRequestMethodNotSupportedException
 import org.springframework.web.accept.InvalidApiVersionException
 import org.springframework.web.accept.MissingApiVersionException
@@ -19,6 +20,7 @@ import org.springframework.web.bind.MissingRequestHeaderException
 import org.springframework.web.bind.MissingServletRequestParameterException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
+import org.springframework.web.method.annotation.HandlerMethodValidationException
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException
 import org.springframework.web.server.ResponseStatusException
 import org.springframework.web.servlet.resource.NoResourceFoundException
@@ -54,6 +56,40 @@ class GlobalExceptionHandler(
         logger.warn { "Validation failed: ${fieldErrors.map { "${it.field}: ${it.message}" }}" }
         return ResponseEntity
             .badRequest()
+            .body(ApiResponse.failValidation(CommonErrorCode.INVALID_INPUT, message, fieldErrors))
+    }
+
+    /**
+     * 메서드 파라미터에 제약(`@Positive` 등)이 직접 붙은 핸들러의 검증 실패
+     *
+     * Spring 6.1+ 내장 메서드 검증은 제약이 하나라도 있으면
+     * 같은 메서드의 `@Valid @RequestBody` 까지 메서드 레벨에서 검증하므로 해당 예외로 발생
+     */
+    @ExceptionHandler(HandlerMethodValidationException::class)
+    fun handleMethodValidation(
+        e: HandlerMethodValidationException,
+        locale: Locale,
+    ): ResponseEntity<ApiResponse<Nothing>> {
+        val fieldErrors = e.parameterValidationResults.flatMap { result ->
+            when (result) {
+                // @Valid로 중첩된 객체의 오류는 원래 필드명을 그대로 사용
+                is ParameterErrors -> result.fieldErrors.map { error ->
+                    FieldError(field = error.field, message = error.defaultMessage ?: "유효하지 않은 값입니다")
+                }
+
+                // 파라미터(@PathVariable 등)의 오류는 파라미터명을 필드명으로 사용
+                else -> result.resolvableErrors.map { error ->
+                    FieldError(
+                        field = result.methodParameter.parameterName ?: "unknown",
+                        message = messageSource.getMessage(error, locale),
+                    )
+                }
+            }
+        }
+        val message = resolveMessage(CommonErrorCode.INVALID_INPUT, null, locale)
+        logger.warn { "Method validation failed: ${fieldErrors.map { "${it.field}: ${it.message}" }}" }
+        return ResponseEntity
+            .status(e.statusCode)
             .body(ApiResponse.failValidation(CommonErrorCode.INVALID_INPUT, message, fieldErrors))
     }
 

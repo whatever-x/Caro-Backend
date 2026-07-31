@@ -22,7 +22,6 @@ import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import jakarta.validation.constraints.Positive
 import org.springframework.http.ResponseEntity
-import org.springframework.validation.annotation.Validated
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PatchMapping
@@ -34,7 +33,6 @@ import org.springframework.web.bind.annotation.RestController
 import java.time.ZoneId
 
 @Tag(name = "Card", description = "카드 관리")
-@Validated
 @RestController
 class CardController(
     private val cardService: CardService,
