@@ -68,44 +68,58 @@ class DeckControllerWebMvcTest : DescribeSpec() {
             SecurityContextHolder.clearContext()
         }
 
-        describe("POST /v1/decks - @Valid 검증") {
+        describe("POST /decks - @Valid 검증") {
             it("name이 blank면 400을 반환한다") {
-                mockMvc.post("/v1/decks") {
+                mockMvc.post("/decks") {
+                    header(API_VERSION_HEADER, API_VERSION)
                     contentType = MediaType.APPLICATION_JSON
                     content = """{"name": "", "description": "설명"}"""
                 }.andExpect {
                     status { isBadRequest() }
+                    jsonPath("$.error.code") { value(INVALID_INPUT_CODE) }
                 }
             }
 
             it("description이 blank면 400을 반환한다") {
-                mockMvc.post("/v1/decks") {
+                mockMvc.post("/decks") {
+                    header(API_VERSION_HEADER, API_VERSION)
                     contentType = MediaType.APPLICATION_JSON
                     content = """{"name": "새 덱", "description": ""}"""
                 }.andExpect {
                     status { isBadRequest() }
+                    jsonPath("$.error.code") { value(INVALID_INPUT_CODE) }
                 }
             }
         }
 
-        describe("PATCH /v1/decks/{deckId} - @Valid 검증") {
+        describe("PATCH /decks/{deckId} - @Valid 검증") {
             it("name이 blank면 400을 반환한다") {
-                mockMvc.patch("/v1/decks/1") {
+                mockMvc.patch("/decks/1") {
+                    header(API_VERSION_HEADER, API_VERSION)
                     contentType = MediaType.APPLICATION_JSON
                     content = """{"name": "", "description": "새 설명"}"""
                 }.andExpect {
                     status { isBadRequest() }
+                    jsonPath("$.error.code") { value(INVALID_INPUT_CODE) }
                 }
             }
 
             it("description이 blank면 400을 반환한다") {
-                mockMvc.patch("/v1/decks/1") {
+                mockMvc.patch("/decks/1") {
+                    header(API_VERSION_HEADER, API_VERSION)
                     contentType = MediaType.APPLICATION_JSON
                     content = """{"name": "새 이름", "description": ""}"""
                 }.andExpect {
                     status { isBadRequest() }
+                    jsonPath("$.error.code") { value(INVALID_INPUT_CODE) }
                 }
             }
         }
+    }
+
+    companion object {
+        private const val API_VERSION_HEADER = "API-Version"
+        private const val API_VERSION = "1.0"
+        private const val INVALID_INPUT_CODE = "C001"
     }
 }

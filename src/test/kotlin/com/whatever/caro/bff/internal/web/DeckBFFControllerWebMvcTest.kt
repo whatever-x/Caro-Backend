@@ -73,12 +73,14 @@ class DeckBFFControllerWebMvcTest : DescribeSpec() {
             SecurityContextHolder.clearContext()
         }
 
-        describe("GET /v2/decks/{deckId}/cards - sortType 바인딩") {
+        describe("GET /decks/{deckId}/cards (v2) - sortType 바인딩") {
             it("sortType을 생략하면 기본값 CREATED로 서비스에 전달한다") {
                 given(deckBFFService.getCardsWithLearningState(1L, 1L, CardSortType.CREATED))
                     .willReturn(emptyList())
 
-                mockMvc.get("/v2/decks/1/cards").andExpect {
+                mockMvc.get("/decks/1/cards") {
+                    header(API_VERSION_HEADER, API_VERSION)
+                }.andExpect {
                     status { isOk() }
                 }
 
@@ -93,7 +95,8 @@ class DeckBFFControllerWebMvcTest : DescribeSpec() {
                 given(deckBFFService.getCardsWithLearningState(1L, 1L, CardSortType.LAST_REVIEWED))
                     .willReturn(emptyList())
 
-                mockMvc.get("/v2/decks/1/cards") {
+                mockMvc.get("/decks/1/cards") {
+                    header(API_VERSION_HEADER, API_VERSION)
                     param("sortType", "LAST_REVIEWED")
                 }.andExpect {
                     status { isOk() }
@@ -107,12 +110,20 @@ class DeckBFFControllerWebMvcTest : DescribeSpec() {
             }
 
             it("유효하지 않은 sortType이면 400을 반환한다") {
-                mockMvc.get("/v2/decks/1/cards") {
+                mockMvc.get("/decks/1/cards") {
+                    header(API_VERSION_HEADER, API_VERSION)
                     param("sortType", "INVALID")
                 }.andExpect {
                     status { isBadRequest() }
+                    jsonPath("$.error.code") { value(TYPE_MISMATCH_CODE) }
                 }
             }
         }
+    }
+
+    companion object {
+        private const val API_VERSION_HEADER = "API-Version"
+        private const val API_VERSION = "2.0"
+        private const val TYPE_MISMATCH_CODE = "C006"
     }
 }
