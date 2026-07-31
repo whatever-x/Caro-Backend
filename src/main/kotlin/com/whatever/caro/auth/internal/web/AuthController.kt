@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.RestController
 
 @Tag(name = "Auth", description = "인증 / 세션 관리")
 @RestController
-@RequestMapping("/v1/auth")
+@RequestMapping("/auth")
 class AuthController(
     private val authService: AuthService,
 ) {
@@ -32,7 +32,7 @@ class AuthController(
         description = "소셜 ID 토큰을 검증해 access/refresh 토큰을 발급한다. 신규 사용자는 isRegistrationComplete=false 로 응답.",
     )
     @PublicApi
-    @PostMapping("/social-login")
+    @PostMapping("/social-login", version = "1.0")
     fun socialLogin(
         @Parameter(name = "Device-Id", description = "디바이스 식별자", required = true, example = "unique-device-identifier")
         @RequestHeader(name = "Device-Id", required = true) deviceId: String,
@@ -46,7 +46,7 @@ class AuthController(
         summary = "회원가입 완료",
         description = "닉네임/약관 동의 입력 후 access/refresh 토큰을 재발급한다.",
     )
-    @PostMapping("/complete-registration")
+    @PostMapping("/complete-registration", version = "1.0")
     fun completeRegistration(
         @Parameter(name = "Device-Id", description = "디바이스 식별자", required = true, example = "unique-device-identifier")
         @RequestHeader(name = "Device-Id", required = true) deviceId: String,
@@ -62,7 +62,7 @@ class AuthController(
         description = "Refresh Token 으로 access/refresh 토큰을 재발급한다. 단일 사용 정책.",
     )
     @PublicApi
-    @PostMapping("/refresh")
+    @PostMapping("/refresh", version = "1.0")
     fun refreshToken(
         @Parameter(name = "Device-Id", description = "디바이스 식별자", required = true, example = "unique-device-identifier")
         @RequestHeader(name = "Device-Id", required = true) deviceId: String,
@@ -76,7 +76,7 @@ class AuthController(
         summary = "로그아웃",
         description = "현재 access token 을 블랙리스트 처리하고 디바이스 refresh token 을 폐기한다.",
     )
-    @PostMapping("/logout")
+    @PostMapping("/logout", version = "1.0")
     fun logout(
         @Parameter(name = "Device-Id", description = "디바이스 식별자", required = true, example = "unique-device-identifier")
         @RequestHeader(name = "Device-Id", required = true) deviceId: String,
@@ -90,7 +90,7 @@ class AuthController(
         summary = "탈퇴",
         description = "유저를 탈퇴처리 하고, 현재 access token 을 블랙리스트 처리하고 유저의 모든 refresh token 을 폐기한다.",
     )
-    @DeleteMapping("/withdraw")
+    @DeleteMapping("/withdraw", version = "1.0")
     fun withdraw(): ResponseEntity<ApiResponse<Unit>> {
         val authUser = SecurityUtil.currentUser()
         authService.withdrawUser(authUser)

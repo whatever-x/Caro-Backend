@@ -42,7 +42,7 @@ class DeckBFFController(
         - REVIEW_FREQUENCY: 복습 수(reviewCount) 많은 순
         """,
     )
-    @GetMapping("/v2/decks/{deckId}/cards")
+    @GetMapping("/decks/{deckId}/cards", version = "2.0")
     fun getCardsByDeck(
         @Parameter(description = "덱 ID", required = true) @PathVariable deckId: Long,
         @Parameter(description = "정렬 기준 (기본값 CREATED)")
@@ -67,7 +67,7 @@ class DeckBFFController(
         (NOT_STARTED는 오늘 학습 목표의 합, REST_DAY는 0)
         """,
     )
-    @GetMapping("/v1/decks")
+    @GetMapping("/decks", version = "1.0")
     fun getDecks(
         @RequestHeader("Client-Timezone", required = true) timezone: ZoneId,
     ): ResponseEntity<ApiResponse<List<DeckListResponse>>> {

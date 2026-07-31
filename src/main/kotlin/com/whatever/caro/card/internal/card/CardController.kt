@@ -43,7 +43,7 @@ class CardController(
         summary = "카드 생성",
         description = "덱에 여러 카드를 한 번에 생성한다.",
     )
-    @PostMapping("/v1/decks/{deckId}/cards")
+    @PostMapping("/decks/{deckId}/cards", version = "1.0")
     fun createCards(
         @Parameter(description = "덱 ID", required = true)
         @Positive @PathVariable deckId: Long,
@@ -60,7 +60,7 @@ class CardController(
         deprecated = true,
     )
     @Deprecated(message = "v2 메서드로 변경 필요")
-    @GetMapping("/v1/decks/{deckId}/cards")
+    @GetMapping("/decks/{deckId}/cards", version = "1.0")
     fun getCardsByDeck(
         @Parameter(description = "덱 ID", required = true)
         @Positive @PathVariable deckId: Long,
@@ -74,7 +74,7 @@ class CardController(
         summary = "카드 단건 조회",
         description = "카드 ID로 카드 1건을 조회한다.",
     )
-    @GetMapping("/v1/cards/{id}")
+    @GetMapping("/cards/{id}", version = "1.0")
     fun getCard(
         @Parameter(description = "카드 ID", required = true)
         @Positive @PathVariable id: Long,
@@ -88,7 +88,7 @@ class CardController(
         summary = "카드 수정",
         description = "카드의 필드 값을 수정한다.",
     )
-    @PatchMapping("/v1/cards/{id}")
+    @PatchMapping("/cards/{id}", version = "1.0")
     fun updateCard(
         @Parameter(description = "카드 ID", required = true)
         @Positive @PathVariable id: Long,
@@ -106,7 +106,7 @@ class CardController(
         삭제는 일일학습 목표/진행도와 streak 계산에 반영되므로 `Client-Timezone` 헤더로 사용자의 오늘 경계를 판단한다.
         """,
     )
-    @DeleteMapping("/v1/cards")
+    @DeleteMapping("/cards", version = "1.0")
     fun deleteCards(
         @RequestHeader("Client-Timezone", required = true)
         timezone: ZoneId,

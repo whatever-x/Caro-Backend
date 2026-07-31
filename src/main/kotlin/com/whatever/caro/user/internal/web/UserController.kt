@@ -27,7 +27,7 @@ import org.springframework.web.bind.annotation.RestController
 @Tag(name = "User", description = "사용자 정보 조회")
 @Validated
 @RestController
-@RequestMapping("/v1/users")
+@RequestMapping("/users")
 class UserController(
     private val userApi: UserApi,
     private val userService: UserService,
@@ -37,7 +37,7 @@ class UserController(
         summary = "닉네임 사용 가능 여부 조회",
         description = "닉네임 중복 여부를 반환한다. 길이 제한 50자.",
     )
-    @GetMapping("/nicknames/{nickname}/availability")
+    @GetMapping("/nicknames/{nickname}/availability", version = "1.0")
     fun checkNicknameAvailability(
         @PathVariable
         @NotBlank(message = "Nickname is required")
@@ -52,7 +52,7 @@ class UserController(
         summary = "내 정보 조회",
         description = "현재 로그인한 사용자의 정보를 반환한다.",
     )
-    @GetMapping("/me/info")
+    @GetMapping("/me/info", version = "1.0")
     fun getMyInfo(
         @AuthenticationPrincipal(expression = "userId")
         userId: Long,
@@ -65,7 +65,7 @@ class UserController(
         summary = "닉네임 변경",
         description = "현재 로그인한 사용자의 닉네임을 변경한다.",
     )
-    @PatchMapping("/me/nickname")
+    @PatchMapping("/me/nickname", version = "1.0")
     fun updateNickname(
         @Valid @RequestBody request: UpdateNicknameRequest,
         @AuthenticationPrincipal(expression = "userId")

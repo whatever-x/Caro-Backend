@@ -20,7 +20,7 @@ import java.time.ZoneId
 
 @Tag(name = "Streak", description = "연속 학습(streak)")
 @RestController
-@RequestMapping("/v1/streaks")
+@RequestMapping("/streaks")
 class StreakController(
     private val clock: Clock,
     private val streakService: StreakService,
@@ -30,7 +30,7 @@ class StreakController(
         summary = "현재 streak 조회",
         description = "오늘이 휴식일(모든 학습 활성 덱의 due=0)이면 휴식일을 기록한 뒤 현재 streak을 반환한다.",
     )
-    @GetMapping
+    @GetMapping(version = "1.0")
     fun getStreak(
         @RequestHeader("Client-Timezone") timezone: ZoneId,
     ): ResponseEntity<ApiResponse<StreakResponse>> {
@@ -68,7 +68,7 @@ class StreakController(
         오프라인 학습 후 재접속 시 클라이언트가 호출해 서버 streak을 최신 상태로 맞추는 용도이다.
         """,
     )
-    @PostMapping("/sync")
+    @PostMapping("/sync", version = "1.0")
     fun syncStreak(
         @RequestHeader("Client-Timezone") timezone: ZoneId,
     ): ResponseEntity<ApiResponse<Unit>> {

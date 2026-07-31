@@ -32,7 +32,7 @@ import org.springframework.web.bind.annotation.RestController
 @Tag(name = "Deck", description = "단어/표현 덱 관리")
 @Validated
 @RestController
-@RequestMapping("/v1/decks")
+@RequestMapping("/decks")
 class DeckController(
     private val deckService: DeckService,
 ) {
@@ -41,7 +41,7 @@ class DeckController(
         summary = "덱 생성",
         description = "새 덱을 생성하고 기본 프리셋을 연결한다.",
     )
-    @PostMapping
+    @PostMapping(version = "1.0")
     fun createDeck(
         @Valid @RequestBody createDeckRequest: CreateDeckRequest,
     ): ResponseEntity<ApiResponse<CreateDeckResponse>> {
@@ -54,7 +54,7 @@ class DeckController(
         summary = "덱 삭제",
         description = "덱을 삭제한다. 덱에 속한 카드와 학습 상태도 함께 정리된다.",
     )
-    @DeleteMapping("/{deckId}")
+    @DeleteMapping("/{deckId}", version = "1.0")
     fun deleteDeck(
         @Parameter(description = "덱 ID", required = true)
         @Positive @PathVariable deckId: Long,
@@ -71,7 +71,7 @@ class DeckController(
         summary = "덱 수정",
         description = "덱의 이름/설명 등 메타데이터를 수정한다.",
     )
-    @PatchMapping("/{deckId}")
+    @PatchMapping("/{deckId}", version = "1.0")
     fun updateDeck(
         @Parameter(description = "덱 ID", required = true)
         @PathVariable deckId: Long,
