@@ -56,7 +56,7 @@ class CardController(
 
     @Operation(
         summary = "덱의 카드 목록 조회 (deprecated)",
-        description = "덱에 속한 카드 목록을 조회한다. 학습 상태(badge/복습 수)가 포함된 `GET /v2/decks/{deckId}/cards` 로 대체되었다.",
+        description = "덱에 속한 카드 목록을 조회한다. 학습 상태(badge/복습 수)가 포함된 `GET /decks/{deckId}/cards` 로 대체되었다.",
         deprecated = true,
     )
     @Deprecated(message = "v2 메서드로 변경 필요")
