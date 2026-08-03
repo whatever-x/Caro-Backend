@@ -19,6 +19,8 @@ class WebMvcConfig(
     override fun configureApiVersioning(
         configurer: ApiVersionConfigurer,
     ) {
-        configurer.useRequestHeader("API-Version")
+        configurer
+            .useRequestHeader("API-Version")
+            .setDefaultVersion("1.0")
     }
 }

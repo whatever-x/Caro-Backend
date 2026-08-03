@@ -184,6 +184,10 @@ class GlobalExceptionHandler(
             )
     }
 
+    /**
+     * API-Version Header의 default값을 WebMvcConfig에서 설정되어있음.
+     * 해당 설정으로 인해, 이 Handler는 실행되지 않음.
+     */
     @ExceptionHandler(MissingApiVersionException::class)
     fun handleMissingApiVersion(
         e: MissingApiVersionException,
