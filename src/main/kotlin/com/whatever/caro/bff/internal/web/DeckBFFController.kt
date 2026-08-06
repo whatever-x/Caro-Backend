@@ -81,6 +81,23 @@ class DeckBFFController(
         )
         return ResponseEntity.ok(ApiResponse.ok(decks.map { it.toResponse() }))
     }
+
+    @GetMapping("/decks/{deckId}", version = "1.0")
+    fun getDeckDetail(
+        @RequestHeader("Client-Timezone", required = true) timezone: ZoneId,
+        @Parameter(description = "덱 ID", required = true) @PathVariable deckId: Long,
+    ): ResponseEntity<ApiResponse<DeckListResponse>> {
+        val now = Instant.now(clock)
+        val userId = SecurityUtil.currentUser().userId
+
+        val deck = deckBFFService.getDeckByDeckId(
+            now = now,
+            timezone = timezone,
+            userId = userId,
+            deckId = deckId,
+        )
+        return ResponseEntity.ok(ApiResponse.ok(deck.toResponse()))
+    }
 }
 
 private fun DeckCardItem.toResponse(): DeckCardResponse =

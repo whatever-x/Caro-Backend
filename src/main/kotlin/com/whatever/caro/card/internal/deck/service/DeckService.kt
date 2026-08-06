@@ -32,12 +32,15 @@ class DeckService(
     ): List<DeckInfoResponse> = deckRepository.findByUserIdAndDeletedAtIsNull(userId).map { it.toInfo() }
 
     override fun getDeck(
+        userId: Long,
         deckId: Long,
-    ): DeckInfoResponse =
-        (
-            deckRepository.findByIdAndDeletedAtIsNull(deckId)
-                ?: throw DeckNotFoundException("deckId=$deckId 덱을 찾을 수 없습니다")
-            ).toInfo()
+    ): DeckInfoResponse {
+        val deck = deckRepository.findByIdAndDeletedAtIsNull(deckId)?.toInfo()
+            ?: throw DeckNotFoundException("deckId=$deckId 덱을 찾을 수 없습니다")
+        if (deck.userId != userId) throw DeckForbiddenException("deckId=$deckId 에 대한 접근 권한이 없습니다")
+
+        return deck
+    }
 
     @Transactional
     override fun deleteAllByUserId(

@@ -107,7 +107,7 @@ class DeckServiceTest(
         it("덱을 반환한다") {
             val deck = saveDeck(userId = 1L, name = "내 덱")
 
-            val result = deckService.getDeck(deck.id)
+            val result = deckService.getDeck(userId = 1L, deckId = deck.id)
 
             result.id shouldBe deck.id
             result.name shouldBe "내 덱"
@@ -115,7 +115,15 @@ class DeckServiceTest(
 
         it("존재하지 않으면 DeckNotFoundException을 던진다") {
             shouldThrow<DeckNotFoundException> {
-                deckService.getDeck(999L)
+                deckService.getDeck(userId = 1L, deckId = 999L)
+            }
+        }
+
+        it("다른 유저의 덱이면 DeckForbiddenException을 던진다") {
+            val deck = saveDeck(userId = 2L, name = "남의 덱")
+
+            shouldThrow<DeckForbiddenException> {
+                deckService.getDeck(userId = 1L, deckId = deck.id)
             }
         }
     }

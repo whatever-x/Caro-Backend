@@ -148,7 +148,7 @@ class DeckServiceUnitTest :
                 val deck = createDeckWithId(id = 10L, userId = 1L, name = "내 덱")
                 every { deckRepository.findByIdAndDeletedAtIsNull(10L) } returns deck
 
-                val result = deckService.getDeck(10L)
+                val result = deckService.getDeck(userId = 1L, deckId = 10L)
 
                 result.id shouldBe 10L
                 result.name shouldBe "내 덱"
@@ -158,7 +158,7 @@ class DeckServiceUnitTest :
                 every { deckRepository.findByIdAndDeletedAtIsNull(any()) } returns null
 
                 shouldThrow<DeckNotFoundException> {
-                    deckService.getDeck(999L)
+                    deckService.getDeck(userId = 1L, deckId = 999L)
                 }
             }
 
@@ -166,7 +166,16 @@ class DeckServiceUnitTest :
                 every { deckRepository.findByIdAndDeletedAtIsNull(any()) } returns null
 
                 shouldThrow<DeckNotFoundException> {
-                    deckService.getDeck(10L)
+                    deckService.getDeck(userId = 1L, deckId = 10L)
+                }
+            }
+
+            it("다른 유저의 덱이면 DeckForbiddenException을 던진다") {
+                val deck = createDeckWithId(id = 10L, userId = 2L, name = "남의 덱")
+                every { deckRepository.findByIdAndDeletedAtIsNull(10L) } returns deck
+
+                shouldThrow<DeckForbiddenException> {
+                    deckService.getDeck(userId = 1L, deckId = 10L)
                 }
             }
         }
