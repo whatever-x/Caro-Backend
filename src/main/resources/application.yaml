@@ -131,6 +131,7 @@ springdoc:
     operations-sorter: alpha
     tags-sorter: alpha
     display-request-duration: true
+    urls-primary-name: version-1
   packages-to-scan: com.whatever.caro
   default-produces-media-type: application/json
   default-consumes-media-type: application/json

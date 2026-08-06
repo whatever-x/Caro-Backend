@@ -21,7 +21,7 @@ import java.time.ZoneId
 
 @Tag(name = "StudySession", description = "일일학습 세션 / 평가")
 @RestController
-@RequestMapping("/v1/study-sessions")
+@RequestMapping("/study-sessions")
 class StudyBFFController(
     private val clock: Clock,
     private val studyBFFService: StudyBFFService,
@@ -37,7 +37,7 @@ class StudyBFFController(
         """,
     )
     @Idempotent
-    @PostMapping("/daily")
+    @PostMapping("/daily", version = "1.0")
     fun startDailyStudy(
         @RequestHeader("Idempotency-Key", required = true) idempotencyKey: String,
         @RequestHeader("Client-Timezone", required = true) timezone: ZoneId,

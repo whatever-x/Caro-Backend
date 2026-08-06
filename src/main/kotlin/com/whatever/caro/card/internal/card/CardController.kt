@@ -22,7 +22,6 @@ import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import jakarta.validation.constraints.Positive
 import org.springframework.http.ResponseEntity
-import org.springframework.validation.annotation.Validated
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PatchMapping
@@ -34,7 +33,6 @@ import org.springframework.web.bind.annotation.RestController
 import java.time.ZoneId
 
 @Tag(name = "Card", description = "카드 관리")
-@Validated
 @RestController
 class CardController(
     private val cardService: CardService,
@@ -43,7 +41,7 @@ class CardController(
         summary = "카드 생성",
         description = "덱에 여러 카드를 한 번에 생성한다.",
     )
-    @PostMapping("/v1/decks/{deckId}/cards")
+    @PostMapping("/decks/{deckId}/cards", version = "1.0")
     fun createCards(
         @Parameter(description = "덱 ID", required = true)
         @Positive @PathVariable deckId: Long,
@@ -56,11 +54,11 @@ class CardController(
 
     @Operation(
         summary = "덱의 카드 목록 조회 (deprecated)",
-        description = "덱에 속한 카드 목록을 조회한다. 학습 상태(badge/복습 수)가 포함된 `GET /v2/decks/{deckId}/cards` 로 대체되었다.",
+        description = "덱에 속한 카드 목록을 조회한다. 학습 상태(badge/복습 수)가 포함된 `GET /decks/{deckId}/cards` 로 대체되었다.",
         deprecated = true,
     )
     @Deprecated(message = "v2 메서드로 변경 필요")
-    @GetMapping("/v1/decks/{deckId}/cards")
+    @GetMapping("/decks/{deckId}/cards", version = "1.0")
     fun getCardsByDeck(
         @Parameter(description = "덱 ID", required = true)
         @Positive @PathVariable deckId: Long,
@@ -74,7 +72,7 @@ class CardController(
         summary = "카드 단건 조회",
         description = "카드 ID로 카드 1건을 조회한다.",
     )
-    @GetMapping("/v1/cards/{id}")
+    @GetMapping("/cards/{id}", version = "1.0")
     fun getCard(
         @Parameter(description = "카드 ID", required = true)
         @Positive @PathVariable id: Long,
@@ -88,7 +86,7 @@ class CardController(
         summary = "카드 수정",
         description = "카드의 필드 값을 수정한다.",
     )
-    @PatchMapping("/v1/cards/{id}")
+    @PatchMapping("/cards/{id}", version = "1.0")
     fun updateCard(
         @Parameter(description = "카드 ID", required = true)
         @Positive @PathVariable id: Long,
@@ -106,7 +104,7 @@ class CardController(
         삭제는 일일학습 목표/진행도와 streak 계산에 반영되므로 `Client-Timezone` 헤더로 사용자의 오늘 경계를 판단한다.
         """,
     )
-    @DeleteMapping("/v1/cards")
+    @DeleteMapping("/cards", version = "1.0")
     fun deleteCards(
         @RequestHeader("Client-Timezone", required = true)
         timezone: ZoneId,

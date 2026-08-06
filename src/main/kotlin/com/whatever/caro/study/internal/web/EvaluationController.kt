@@ -24,7 +24,7 @@ import java.time.ZoneId
 
 @Tag(name = "StudySession", description = "일일학습 세션 / 평가")
 @RestController
-@RequestMapping("/v1/study-sessions")
+@RequestMapping("/study-sessions")
 class EvaluationController(
     private val clock: Clock,
     private val evaluationService: EvaluationService,
@@ -43,7 +43,7 @@ class EvaluationController(
         """,
     )
     @Idempotent
-    @PostMapping("/{sessionId}/evaluations")
+    @PostMapping("/{sessionId}/evaluations", version = "1.0")
     fun evaluate(
         @RequestHeader("Idempotency-Key", required = true) idempotencyKey: String,
         @RequestHeader("Client-Timezone", required = true) clientTimezone: ZoneId,

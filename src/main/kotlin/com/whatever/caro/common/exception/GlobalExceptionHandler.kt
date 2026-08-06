@@ -6,15 +6,23 @@ import com.whatever.caro.common.response.ErrorCodeSpec
 import com.whatever.caro.common.response.FieldError
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.context.MessageSource
+import org.springframework.http.HttpStatus
+import org.springframework.http.HttpStatusCode
 import org.springframework.http.ResponseEntity
 import org.springframework.http.converter.HttpMessageNotReadableException
+import org.springframework.validation.method.ParameterErrors
 import org.springframework.web.HttpRequestMethodNotSupportedException
+import org.springframework.web.accept.InvalidApiVersionException
+import org.springframework.web.accept.MissingApiVersionException
+import org.springframework.web.accept.NotAcceptableApiVersionException
 import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.MissingRequestHeaderException
 import org.springframework.web.bind.MissingServletRequestParameterException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
+import org.springframework.web.method.annotation.HandlerMethodValidationException
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException
+import org.springframework.web.server.ResponseStatusException
 import org.springframework.web.servlet.resource.NoResourceFoundException
 import java.util.Locale
 
@@ -48,6 +56,40 @@ class GlobalExceptionHandler(
         logger.warn { "Validation failed: ${fieldErrors.map { "${it.field}: ${it.message}" }}" }
         return ResponseEntity
             .badRequest()
+            .body(ApiResponse.failValidation(CommonErrorCode.INVALID_INPUT, message, fieldErrors))
+    }
+
+    /**
+     * 메서드 파라미터에 제약(`@Positive` 등)이 직접 붙은 핸들러의 검증 실패
+     *
+     * Spring 6.1+ 내장 메서드 검증은 제약이 하나라도 있으면
+     * 같은 메서드의 `@Valid @RequestBody` 까지 메서드 레벨에서 검증하므로 해당 예외로 발생
+     */
+    @ExceptionHandler(HandlerMethodValidationException::class)
+    fun handleMethodValidation(
+        e: HandlerMethodValidationException,
+        locale: Locale,
+    ): ResponseEntity<ApiResponse<Nothing>> {
+        val fieldErrors = e.parameterValidationResults.flatMap { result ->
+            when (result) {
+                // @Valid로 중첩된 객체의 오류는 원래 필드명을 그대로 사용
+                is ParameterErrors -> result.fieldErrors.map { error ->
+                    FieldError(field = error.field, message = error.defaultMessage ?: "유효하지 않은 값입니다")
+                }
+
+                // 파라미터(@PathVariable 등)의 오류는 파라미터명을 필드명으로 사용
+                else -> result.resolvableErrors.map { error ->
+                    FieldError(
+                        field = result.methodParameter.parameterName ?: "unknown",
+                        message = messageSource.getMessage(error, locale),
+                    )
+                }
+            }
+        }
+        val message = resolveMessage(CommonErrorCode.INVALID_INPUT, null, locale)
+        logger.warn { "Method validation failed: ${fieldErrors.map { "${it.field}: ${it.message}" }}" }
+        return ResponseEntity
+            .status(e.statusCode)
             .body(ApiResponse.failValidation(CommonErrorCode.INVALID_INPUT, message, fieldErrors))
     }
 
@@ -142,6 +184,91 @@ class GlobalExceptionHandler(
             )
     }
 
+    /**
+     * API-Version Header의 default값을 WebMvcConfig에서 설정되어있음.
+     * 해당 설정으로 인해, 이 Handler는 실행되지 않음.
+     */
+    @ExceptionHandler(MissingApiVersionException::class)
+    fun handleMissingApiVersion(
+        e: MissingApiVersionException,
+        locale: Locale,
+    ): ResponseEntity<ApiResponse<Nothing>> {
+        logger.warn { "Missing API version" }
+        return ResponseEntity
+            .status(e.statusCode)
+            .body(
+                ApiResponse.fail(
+                    CommonErrorCode.MISSING_API_VERSION,
+                    resolveMessage(CommonErrorCode.MISSING_API_VERSION, null, locale),
+                ),
+            )
+    }
+
+    /**
+     * 요청 버전은 유효하지만, 해당 엔드포인트가 그 버전을 제공하지 않는 경우
+     */
+    @ExceptionHandler(NotAcceptableApiVersionException::class)
+    fun handleNotAcceptableApiVersion(
+        e: NotAcceptableApiVersionException,
+        locale: Locale,
+    ): ResponseEntity<ApiResponse<Nothing>> {
+        val version = e.version.take(MAX_VERSION_LENGTH)
+        logger.warn { "API version not supported by endpoint: $version" }
+        return ResponseEntity
+            .status(e.statusCode)
+            .body(
+                ApiResponse.fail(
+                    CommonErrorCode.UNSUPPORTED_API_VERSION,
+                    resolveMessage(CommonErrorCode.UNSUPPORTED_API_VERSION, arrayOf(version), locale),
+                ),
+            )
+    }
+
+    @ExceptionHandler(InvalidApiVersionException::class)
+    fun handleInvalidApiVersion(
+        e: InvalidApiVersionException,
+        locale: Locale,
+    ): ResponseEntity<ApiResponse<Nothing>> {
+        val version = e.version.take(MAX_VERSION_LENGTH)
+        logger.warn { "Invalid API version: $version" }
+        return ResponseEntity
+            .status(e.statusCode)
+            .body(
+                ApiResponse.fail(
+                    CommonErrorCode.INVALID_API_VERSION,
+                    resolveMessage(CommonErrorCode.INVALID_API_VERSION, arrayOf(version), locale),
+                ),
+            )
+    }
+
+    @ExceptionHandler(ResponseStatusException::class)
+    fun handleResponseStatus(
+        e: ResponseStatusException,
+        locale: Locale,
+    ): ResponseEntity<ApiResponse<Nothing>> {
+        val errorCode = errorCodeFor(e.statusCode)
+        if (e.statusCode.is5xxServerError) {
+            logger.error(e) { "Response status exception (${e.statusCode})" }
+        } else {
+            logger.warn { "Response status exception (${e.statusCode}): ${e.reason}" }
+        }
+        return ResponseEntity
+            .status(e.statusCode)
+            .headers(e.headers)
+            .body(ApiResponse.fail(errorCode, resolveMessage(errorCode, null, locale)))
+    }
+
+    /** 상태 코드에 대응하는 에러 코드가 있으면 그것을 쓰고, 없으면 4xx/5xx 기본값으로 떨어진다. */
+    private fun errorCodeFor(
+        status: HttpStatusCode,
+    ): ErrorCodeSpec =
+        when {
+            status.is5xxServerError -> CommonErrorCode.INTERNAL_ERROR
+            status.value() == HttpStatus.NOT_FOUND.value() -> CommonErrorCode.NOT_FOUND
+            status.value() == HttpStatus.METHOD_NOT_ALLOWED.value() -> CommonErrorCode.METHOD_NOT_ALLOWED
+            else -> CommonErrorCode.INVALID_REQUEST
+        }
+
     @ExceptionHandler(Exception::class)
     fun handleUnexpected(
         e: Exception,
@@ -163,4 +290,9 @@ class GlobalExceptionHandler(
         args: Array<Any>?,
         locale: Locale,
     ): String = messageSource.getMessage(errorCode.messageKey, args, errorCode.message, locale) ?: errorCode.message
+
+    companion object {
+        /** 클라이언트가 보낸 API 버전 문자열을 응답/로그에 반영할 때의 최대 길이 */
+        private const val MAX_VERSION_LENGTH = 32
+    }
 }

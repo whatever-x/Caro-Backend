@@ -33,5 +33,23 @@ enum class CommonErrorCode(
         "이전 요청이 처리 중입니다. 잠시 후 다시 시도해주세요",
         "error.common.idempotency_request_in_progress",
     ),
+    MISSING_API_VERSION(
+        "C011",
+        HttpStatus.BAD_REQUEST,
+        "API 버전이 누락되었습니다",
+        "error.common.missing_api_version",
+    ),
+    INVALID_API_VERSION(
+        "C012",
+        HttpStatus.BAD_REQUEST,
+        "유효하지 않은 API 버전입니다: {0}",
+        "error.common.invalid_api_version",
+    ),
+    UNSUPPORTED_API_VERSION(
+        "C013",
+        HttpStatus.BAD_REQUEST,
+        "해당 엔드포인트가 지원하지 않는 API 버전입니다: {0}",
+        "error.common.unsupported_api_version",
+    ),
     INTERNAL_ERROR("C999", HttpStatus.INTERNAL_SERVER_ERROR, "내부 서버 오류가 발생했습니다", "error.common.internal_error"),
 }

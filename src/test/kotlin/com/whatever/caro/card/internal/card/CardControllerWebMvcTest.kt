@@ -68,77 +68,98 @@ class CardControllerWebMvcTest : DescribeSpec() {
             SecurityContextHolder.clearContext()
         }
 
-        describe("POST /v1/decks/{deckId}/cards - @Valid 검증") {
+        describe("POST /decks/{deckId}/cards - @Valid 검증") {
             it("items 가 비어있으면 400 을 반환한다") {
-                mockMvc.post("/v1/decks/1/cards") {
+                mockMvc.post("/decks/1/cards") {
+                    header(API_VERSION_HEADER, API_VERSION)
                     contentType = MediaType.APPLICATION_JSON
                     content = """{"items": []}"""
                 }.andExpect {
                     status { isBadRequest() }
+                    jsonPath("$.error.code") { value(INVALID_INPUT_CODE) }
                 }
             }
 
             it("item 의 fields 가 비어있으면 400 을 반환한다") {
-                mockMvc.post("/v1/decks/1/cards") {
+                mockMvc.post("/decks/1/cards") {
+                    header(API_VERSION_HEADER, API_VERSION)
                     contentType = MediaType.APPLICATION_JSON
                     content = """{"items": [{"cardType": "BASIC", "fields": {}}]}"""
                 }.andExpect {
                     status { isBadRequest() }
+                    jsonPath("$.error.code") { value(INVALID_INPUT_CODE) }
                 }
             }
         }
 
-        describe("PATCH /v1/cards/{id} - @Valid 검증") {
+        describe("PATCH /cards/{id} - @Valid 검증") {
             it("fields 가 비어있으면 400 을 반환한다") {
-                mockMvc.patch("/v1/cards/1") {
+                mockMvc.patch("/cards/1") {
+                    header(API_VERSION_HEADER, API_VERSION)
                     contentType = MediaType.APPLICATION_JSON
                     content = """{"fields": {}}"""
                 }.andExpect {
                     status { isBadRequest() }
+                    jsonPath("$.error.code") { value(INVALID_INPUT_CODE) }
                 }
             }
         }
 
-        describe("DELETE /v1/cards - @Valid 검증") {
+        describe("DELETE /cards - @Valid 검증") {
             it("cardIds 가 비어있으면 400 을 반환한다") {
-                mockMvc.delete("/v1/cards") {
+                mockMvc.delete("/cards") {
+                    header(API_VERSION_HEADER, API_VERSION)
                     header("Client-Timezone", "Asia/Seoul")
                     contentType = MediaType.APPLICATION_JSON
                     content = """{"cardIds": []}"""
                 }.andExpect {
                     status { isBadRequest() }
+                    jsonPath("$.error.code") { value(INVALID_INPUT_CODE) }
                 }
             }
 
             it("cardIds 가 1000개를 초과하면 400 을 반환한다") {
                 val ids = (1..1001).joinToString(",")
-                mockMvc.delete("/v1/cards") {
+                mockMvc.delete("/cards") {
+                    header(API_VERSION_HEADER, API_VERSION)
                     header("Client-Timezone", "Asia/Seoul")
                     contentType = MediaType.APPLICATION_JSON
                     content = """{"cardIds": [$ids]}"""
                 }.andExpect {
                     status { isBadRequest() }
+                    jsonPath("$.error.code") { value(INVALID_INPUT_CODE) }
                 }
             }
 
             it("cardIds 에 0 이하가 섞이면 400 을 반환한다") {
-                mockMvc.delete("/v1/cards") {
+                mockMvc.delete("/cards") {
+                    header(API_VERSION_HEADER, API_VERSION)
                     header("Client-Timezone", "Asia/Seoul")
                     contentType = MediaType.APPLICATION_JSON
                     content = """{"cardIds": [1, 0]}"""
                 }.andExpect {
                     status { isBadRequest() }
+                    jsonPath("$.error.code") { value(INVALID_INPUT_CODE) }
                 }
             }
 
             it("Client-Timezone 헤더가 없으면 400 을 반환한다") {
-                mockMvc.delete("/v1/cards") {
+                mockMvc.delete("/cards") {
+                    header(API_VERSION_HEADER, API_VERSION)
                     contentType = MediaType.APPLICATION_JSON
                     content = """{"cardIds": [1]}"""
                 }.andExpect {
                     status { isBadRequest() }
+                    jsonPath("$.error.code") { value(MISSING_HEADER_CODE) }
                 }
             }
         }
+    }
+
+    companion object {
+        private const val API_VERSION_HEADER = "API-Version"
+        private const val API_VERSION = "1.0"
+        private const val INVALID_INPUT_CODE = "C001"
+        private const val MISSING_HEADER_CODE = "C007"
     }
 }

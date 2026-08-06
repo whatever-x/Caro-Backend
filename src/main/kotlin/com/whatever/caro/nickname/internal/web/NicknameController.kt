@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RestController
 
 @Tag(name = "Nickname", description = "닉네임 추천")
 @RestController
-@RequestMapping("/v1/nicknames")
+@RequestMapping("/nicknames")
 class NicknameController(
     private val nicknameService: NicknameApi,
 ) {
@@ -22,7 +22,7 @@ class NicknameController(
         summary = "랜덤 닉네임 1개 발급",
         description = "Accept-Language 헤더 로케일에 맞춘 랜덤 닉네임을 반환한다.",
     )
-    @GetMapping("/random")
+    @GetMapping("/random", version = "1.0")
     fun getRandomNickname(): ResponseEntity<ApiResponse<NicknameResponse>> {
         val locale = LocaleContextHolder.getLocale()
         val nickname = nicknameService.randomName(locale)

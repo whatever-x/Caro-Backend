@@ -7,10 +7,16 @@ import io.swagger.v3.oas.models.media.StringSchema
 import io.swagger.v3.oas.models.parameters.Parameter
 import io.swagger.v3.oas.models.security.SecurityRequirement
 import io.swagger.v3.oas.models.security.SecurityScheme
+import org.springdoc.core.customizers.GlobalOperationCustomizer
 import org.springdoc.core.customizers.OperationCustomizer
+import org.springdoc.core.filters.OpenApiMethodFilter
+import org.springdoc.core.models.GroupedOpenApi
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Profile
+import org.springframework.core.annotation.AnnotatedElementUtils
+import org.springframework.web.bind.annotation.RequestMapping
+import java.lang.reflect.Method
 
 @Configuration
 @Profile("!prod")
@@ -39,8 +45,8 @@ class OpenApiConfig {
             .addSecurityItem(SecurityRequirement().addList(BEARER_SCHEME_NAME))
 
     @Bean
-    fun acceptLanguageHeaderCustomizer(): OperationCustomizer =
-        OperationCustomizer { operation, _ ->
+    fun acceptLanguageHeaderCustomizer(): GlobalOperationCustomizer =
+        GlobalOperationCustomizer { operation, _ ->
             operation.apply {
                 addParametersItem(
                     Parameter()
@@ -61,6 +67,30 @@ class OpenApiConfig {
                         .schema(StringSchema()._default("Asia/Seoul")),
                 )
             }
+        }
+
+    @Bean
+    fun apiGroupV1(): GroupedOpenApi =
+        GroupedOpenApi.builder()
+            .group("version-1")
+            .displayName("API version 1")
+            .addOpenApiMethodFilter(versionMethodFilter("1.0"))
+            .build()
+
+    @Bean
+    fun apiGroupV2(): GroupedOpenApi =
+        GroupedOpenApi.builder()
+            .group("version-2")
+            .displayName("API version 2")
+            .addOpenApiMethodFilter(versionMethodFilter("2.0"))
+            .build()
+
+    private fun versionMethodFilter(
+        targetVersion: String,
+    ): OpenApiMethodFilter =
+        OpenApiMethodFilter { method: Method ->
+            val requestMapping = AnnotatedElementUtils.findMergedAnnotation(method, RequestMapping::class.java)
+            requestMapping?.version == targetVersion
         }
 
     companion object {

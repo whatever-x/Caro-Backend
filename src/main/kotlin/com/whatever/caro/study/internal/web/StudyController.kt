@@ -19,7 +19,7 @@ import java.time.ZoneId
 
 @Tag(name = "StudySession", description = "일일학습 세션 / 평가")
 @RestController
-@RequestMapping("/v1/study-sessions")
+@RequestMapping("/study-sessions")
 class StudyController(
     private val clock: Clock,
     private val studyService: StudyService,
@@ -33,7 +33,7 @@ class StudyController(
         각 상태에서 학습한 카드 수와 오늘 목표 카드 수를 함께 제공한다.
         """,
     )
-    @GetMapping("/daily/summary")
+    @GetMapping("/daily/summary", version = "1.0")
     fun getTodayDailyStudySummary(
         @RequestHeader("Client-Timezone") timezone: ZoneId,
         @RequestParam(value = "deckId", required = true) deckId: Long,
