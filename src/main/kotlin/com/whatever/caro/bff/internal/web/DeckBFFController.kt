@@ -82,6 +82,16 @@ class DeckBFFController(
         return ResponseEntity.ok(ApiResponse.ok(decks.map { it.toResponse() }))
     }
 
+    @Operation(
+        summary = "덱 상세 조회",
+        description = """
+        덱의 상세 내용을 deckId 를 이용해 조회한다.
+        덱의 오늘의 일일학습 진행 정보(progress)가 포함된다.
+
+        totalCardCount는 모든 상태에서 "오늘 학습 목표 장 수"를 의미한다.
+        (NOT_STARTED는 오늘 학습 목표의 합, REST_DAY는 0)
+        """,
+    )
     @GetMapping("/decks/{deckId}", version = "1.0")
     fun getDeckDetail(
         @RequestHeader("Client-Timezone", required = true) timezone: ZoneId,
