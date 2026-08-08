@@ -65,6 +65,29 @@ class DeckBFFService(
             )
         }
     }
+
+    fun getDeckByDeckId(
+        now: Instant,
+        timezone: ZoneId,
+        userId: Long,
+        deckId: Long,
+    ): DeckListItem {
+        val deck = deckApi.getDeck(userId = userId, deckId = deckId)
+        val todaySummaryByDeckId = studyApi.getTodaySummaries(
+            now = now,
+            timezone = timezone,
+            userId = userId,
+            deckIds = setOf(deckId),
+        )
+
+        return DeckListItem(
+            deckId = deck.id,
+            name = deck.name,
+            description = deck.description,
+            cardCount = deck.cardCount,
+            progress = todaySummaryByDeckId.getValue(deck.id).toDeckProgress(),
+        )
+    }
 }
 
 private fun TodayStudySessionState.toDeckProgress(): StudySessionProgress =

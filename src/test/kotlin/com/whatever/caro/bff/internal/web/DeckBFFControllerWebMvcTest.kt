@@ -6,8 +6,11 @@ import com.whatever.caro.auth.internal.filter.JwtExceptionFilter
 import com.whatever.caro.auth.internal.filter.RequestResponseLoggingFilter
 import com.whatever.caro.bff.internal.CardSortType
 import com.whatever.caro.bff.internal.DeckBFFService
+import com.whatever.caro.bff.internal.DeckListItem
+import com.whatever.caro.bff.internal.StudySessionProgress
 import com.whatever.caro.common.web.idempotency.IdempotencyProperties
 import com.whatever.caro.common.web.idempotency.IdempotencyRepository
+import com.whatever.caro.study.TodaySummaryState
 import io.kotest.core.spec.style.DescribeSpec
 import org.mockito.BDDMockito.given
 import org.mockito.Mockito.verify
@@ -23,6 +26,8 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.get
 import java.time.Clock
+import java.time.Instant
+import java.time.ZoneId
 
 @WebMvcTest(
     controllers = [DeckBFFController::class],
@@ -119,11 +124,46 @@ class DeckBFFControllerWebMvcTest : DescribeSpec() {
                 }
             }
         }
+
+        describe("GET /decks/{deckId} (v1) - 단건 덱 상세 조회") {
+            it("PathVariable deckId와 인증 userId를 서비스에 전달하고 200과 응답을 반환한다") {
+                val fixedNow = Instant.parse("2026-08-07T00:00:00Z")
+                val timezone = ZoneId.of("Asia/Seoul")
+                given(clock.instant()).willReturn(fixedNow)
+
+                val item = DeckListItem(
+                    deckId = 1L,
+                    name = "내 덱",
+                    description = "설명",
+                    cardCount = 5,
+                    progress = StudySessionProgress(
+                        state = TodaySummaryState.REST_DAY,
+                        sessionId = null,
+                        studiedCardCount = 0,
+                        totalCardCount = 0,
+                    ),
+                )
+                given(deckBFFService.getDeckByDeckId(fixedNow, timezone, 1L, 1L)).willReturn(item)
+
+                mockMvc.get("/decks/1") {
+                    header(API_VERSION_HEADER, DECK_DETAIL_API_VERSION)
+                    header(CLIENT_TIMEZONE_HEADER, "Asia/Seoul")
+                }.andExpect {
+                    status { isOk() }
+                    jsonPath("$.data.deckId") { value(1) }
+                    jsonPath("$.data.name") { value("내 덱") }
+                }
+
+                verify(deckBFFService).getDeckByDeckId(fixedNow, timezone, 1L, 1L)
+            }
+        }
     }
 
     companion object {
         private const val API_VERSION_HEADER = "API-Version"
         private const val API_VERSION = "2.0"
+        private const val DECK_DETAIL_API_VERSION = "1.0"
+        private const val CLIENT_TIMEZONE_HEADER = "Client-Timezone"
         private const val TYPE_MISMATCH_CODE = "C006"
     }
 }

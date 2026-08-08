@@ -3,11 +3,18 @@ package com.whatever.caro.bff.internal
 import com.whatever.caro.card.api.card.CardApi
 import com.whatever.caro.card.api.card.CardContentDto
 import com.whatever.caro.card.api.deck.DeckApi
+import com.whatever.caro.card.api.deck.DeckInfoResponse
 import com.whatever.caro.card.api.deck.DeckPresetApi
 import com.whatever.caro.card.api.deck.DeckPresetDto
 import com.whatever.caro.study.CardLearningStateDto
 import com.whatever.caro.study.CardLearningStatus
 import com.whatever.caro.study.StudyApi
+import com.whatever.caro.study.StudySessionDto
+import com.whatever.caro.study.StudySessionStatus
+import com.whatever.caro.study.StudyTargetPoolCount
+import com.whatever.caro.study.StudyType
+import com.whatever.caro.study.TodayStudySessionState
+import com.whatever.caro.study.TodaySummaryState
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.DescribeSpec
 import io.kotest.datatest.withData
@@ -19,7 +26,9 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import java.math.BigDecimal
+import java.time.Instant
 import java.time.LocalDate
+import java.time.ZoneId
 
 class DeckBFFServiceUnitTest :
     DescribeSpec({
@@ -94,7 +103,7 @@ class DeckBFFServiceUnitTest :
         }
 
         afterTest {
-            clearMocks(cardApi, studyApi, deckPresetApi)
+            clearMocks(cardApi, studyApi, deckPresetApi, deckApi)
         }
 
         describe("getCardsWithLearningState") {
@@ -233,6 +242,120 @@ class DeckBFFServiceUnitTest :
                     shouldThrow<IllegalStateException> {
                         service.getCardsWithLearningState(userId, deckId, CardSortType.CREATED)
                     }
+                }
+            }
+        }
+
+        describe("getDeckByDeckId") {
+            val now = Instant.parse("2026-08-07T00:00:00Z")
+            val timezone = ZoneId.of("Asia/Seoul")
+
+            it("덱 정보와 오늘 학습 요약을 조합해 DeckListItem 하나로 반환한다") {
+                every {
+                    deckApi.getDeck(userId = userId, deckId = deckId)
+                } returns DeckInfoResponse(id = deckId, userId = userId, name = "내 덱", description = "설명", cardCount = 5)
+                every {
+                    studyApi.getTodaySummaries(now = now, timezone = timezone, userId = userId, deckIds = setOf(deckId))
+                } returns mapOf(deckId to TodayStudySessionState.RestDay)
+
+                val result = service.getDeckByDeckId(now = now, timezone = timezone, userId = userId, deckId = deckId)
+
+                result.deckId shouldBe deckId
+                result.name shouldBe "내 덱"
+                result.description shouldBe "설명"
+                result.cardCount shouldBe 5
+                result.progress.state shouldBe TodaySummaryState.REST_DAY
+            }
+
+            it("소유권 검증은 deckApi.getDeck에 위임한다 - userId/deckId를 그대로 전달한다") {
+                every {
+                    deckApi.getDeck(userId = userId, deckId = deckId)
+                } returns DeckInfoResponse(id = deckId, userId = userId, name = "덱", description = "", cardCount = 0)
+                every {
+                    studyApi.getTodaySummaries(now, timezone, userId, setOf(deckId))
+                } returns mapOf(deckId to TodayStudySessionState.RestDay)
+
+                service.getDeckByDeckId(now = now, timezone = timezone, userId = userId, deckId = deckId)
+
+                verify(exactly = 1) { deckApi.getDeck(userId = userId, deckId = deckId) }
+            }
+
+            context("오늘 학습 상태(TodayStudySessionState)에 따라 progress를 매핑한다") {
+                val sampleSession = StudySessionDto(
+                    sessionId = 100L,
+                    deckId = deckId,
+                    status = StudySessionStatus.ACTIVE,
+                    studyType = StudyType.DAILY,
+                    sessionDate = LocalDate.parse("2026-08-07"),
+                    newCardsStudied = 3,
+                    reviewCardsStudied = 2,
+                    newCardsGoal = 5,
+                    reviewCardsGoal = 5,
+                    estimatedTotal = 10,
+                    startedAt = now,
+                    endedAt = null,
+                )
+
+                data class ProgressCase(
+                    val label: String,
+                    val state: TodayStudySessionState,
+                    val expectedState: TodaySummaryState,
+                    val expectedSessionId: Long?,
+                    val expectedStudied: Int,
+                    val expectedTotal: Int,
+                )
+
+                withData(
+                    nameFn = { it.label },
+                    ProgressCase(
+                        label = "InProgress -> IN_PROGRESS, 학습 수=학습한 new+review, 총=estimatedTotal",
+                        state = TodayStudySessionState.InProgress(sampleSession),
+                        expectedState = TodaySummaryState.IN_PROGRESS,
+                        expectedSessionId = 100L,
+                        expectedStudied = 5,
+                        expectedTotal = 10,
+                    ),
+                    ProgressCase(
+                        label = "Completed -> COMPLETED",
+                        state = TodayStudySessionState.Completed(sampleSession),
+                        expectedState = TodaySummaryState.COMPLETED,
+                        expectedSessionId = 100L,
+                        expectedStudied = 5,
+                        expectedTotal = 10,
+                    ),
+                    ProgressCase(
+                        label = "NotStarted -> NOT_STARTED, sessionId=null, 총=pool 합",
+                        state = TodayStudySessionState.NotStarted(
+                            pool = StudyTargetPoolCount(newCount = 4, reviewCount = 6),
+                            presetId = 7L,
+                        ),
+                        expectedState = TodaySummaryState.NOT_STARTED,
+                        expectedSessionId = null,
+                        expectedStudied = 0,
+                        expectedTotal = 10,
+                    ),
+                    ProgressCase(
+                        label = "RestDay -> REST_DAY, 모두 0",
+                        state = TodayStudySessionState.RestDay,
+                        expectedState = TodaySummaryState.REST_DAY,
+                        expectedSessionId = null,
+                        expectedStudied = 0,
+                        expectedTotal = 0,
+                    ),
+                ) { case ->
+                    every {
+                        deckApi.getDeck(userId = userId, deckId = deckId)
+                    } returns DeckInfoResponse(id = deckId, userId = userId, name = "덱", description = "", cardCount = 0)
+                    every {
+                        studyApi.getTodaySummaries(now, timezone, userId, setOf(deckId))
+                    } returns mapOf(deckId to case.state)
+
+                    val result = service.getDeckByDeckId(now = now, timezone = timezone, userId = userId, deckId = deckId)
+
+                    result.progress.state shouldBe case.expectedState
+                    result.progress.sessionId shouldBe case.expectedSessionId
+                    result.progress.studiedCardCount shouldBe case.expectedStudied
+                    result.progress.totalCardCount shouldBe case.expectedTotal
                 }
             }
         }
