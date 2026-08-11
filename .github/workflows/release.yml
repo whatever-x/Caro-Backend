@@ -52,7 +52,8 @@ jobs:
       contents: read
       packages: write
     outputs:
-      version: ${{ steps.meta.outputs.version }}   # deploy job이 이 태그를 받아 배포
+      version: ${{ steps.meta.outputs.version }}          # 검증/로그용 semver 태그 (0.0.6-rc.6)
+      image_tag: sha-${{ steps.vars.outputs.short_sha }}  # deploy가 실제로 pull하는 불변 태그 (sha-0495b1d)
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -131,7 +132,7 @@ jobs:
 
       - name: Deploy via SSH
         env:
-          IMAGE_TAG: ${{ needs.build-push.outputs.version }}   # build-push가 만든 정확한 태그
+          IMAGE_TAG: ${{ needs.build-push.outputs.image_tag }}   # sha-<short> 불변 태그로 배포
         run: |
           echo "== deploy: $IMAGE_TAG =="
           ssh -o StrictHostKeyChecking=accept-new \
