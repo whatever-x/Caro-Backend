@@ -1,0 +1,28 @@
+name: Slack Notify Test
+
+# 수동 실행 전용 — Slack 연동만 격리 테스트 (배포/릴리즈와 무관)
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  slack-test:
+    name: Send test message
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Post to Slack
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_CHANNEL_ID: C0BPC2U61CY
+        run: |
+          resp=$(curl -sS -X POST https://slack.com/api/chat.postMessage \
+            -H "Authorization: Bearer $SLACK_BOT_TOKEN" \
+            -H 'Content-Type: application/json; charset=utf-8' \
+            -d "$(jq -n --arg ch "$SLACK_CHANNEL_ID" \
+              '{channel:$ch, text:"🔔 Slack 연동 테스트 (수동 트리거)"}')")
+          echo "응답: $resp"
+          echo "$resp" | jq -e '.ok' >/dev/null || { echo "::error::Slack 전송 실패"; exit 1; }
+          echo "✅ 전송 성공 — 채널 확인"

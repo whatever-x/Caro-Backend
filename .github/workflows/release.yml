@@ -138,3 +138,35 @@ jobs:
           ssh -o StrictHostKeyChecking=accept-new \
               "deploy@$SERVER_TS_IP" \
               "~/caro/deploy.sh '$IMAGE_TAG'"
+
+      - name: Notify Slack (성공)
+        if: success()
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_CHANNEL_ID: C0BPC2U61CY
+          VERSION: ${{ needs.build-push.outputs.version }}
+          IMAGE_TAG: ${{ needs.build-push.outputs.image_tag }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          resp=$(curl -sS -X POST https://slack.com/api/chat.postMessage \
+            -H "Authorization: Bearer $SLACK_BOT_TOKEN" \
+            -H 'Content-Type: application/json; charset=utf-8' \
+            -d "$(jq -n --arg ch "$SLACK_CHANNEL_ID" --arg v "$VERSION" --arg tag "$IMAGE_TAG" --arg url "$RUN_URL" \
+              '{channel:$ch, text:("✅ staging 서버 교체 성공 — \($v) (`\($tag)`)\n<\($url)|배포 로그>")}')")
+          echo "$resp" | jq -e '.ok' >/dev/null || echo "::warning::Slack 알림 실패: $resp"
+
+      - name: Notify Slack (실패)
+        if: failure()
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_CHANNEL_ID: C0BPC2U61CY
+          VERSION: ${{ needs.build-push.outputs.version }}
+          IMAGE_TAG: ${{ needs.build-push.outputs.image_tag }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          resp=$(curl -sS -X POST https://slack.com/api/chat.postMessage \
+            -H "Authorization: Bearer $SLACK_BOT_TOKEN" \
+            -H 'Content-Type: application/json; charset=utf-8' \
+            -d "$(jq -n --arg ch "$SLACK_CHANNEL_ID" --arg v "$VERSION" --arg tag "$IMAGE_TAG" --arg url "$RUN_URL" \
+              '{channel:$ch, text:("❌ staging 서버 교체 실패 — \($v) (`\($tag)`)\n<\($url)|배포 로그 확인>")}')")
+          echo "$resp" | jq -e '.ok' >/dev/null || echo "::warning::Slack 알림 실패: $resp"
