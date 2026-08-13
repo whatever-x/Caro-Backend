@@ -69,6 +69,24 @@ class OpenApiConfig {
         }
 
     @Bean
+    fun apiVersionDefaultCustomizer(): GlobalOperationCustomizer =
+        GlobalOperationCustomizer { operation, handlerMethod ->
+            val version = AnnotatedElementUtils.findMergedAnnotation(
+                handlerMethod.method,
+                RequestMapping::class.java,
+            )?.version?.takeIf { it.isNotBlank() }?.removeSuffix("+")
+
+            val parameter = operation.parameters?.firstOrNull { it.name == "API-Version" && it.`in` == "header" }
+
+            if (version != null && parameter != null) {
+                parameter.required = true
+                parameter.schema.default = version
+            }
+
+            operation
+        }
+
+    @Bean
     fun apiGroupAll(): GroupedOpenApi =
         GroupedOpenApi.builder()
             .group("all-version")
