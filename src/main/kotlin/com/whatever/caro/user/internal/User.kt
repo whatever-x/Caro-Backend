@@ -19,9 +19,6 @@ class User(
     @Column(nullable = false)
     var nickname: String,
 
-    @Column(name = "primary_email", nullable = true)
-    var primaryEmail: String? = null,
-
     @Convert(converter = EmailCryptoConverter::class)
     @Column(name = "encrypted_primary_email", nullable = true)
     var encryptedPrimaryEmail: String? = null,
