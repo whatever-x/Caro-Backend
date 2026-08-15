@@ -9,6 +9,11 @@ import org.springframework.data.jpa.repository.Query
 import java.time.LocalDate
 
 interface CardLearningStateRepository : JpaRepository<CardLearningState, Long> {
+    fun findAllByUserIdAndCardIdIn(
+        userId: Long,
+        cardIds: Collection<Long>,
+    ): List<CardLearningState>
+
     fun findAllByUserIdAndCardIdInAndDeletedAtIsNull(
         userId: Long,
         cardIds: Collection<Long>,
