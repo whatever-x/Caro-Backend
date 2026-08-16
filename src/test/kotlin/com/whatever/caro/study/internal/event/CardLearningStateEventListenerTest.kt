@@ -1,6 +1,7 @@
 package com.whatever.caro.study.internal.event
 
 import com.whatever.caro.CaroModuleTest
+import com.whatever.caro.card.api.event.CardsCreatedEvent
 import com.whatever.caro.card.api.event.CardsDeletedEvent
 import com.whatever.caro.study.CardLearningStatus
 import com.whatever.caro.study.StudySessionStatus
@@ -96,6 +97,115 @@ class CardLearningStateEventListenerTest(
     afterTest {
         studySessionRepository.deleteAllInBatch()
         cardLearningStateRepository.deleteAllInBatch()
+    }
+    describe("onCardsCreated") {
+        it("CardsCreatedEvent를 수신하면 LearningState를 생성한다") {
+            val cardIds = listOf(1L)
+            transactionTemplate.execute {
+                publisher.publishEvent(
+                    CardsCreatedEvent(cardIds = cardIds, deckId = 1L, userId = 1L),
+                )
+            }
+
+            await().atMost(2, TimeUnit.SECONDS).untilAsserted {
+                val states = cardLearningStateRepository.findAllByUserIdAndCardIdIn(
+                    userId = 1L,
+                    cardIds = cardIds,
+                )
+                states.size shouldBe 1
+                states.map { it.cardId } shouldContainExactlyInAnyOrder cardIds
+            }
+        }
+
+        it("CardsCreatedEvent를 수신했을 때 card id가 여러개라면 LearningState도 card id 갯수만큼 생성된다.") {
+            val cardIds = listOf(1L, 2L, 3L)
+            transactionTemplate.execute {
+                publisher.publishEvent(
+                    CardsCreatedEvent(cardIds = cardIds, deckId = 1L, userId = 1L),
+                )
+            }
+
+            await().atMost(2, TimeUnit.SECONDS).untilAsserted {
+                val states = cardLearningStateRepository.findAllByUserIdAndCardIdIn(
+                    userId = 1L,
+                    cardIds = cardIds,
+                )
+                states.size shouldBe 3
+                states.map { it.cardId } shouldContainExactlyInAnyOrder cardIds
+            }
+        }
+
+        it("CardsCreatedEvent를 수신했을 때 이벤트가 여러번 들어와 재수행 되어도 card id 개수만큼만 DB에 생성된다") {
+            val cardIds = listOf(1L, 2L)
+            val event = CardsCreatedEvent(cardIds = cardIds, deckId = 1L, userId = 1L)
+
+            transactionTemplate.execute { publisher.publishEvent(event) }
+            await().atMost(2, TimeUnit.SECONDS).untilAsserted {
+                cardLearningStateRepository.findAllByUserIdAndCardIdIn(
+                    userId = 1L,
+                    cardIds = cardIds,
+                ).size shouldBe 2
+            }
+            // 1차 생성된 row의 PK를 기억 (재발행이 delete+recreate가 아님을 검증)
+            val idsAfterFirst = cardLearningStateRepository.findAllByUserIdAndCardIdIn(
+                userId = 1L,
+                cardIds = cardIds,
+            ).map { it.id }.toSet()
+
+            // 같은 이벤트 재발행 (멱등해야 함)
+            transactionTemplate.execute { publisher.publishEvent(event) }
+            await().atMost(2, TimeUnit.SECONDS).untilAsserted {
+                val states = cardLearningStateRepository.findAllByUserIdAndCardIdIn(
+                    userId = 1L,
+                    cardIds = cardIds,
+                )
+                states.size shouldBe 2
+                // 기존 row가 그대로 유지됨 (재생성/중복 없음)
+                states.map { it.id }.toSet() shouldBe idsAfterFirst
+            }
+        }
+
+        it("CardsCreatedEvent의 cardId 중 이미 LearningState가 존재하는 것은 제외하고 생성한다") {
+            createCls(cardId = 1L) // 1L은 이미 존재
+            val cardIds = listOf(1L, 2L)
+
+            transactionTemplate.execute {
+                publisher.publishEvent(
+                    CardsCreatedEvent(cardIds = cardIds, deckId = 1L, userId = 1L),
+                )
+            }
+
+            await().atMost(2, TimeUnit.SECONDS).untilAsserted {
+                val states = cardLearningStateRepository.findAllByUserIdAndCardIdIn(
+                    userId = 1L,
+                    cardIds = cardIds,
+                )
+                states.size shouldBe 2 // 1(기존) + 2(새것), 1이 중복 생성되지 않음
+                states.map { it.cardId } shouldContainExactlyInAnyOrder cardIds
+            }
+        }
+
+        it("cardId가 soft-delete된 상태여도 유니크 위반 없이 나머지 cardId만 생성한다") {
+            // uk_ls_card는 deleted_at을 무시하므로, 존재 확인은 deleted 포함(findAllByUserIdAndCardIdIn)이어야 한다.
+            val deleted = createCls(cardId = 1L)
+            deleted.softDelete(Instant.now(clock))
+            cardLearningStateRepository.save(deleted) // 1L은 soft-delete 상태 (row는 남아있음)
+
+            transactionTemplate.execute {
+                publisher.publishEvent(
+                    CardsCreatedEvent(cardIds = listOf(1L, 2L), deckId = 1L, userId = 1L),
+                )
+            }
+
+            await().atMost(2, TimeUnit.SECONDS).untilAsserted {
+                // 2L만 새로 활성 상태로 생성됨 (1L은 이미 존재해 skip → UK 위반 없음)
+                val activeStates = cardLearningStateRepository.findAllByUserIdAndCardIdInAndDeletedAtIsNull(
+                    userId = 1L,
+                    cardIds = listOf(1L, 2L),
+                )
+                activeStates.map { it.cardId } shouldContainExactlyInAnyOrder listOf(2L)
+            }
+        }
     }
 
     describe("onCardDeleted") {

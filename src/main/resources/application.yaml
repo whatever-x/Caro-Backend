@@ -40,6 +40,9 @@ spring:
     connect-retries: 3
     connect-retries-interval: 2s
   modulith:
+    events:
+      completion-mode: archive
+      republish-outstanding-events-on-restart: off
     runtime:
       flyway-enabled: true
 

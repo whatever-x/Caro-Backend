@@ -17,10 +17,17 @@ internal class CardLearningStateEventListener(
     fun onCardsCreated(
         event: CardsCreatedEvent,
     ) {
-        val states = event.cardIds.map { cardId ->
+        val existingLearningStates = cardLearningStateRepository.findAllByUserIdAndCardIdIn(
+            userId = event.userId,
+            cardIds = event.cardIds,
+        )
+        val newCardIds = event.cardIds - existingLearningStates.map { it.cardId }.toSet()
+        if (newCardIds.isEmpty()) return
+
+        val newLearningStates = newCardIds.map { cardId ->
             CardLearningState(cardId = cardId, deckId = event.deckId, userId = event.userId)
         }
-        cardLearningStateRepository.saveAll(states)
+        cardLearningStateRepository.saveAll(newLearningStates)
     }
 
     @ApplicationModuleListener
