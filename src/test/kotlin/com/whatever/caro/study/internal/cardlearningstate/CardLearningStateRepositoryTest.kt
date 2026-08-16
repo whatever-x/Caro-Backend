@@ -248,6 +248,69 @@ class CardLearningStateRepositoryTest(
         }
     }
 
+    describe("findAllByUserIdAndCardIdIn (deleted 포함)") {
+        it("soft delete된 카드도 결과에 포함해서 반환한다") {
+            // uk_ls_card는 deleted_at을 무시하므로, 멱등화의 존재 확인은 deleted 포함으로 조회해야 한다.
+            val deleted = createCls(cardId = 1L)
+            deleted.softDelete(deletedAt = deletedAt)
+            cardLearningStateRepository.save(deleted)
+
+            val result = cardLearningStateRepository.findAllByUserIdAndCardIdIn(
+                userId = deleted.userId,
+                cardIds = listOf(1L),
+            )
+
+            result.map { it.cardId }.shouldContainExactlyInAnyOrder(listOf(1L))
+        }
+
+        it("활성 카드와 soft delete된 카드가 섞여 있어도 모두 반환한다") {
+            val active = createCls(cardId = 1L)
+            val deleted = createCls(cardId = 2L)
+            deleted.softDelete(deletedAt = deletedAt)
+            cardLearningStateRepository.save(deleted)
+
+            val result = cardLearningStateRepository.findAllByUserIdAndCardIdIn(
+                userId = active.userId,
+                cardIds = listOf(1L, 2L),
+            )
+
+            result.map { it.cardId }.shouldContainExactlyInAnyOrder(listOf(1L, 2L))
+        }
+
+        it("요청 userId와 다른 userId의 카드는 결과에서 제외된다") {
+            val cls = createCls(cardId = 1L, userId = 2L)
+
+            val result = cardLearningStateRepository.findAllByUserIdAndCardIdIn(
+                userId = 1L,
+                cardIds = listOf(cls.cardId),
+            )
+
+            result.size shouldBe 0
+        }
+
+        it("요청한 cardIds 중 존재하는 카드만 부분 매칭으로 반환된다") {
+            val cls = createCls(cardId = 1L)
+
+            val result = cardLearningStateRepository.findAllByUserIdAndCardIdIn(
+                userId = cls.userId,
+                cardIds = listOf(cls.cardId, 2L),
+            )
+
+            result.map { it.cardId }.shouldContainExactlyInAnyOrder(listOf(cls.cardId))
+        }
+
+        it("빈 cardIds 컬렉션은 빈 결과를 반환한다") {
+            val cls = createCls(cardId = 1L)
+
+            val result = cardLearningStateRepository.findAllByUserIdAndCardIdIn(
+                userId = cls.userId,
+                cardIds = emptyList(),
+            )
+
+            result.size shouldBe 0
+        }
+    }
+
     describe("countNewCards") {
         it("status=NEW 카드는 포함된다") {
             val cls = createCls(
