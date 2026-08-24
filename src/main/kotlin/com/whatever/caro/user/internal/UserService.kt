@@ -3,9 +3,6 @@ package com.whatever.caro.user.internal
 import com.whatever.caro.user.SocialProvider
 import com.whatever.caro.user.UserApi
 import com.whatever.caro.user.UserInfo
-import com.whatever.caro.user.UserStatus
-import com.whatever.caro.user.exception.AlreadyCompletedException
-import com.whatever.caro.user.exception.NicknameDuplicatedException
 import com.whatever.caro.user.exception.UserNotFoundException
 import com.whatever.caro.user.internal.encrypt.EmailHasher
 import io.github.oshai.kotlinlogging.KotlinLogging
@@ -114,15 +111,10 @@ class UserService(
         val user = userRepository.findByIdOrNull(userId)
             ?: throw UserNotFoundException("사용자를 찾을 수 없습니다: $userId")
 
-        if (user.status == UserStatus.ACTIVE) {
-            throw AlreadyCompletedException("이미 가입이 완료된 사용자입니다")
-        }
-
-        if (!isNicknameAvailable(nickname)) {
-            throw NicknameDuplicatedException("이미 사용 중인 닉네임입니다: $nickname")
-        }
-
-        user.completeRegistration(nickname = nickname)
+        user.completeRegistration(
+            nickname = nickname,
+            isNicknameDuplicated = { nickname -> !isNicknameAvailable(nickname) },
+        )
         return user.toInfo()
     }
 
@@ -134,15 +126,10 @@ class UserService(
         val user = userRepository.findByIdOrNull(userId)
             ?: throw UserNotFoundException("사용자를 찾을 수 없습니다: $userId")
 
-        if (user.nickname == nickname) {
-            return user.toInfo()
-        }
-
-        if (!isNicknameAvailable(nickname)) {
-            throw NicknameDuplicatedException("이미 사용 중인 닉네임입니다: $nickname")
-        }
-
-        user.updateNickname(nickname = nickname)
+        user.updateNickname(
+            nickname = nickname,
+            isNicknameDuplicated = { nickname -> !isNicknameAvailable(nickname) },
+        )
         return user.toInfo()
     }
 

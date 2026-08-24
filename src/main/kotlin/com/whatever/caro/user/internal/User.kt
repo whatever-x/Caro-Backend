@@ -2,6 +2,8 @@ package com.whatever.caro.user.internal
 
 import com.whatever.caro.common.entity.SoftDeletableEntity
 import com.whatever.caro.user.UserStatus
+import com.whatever.caro.user.exception.AlreadyCompletedException
+import com.whatever.caro.user.exception.NicknameDuplicatedException
 import com.whatever.caro.user.internal.encrypt.EmailCryptoConverter
 import jakarta.persistence.Column
 import jakarta.persistence.Convert
@@ -41,14 +43,27 @@ class User(
 
     fun updateNickname(
         nickname: String,
+        isNicknameDuplicated: (nickname: String) -> Boolean,
     ) {
-        this.nickname = nickname
+        when {
+            this.nickname == nickname -> return
+
+            isNicknameDuplicated(nickname) -> {
+                throw NicknameDuplicatedException("이미 사용 중인 닉네임입니다: $nickname")
+            }
+
+            else -> this.nickname = nickname
+        }
     }
 
     fun completeRegistration(
         nickname: String,
+        isNicknameDuplicated: (nickname: String) -> Boolean,
     ) {
-        updateNickname(nickname)
+        if (status == UserStatus.ACTIVE) {
+            throw AlreadyCompletedException("이미 가입이 완료된 사용자입니다")
+        }
+        updateNickname(nickname = nickname, isNicknameDuplicated = isNicknameDuplicated)
         this.isTermsAgreed = true
         this.status = UserStatus.ACTIVE
     }
