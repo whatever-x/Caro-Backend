@@ -12,6 +12,8 @@ import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.Table
+import java.time.Clock
+import java.time.Instant
 
 @Entity
 @Table(name = "users")
@@ -36,4 +38,26 @@ class User(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0L
+
+    fun updateNickname(
+        nickname: String,
+    ) {
+        this.nickname = nickname
+    }
+
+    fun completeRegistration(
+        nickname: String,
+    ) {
+        updateNickname(nickname)
+        this.isTermsAgreed = true
+        this.status = UserStatus.ACTIVE
+    }
+
+    fun deleteMe(
+        clock: Clock,
+    ) {
+        if (isDeleted) return
+        val now = Instant.now(clock)
+        softDelete(deletedAt = now)
+    }
 }
