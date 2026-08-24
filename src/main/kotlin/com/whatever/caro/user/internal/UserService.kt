@@ -151,7 +151,7 @@ class UserService(
         userId: Long,
     ) {
         val user = userRepository.findByIdOrNull(userId) ?: throw UserNotFoundException("사용자를 찾을 수 없습니다: $userId")
-        user.deleteMe(clock = clock)
+        user.deleteUserInfo(clock = clock)
     }
 
     @Transactional(readOnly = true)

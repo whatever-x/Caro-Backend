@@ -53,7 +53,7 @@ class User(
         this.status = UserStatus.ACTIVE
     }
 
-    fun deleteMe(
+    fun deleteUserInfo(
         clock: Clock,
     ) {
         if (isDeleted) return

@@ -34,7 +34,7 @@ class Deck(
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0L
 
-    fun updateDeck(
+    fun updateDeckInfo(
         name: String,
         description: String,
     ) {
