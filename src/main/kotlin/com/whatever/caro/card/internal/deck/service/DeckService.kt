@@ -98,8 +98,7 @@ class DeckService(
         if (deck.userId != userId) {
             throw DeckForbiddenException("deckId=${updateDeckDto.deckId} 에 대한 접근 권한이 없습니다")
         }
-        deck.name = updateDeckDto.name
-        deck.description = updateDeckDto.description
+        deck.updateDeckInfo(name = updateDeckDto.name, description = updateDeckDto.description)
         return UpdateDeckResponseDto(
             id = deck.id,
             name = deck.name,

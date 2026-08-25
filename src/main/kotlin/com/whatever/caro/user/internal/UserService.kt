@@ -3,9 +3,6 @@ package com.whatever.caro.user.internal
 import com.whatever.caro.user.SocialProvider
 import com.whatever.caro.user.UserApi
 import com.whatever.caro.user.UserInfo
-import com.whatever.caro.user.UserStatus
-import com.whatever.caro.user.exception.AlreadyCompletedException
-import com.whatever.caro.user.exception.NicknameDuplicatedException
 import com.whatever.caro.user.exception.UserNotFoundException
 import com.whatever.caro.user.internal.encrypt.EmailHasher
 import io.github.oshai.kotlinlogging.KotlinLogging
@@ -15,7 +12,6 @@ import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Clock
-import java.time.Instant
 import java.util.UUID
 
 private val logger = KotlinLogging.logger {}
@@ -115,19 +111,10 @@ class UserService(
         val user = userRepository.findByIdOrNull(userId)
             ?: throw UserNotFoundException("사용자를 찾을 수 없습니다: $userId")
 
-        if (user.status == UserStatus.ACTIVE) {
-            throw AlreadyCompletedException("이미 가입이 완료된 사용자입니다")
-        }
-
-        if (!isNicknameAvailable(nickname)) {
-            throw NicknameDuplicatedException("이미 사용 중인 닉네임입니다: $nickname")
-        }
-
-        user.apply {
-            this.nickname = nickname
-            this.isTermsAgreed = true
-            this.status = UserStatus.ACTIVE
-        }
+        user.completeRegistration(
+            nickname = nickname,
+            isNicknameDuplicated = { nickname -> !isNicknameAvailable(nickname) },
+        )
         return user.toInfo()
     }
 
@@ -139,15 +126,10 @@ class UserService(
         val user = userRepository.findByIdOrNull(userId)
             ?: throw UserNotFoundException("사용자를 찾을 수 없습니다: $userId")
 
-        if (user.nickname == nickname) {
-            return user.toInfo()
-        }
-
-        if (!isNicknameAvailable(nickname)) {
-            throw NicknameDuplicatedException("이미 사용 중인 닉네임입니다: $nickname")
-        }
-
-        user.nickname = nickname
+        user.updateNickname(
+            nickname = nickname,
+            isNicknameDuplicated = { nickname -> !isNicknameAvailable(nickname) },
+        )
         return user.toInfo()
     }
 
@@ -155,12 +137,8 @@ class UserService(
     override fun deleteMe(
         userId: Long,
     ) {
-        val user = userRepository.findByIdOrNull(userId)
-            ?: throw UserNotFoundException("사용자를 찾을 수 없습니다: $userId")
-
-        if (user.isDeleted) return
-        val now = Instant.now(clock)
-        user.softDelete(now)
+        val user = userRepository.findByIdOrNull(userId) ?: throw UserNotFoundException("사용자를 찾을 수 없습니다: $userId")
+        user.deleteUserInfo(clock = clock)
     }
 
     @Transactional(readOnly = true)

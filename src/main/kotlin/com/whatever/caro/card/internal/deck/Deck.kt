@@ -33,4 +33,12 @@ class Deck(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0L
+
+    fun updateDeckInfo(
+        name: String,
+        description: String,
+    ) {
+        this.name = name
+        this.description = description
+    }
 }
