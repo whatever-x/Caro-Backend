@@ -51,9 +51,9 @@ class SecurityConfig(
                 // staging 에서는 SwaggerSecurityConfig가 우선시되어 Basic Auth 필요
                 PublicEndpoints.PATTERNS.forEach { authorize(it, permitAll) }
                 authorize("/auth/complete-registration", hasRole("SUSPENDED"))
-                authorize("/nicknames/**", hasRole("SUSPENDED"))
-                authorize("/users/nicknames/**", hasRole("SUSPENDED"))
-                authorize("/auth/logout", authenticated)
+                authorize("/nicknames/**", hasAnyRole("SUSPENDED", "ACTIVE"))
+                authorize("/users/nicknames/**", hasAnyRole("SUSPENDED", "ACTIVE"))
+                authorize("/auth/logout", hasAnyRole("SUSPENDED", "ACTIVE"))
                 authorize(anyRequest, hasRole("ACTIVE"))
             }
 
