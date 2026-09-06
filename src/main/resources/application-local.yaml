@@ -6,7 +6,7 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
   flyway:
     clean-disabled: false
-    locations: classpath:db/migration,classpath:db/seed-dev
+    locations: classpath:db/migration,classpath:db/seed
   data:
     redis:
       host: ${REDIS_HOST}
