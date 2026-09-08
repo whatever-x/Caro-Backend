@@ -6,6 +6,7 @@ import com.whatever.caro.user.UserStatus
 import com.whatever.caro.user.exception.AlreadyCompletedException
 import com.whatever.caro.user.exception.NicknameDuplicatedException
 import com.whatever.caro.user.exception.UserNotFoundException
+import com.whatever.caro.user.internal.encrypt.EmailHasher
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.DescribeSpec
 import io.kotest.datatest.withData
@@ -14,6 +15,7 @@ import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
 import org.springframework.data.repository.findByIdOrNull
 import java.time.Instant
 import java.util.UUID
@@ -23,6 +25,7 @@ class UserServiceTest(
     private val userService: UserService,
     private val userRepository: UserRepository,
     private val socialAccountRepository: SocialAccountRepository,
+    private val emailHasher: EmailHasher,
 ) : DescribeSpec({
 
     afterEach {
@@ -66,6 +69,63 @@ class UserServiceTest(
             result.status shouldBe UserStatus.SUSPENDED
             result.isTermsAgreed shouldBe false
             result.id shouldBe createdUser!!.id
+        }
+
+        it("같은 이메일이라도 provider가 다르면 각각 별도 유저로 가입된다") {
+            val email = "shared@email.com"
+
+            val googleResult = userService.createSocialUser(
+                provider = SocialProvider.GOOGLE,
+                providerUserId = "google-shared-email",
+                email = email,
+            )
+            val appleResult = userService.createSocialUser(
+                provider = SocialProvider.APPLE,
+                providerUserId = "apple-shared-email",
+                email = email,
+            )
+
+            appleResult.id shouldNotBe googleResult.id
+            userRepository.findByIdOrNull(googleResult.id).shouldNotBeNull()
+            userRepository.findByIdOrNull(appleResult.id).shouldNotBeNull()
+        }
+
+        it("같은 provider이고 이메일이 같아도 providerUserId가 다르면 별도 유저로 가입된다") {
+            val email = "recreated@email.com"
+
+            val beforeRecreate = userService.createSocialUser(
+                provider = SocialProvider.GOOGLE,
+                providerUserId = "google-before-recreate",
+                email = email,
+            )
+            val afterRecreate = userService.createSocialUser(
+                provider = SocialProvider.GOOGLE,
+                providerUserId = "google-after-recreate",
+                email = email,
+            )
+
+            afterRecreate.id shouldNotBe beforeRecreate.id
+        }
+
+        it("가입 시 users와 social_accounts에 같은 이메일 해시가 저장된다") {
+            val email = "hash-check@email.com"
+
+            val result = userService.createSocialUser(
+                provider = SocialProvider.GOOGLE,
+                providerUserId = "google-hash-check",
+                email = email,
+            )
+
+            val expectedHash = emailHasher.hash(email)
+            expectedHash.shouldNotBeNull()
+
+            val createdUser = userRepository.findByIdOrNull(result.id)
+            createdUser.shouldNotBeNull()
+            createdUser.hashedPrimaryEmail shouldBe expectedHash
+
+            val createdSocialAccount = socialAccountRepository.findByUserId(result.id)
+            createdSocialAccount.shouldNotBeNull()
+            createdSocialAccount.hashedEmail shouldBe expectedHash
         }
     }
 
