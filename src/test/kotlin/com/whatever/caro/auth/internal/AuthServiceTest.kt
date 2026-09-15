@@ -22,6 +22,7 @@ import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.DescribeSpec
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.string.shouldNotBeEmpty
 import io.mockk.clearMocks
 import io.mockk.every
@@ -115,6 +116,78 @@ class AuthServiceTest(
 
             redisTemplate.opsForValue().get("refresh:${claims.userId}:$deviceId") shouldBe result.refreshToken
             redisTemplate.opsForValue().get("token_pair:${result.refreshToken}") shouldBe claims.jti
+        }
+
+        it("같은 이메일이라도 provider가 다르면 서로 다른 유저로 로그인된다") {
+            val sharedEmail = "shared@example.com"
+            val deviceId = "device-1"
+
+            stubSocialVerifier(
+                provider = SocialProvider.GOOGLE,
+                providerUserId = "google-shared-email",
+                email = sharedEmail,
+            )
+            val googleLogin = authService.socialLogin(
+                SocialLoginRequest(
+                    provider = SocialProvider.GOOGLE,
+                    idToken = TEST_ID_TOKEN,
+                ),
+                deviceId,
+            )
+            val googleClaims = jwtTokenProvider.parseAccessToken(googleLogin.accessToken)
+
+            stubSocialVerifier(
+                provider = SocialProvider.APPLE,
+                providerUserId = "apple-shared-email",
+                email = sharedEmail,
+            )
+            val appleLogin = authService.socialLogin(
+                SocialLoginRequest(
+                    provider = SocialProvider.APPLE,
+                    idToken = TEST_ID_TOKEN,
+                ),
+                deviceId,
+            )
+            val appleClaims = jwtTokenProvider.parseAccessToken(appleLogin.accessToken)
+
+            appleClaims.userId shouldNotBe googleClaims.userId
+            appleLogin.isRegistrationComplete shouldBe false
+        }
+
+        it("같은 provider·같은 providerUserId면 이메일이 바뀌어도 기존 유저로 로그인된다") {
+            // Apple은 사용자가 relay 설정을 토글하는 등 다른 이메일을 전송 가능
+            val deviceId = "device-1"
+            val providerUserId = "apple-relay-toggle"
+
+            stubSocialVerifier(
+                provider = SocialProvider.APPLE,
+                providerUserId = providerUserId,
+                email = "first-relay@privaterelay.appleid.com",
+            )
+            val firstLogin = authService.socialLogin(
+                SocialLoginRequest(
+                    provider = SocialProvider.APPLE,
+                    idToken = TEST_ID_TOKEN,
+                ),
+                deviceId,
+            )
+            val firstClaims = jwtTokenProvider.parseAccessToken(firstLogin.accessToken)
+
+            stubSocialVerifier(
+                provider = SocialProvider.APPLE,
+                providerUserId = providerUserId,
+                email = "second-relay@privaterelay.appleid.com",
+            )
+            val secondLogin = authService.socialLogin(
+                SocialLoginRequest(
+                    provider = SocialProvider.APPLE,
+                    idToken = TEST_ID_TOKEN,
+                ),
+                deviceId,
+            )
+            val secondClaims = jwtTokenProvider.parseAccessToken(secondLogin.accessToken)
+
+            secondClaims.userId shouldBe firstClaims.userId
         }
 
         it("기존 SUSPENDED 사용자 재로그인 시 새 사용자를 생성하지 않는다") {
