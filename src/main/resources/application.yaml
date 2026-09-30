@@ -67,6 +67,9 @@ app:
     cron:
       stale-session-sweep: "0 0 4 * * *"
       withdrawn-user-purge: "0 0 5 * * *"
+  fcm:
+    # 서비스 계정 JSON을 base64 인코딩한 값. 비어 있으면 실제 발송 대신 로그만 남긴다.
+    credentials-base64: ${FIREBASE_CREDENTIALS_BASE64:}
 
 server:
   port: 8080
