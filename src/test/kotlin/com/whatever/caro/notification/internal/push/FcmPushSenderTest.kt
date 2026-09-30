@@ -73,6 +73,34 @@ class FcmPushSenderTest :
                 result.invalidTokens.shouldBeEmpty()
             }
 
+            it("실패 응답에 예외 정보가 없어도 무효 토큰으로 취급하지 않는다") {
+                val firebaseMessaging = mockk<FirebaseMessaging>()
+                val noException = mockk<SendResponse> {
+                    every { isSuccessful } returns false
+                    every { exception } returns null
+                }
+                every { firebaseMessaging.sendEachForMulticast(any()) } returns batchOf(listOf(noException))
+                val sender = FcmPushSender(firebaseMessaging)
+
+                val result = sender.send(tokens = listOf("a"), message = message)
+
+                result.failureCount shouldBe 1
+                result.invalidTokens.shouldBeEmpty()
+            }
+
+            it("data payload를 포함한 메시지도 발송한다") {
+                val firebaseMessaging = mockk<FirebaseMessaging>()
+                every { firebaseMessaging.sendEachForMulticast(any()) } returns batchOf(listOf(success()))
+                val sender = FcmPushSender(firebaseMessaging)
+
+                val result = sender.send(
+                    tokens = listOf("a"),
+                    message = PushMessage(title = "t", body = "b", data = mapOf("type" to "STREAK")),
+                )
+
+                result.successCount shouldBe 1
+            }
+
             it("토큰이 500개를 넘으면 500개 단위로 나눠 발송하고 결과를 합산한다") {
                 val firebaseMessaging = mockk<FirebaseMessaging>()
                 every { firebaseMessaging.sendEachForMulticast(any()) } returnsMany listOf(
