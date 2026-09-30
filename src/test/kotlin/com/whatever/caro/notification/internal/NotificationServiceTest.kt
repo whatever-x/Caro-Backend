@@ -12,8 +12,9 @@ import java.util.UUID
  * notification 모듈 통합 테스트 (MySQL Testcontainers).
  * Flyway 마이그레이션 ↔ 엔티티 매핑과 unique 제약 기반 upsert 동작을 검증한다.
  * FIREBASE_CREDENTIALS_BASE64가 없으므로 PushSender는 LoggingPushSender가 주입된다.
+ * 컨트롤러의 API 버전 매핑(WebMvcConfig)이 common에 있으므로 다른 모듈 테스트와 같이 common을 포함한다.
  */
-@CaroModuleTest
+@CaroModuleTest(extraIncludes = ["common"])
 class NotificationServiceTest(
     private val notificationService: NotificationService,
     private val deviceTokenRepository: DeviceTokenRepository,
