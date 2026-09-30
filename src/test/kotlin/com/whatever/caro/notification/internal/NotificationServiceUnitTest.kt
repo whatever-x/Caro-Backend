@@ -9,20 +9,16 @@ import io.mockk.clearAllMocks
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
-import java.time.Clock
 import java.time.Instant
-import java.time.ZoneOffset
 
 class NotificationServiceUnitTest :
     DescribeSpec({
         val now = Instant.parse("2026-10-01T00:00:00Z")
-        val clock = Clock.fixed(now, ZoneOffset.UTC)
         val deviceTokenRepository = mockk<DeviceTokenRepository>(relaxed = true)
         val pushSender = mockk<PushSender>()
         val service = NotificationService(
             deviceTokenRepository = deviceTokenRepository,
             pushSender = pushSender,
-            clock = clock,
         )
         val message = PushMessage(title = "title", body = "body")
 
@@ -33,13 +29,17 @@ class NotificationServiceUnitTest :
             lastSeenAt: Instant = now.minusSeconds(3600),
         ) = DeviceToken(userId = userId, token = token, platform = platform, lastSeenAt = lastSeenAt)
 
-        beforeEach { clearAllMocks() }
+        beforeEach {
+            clearAllMocks()
+            // relaxed mock의 제네릭 save(S): S는 Object를 반환해 ClassCastException이 나므로 인자를 그대로 돌려준다
+            every { deviceTokenRepository.save(any<DeviceToken>()) } answers { firstArg() }
+        }
 
         describe("registerToken") {
             it("처음 보는 토큰이면 새로 저장한다") {
                 every { deviceTokenRepository.findByToken("new-token") } returns null
 
-                service.registerToken(userId = 1L, token = "new-token", platform = DevicePlatform.ANDROID)
+                service.registerToken(userId = 1L, token = "new-token", platform = DevicePlatform.ANDROID, now = now)
 
                 verify(exactly = 1) {
                     deviceTokenRepository.save(
@@ -55,7 +55,7 @@ class NotificationServiceUnitTest :
                 every { deviceTokenRepository.findByToken("shared-device") } returns existing
 
                 // 같은 기기에서 다른 계정(2)으로 로그인
-                service.registerToken(userId = 2L, token = "shared-device", platform = DevicePlatform.IOS)
+                service.registerToken(userId = 2L, token = "shared-device", platform = DevicePlatform.IOS, now = now)
 
                 existing.userId shouldBe 2L
                 existing.platform shouldBe DevicePlatform.IOS
