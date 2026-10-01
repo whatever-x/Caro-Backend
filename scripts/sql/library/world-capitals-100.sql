@@ -127,6 +127,8 @@ SELECT COUNT(*), MIN(position), MAX(position)
 INTO @capitals_seed_input_count, @capitals_seed_input_min, @capitals_seed_input_max
 FROM capitals_seed_cards;
 
+-- Read content committed by an operator before acquiring the source row lock.
+SET TRANSACTION ISOLATION LEVEL READ COMMITTED;
 START TRANSACTION;
 SELECT COUNT(*), MIN(id) INTO @capitals_seed_count, @capitals_seed_id
 FROM library_decks WHERE name = '세계 수도 100개';
