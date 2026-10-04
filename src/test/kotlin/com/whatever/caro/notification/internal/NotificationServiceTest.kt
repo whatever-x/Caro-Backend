@@ -24,75 +24,75 @@ class NotificationServiceTest(
     private val deviceTokenRepository: DeviceTokenRepository,
 ) : DescribeSpec({
 
-        fun uniqueToken() = "token-${UUID.randomUUID()}"
-        val seoul = ZoneId.of("Asia/Seoul")
+    fun uniqueToken() = "token-${UUID.randomUUID()}"
+    val seoul = ZoneId.of("Asia/Seoul")
 
-        describe("registerToken") {
-            it("같은 토큰을 다른 유저가 등록하면 행은 1개로 유지되고 소유자가 바뀐다") {
-                val token = uniqueToken()
+    describe("registerToken") {
+        it("같은 토큰을 다른 유저가 등록하면 행은 1개로 유지되고 소유자가 바뀐다") {
+            val token = uniqueToken()
 
-                notificationService.registerToken(
-                    userId = 1001L,
-                    token = token,
-                    platform = DevicePlatform.ANDROID,
-                    timezone = seoul,
-                )
-                notificationService.registerToken(
-                    userId = 1002L,
-                    token = token,
-                    platform = DevicePlatform.ANDROID,
-                    timezone = seoul,
-                )
+            notificationService.registerToken(
+                userId = 1001L,
+                token = token,
+                platform = DevicePlatform.ANDROID,
+                timezone = seoul,
+            )
+            notificationService.registerToken(
+                userId = 1002L,
+                token = token,
+                platform = DevicePlatform.ANDROID,
+                timezone = seoul,
+            )
 
-                val saved = deviceTokenRepository.findByToken(token).shouldNotBeNull()
-                saved.userId shouldBe 1002L
-                deviceTokenRepository.findAllByUserId(1001L).filter { it.token == token }.shouldBeEmpty()
-            }
+            val saved = deviceTokenRepository.findByToken(token).shouldNotBeNull()
+            saved.userId shouldBe 1002L
+            deviceTokenRepository.findAllByUserId(1001L).filter { it.token == token }.shouldBeEmpty()
+        }
+    }
+
+    describe("unregisterToken") {
+        it("다른 유저의 토큰은 삭제되지 않는다") {
+            val token = uniqueToken()
+            notificationService.registerToken(
+                userId = 2001L,
+                token = token,
+                platform = DevicePlatform.ANDROID,
+                timezone = seoul,
+            )
+
+            notificationService.unregisterToken(userId = 9999L, token = token)
+
+            deviceTokenRepository.findByToken(token).shouldNotBeNull()
         }
 
-        describe("unregisterToken") {
-            it("다른 유저의 토큰은 삭제되지 않는다") {
-                val token = uniqueToken()
-                notificationService.registerToken(
-                    userId = 2001L,
-                    token = token,
-                    platform = DevicePlatform.ANDROID,
-                    timezone = seoul,
-                )
+        it("본인 토큰은 삭제된다") {
+            val token = uniqueToken()
+            notificationService.registerToken(
+                userId = 2002L,
+                token = token,
+                platform = DevicePlatform.ANDROID,
+                timezone = seoul,
+            )
 
-                notificationService.unregisterToken(userId = 9999L, token = token)
+            notificationService.unregisterToken(userId = 2002L, token = token)
 
-                deviceTokenRepository.findByToken(token).shouldNotBeNull()
-            }
-
-            it("본인 토큰은 삭제된다") {
-                val token = uniqueToken()
-                notificationService.registerToken(
-                    userId = 2002L,
-                    token = token,
-                    platform = DevicePlatform.ANDROID,
-                    timezone = seoul,
-                )
-
-                notificationService.unregisterToken(userId = 2002L, token = token)
-
-                deviceTokenRepository.findByToken(token) shouldBe null
-            }
+            deviceTokenRepository.findByToken(token) shouldBe null
         }
+    }
 
-        describe("sendToUser") {
-            it("유저의 모든 기기로 발송한다") {
-                val userId = 3001L
-                notificationService.registerToken(userId, uniqueToken(), DevicePlatform.ANDROID, seoul)
-                notificationService.registerToken(userId, uniqueToken(), DevicePlatform.IOS, seoul)
+    describe("sendToUser") {
+        it("유저의 모든 기기로 발송한다") {
+            val userId = 3001L
+            notificationService.registerToken(userId, uniqueToken(), DevicePlatform.ANDROID, seoul)
+            notificationService.registerToken(userId, uniqueToken(), DevicePlatform.IOS, seoul)
 
-                val result = notificationService.sendToUser(
-                    userId = userId,
-                    message = PushMessage(title = "title", body = "body"),
-                )
+            val result = notificationService.sendToUser(
+                userId = userId,
+                message = PushMessage(title = "title", body = "body"),
+            )
 
-                result.successCount shouldBe 2
-                result.invalidTokens.shouldBeEmpty()
-            }
+            result.successCount shouldBe 2
+            result.invalidTokens.shouldBeEmpty()
         }
-    })
+    }
+})
