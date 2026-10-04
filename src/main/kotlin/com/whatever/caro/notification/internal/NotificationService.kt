@@ -7,6 +7,7 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
+import java.time.ZoneId
 
 private val logger = KotlinLogging.logger {}
 
@@ -25,6 +26,7 @@ class NotificationService(
         userId: Long,
         token: String,
         platform: DevicePlatform,
+        timezone: ZoneId,
         now: Instant = Instant.now(),
     ) {
         val existing = deviceTokenRepository.findByToken(token = token)
@@ -34,12 +36,13 @@ class NotificationService(
                     userId = userId,
                     token = token,
                     platform = platform,
+                    timezone = timezone.id,
                     lastSeenAt = now,
                 ),
             )
             return
         }
-        existing.refresh(userId = userId, platform = platform, now = now)
+        existing.refresh(userId = userId, platform = platform, timezone = timezone.id, now = now)
     }
 
     /**

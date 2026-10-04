@@ -10,6 +10,6 @@ import org.springframework.modulith.PackageInfo
 @PackageInfo
 @ApplicationModule(
     displayName = "Notification",
-    allowedDependencies = ["common"],
+    allowedDependencies = ["common", "study"],
 )
 class ModuleMetadata

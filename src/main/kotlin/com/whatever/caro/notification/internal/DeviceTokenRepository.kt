@@ -14,6 +14,17 @@ interface DeviceTokenRepository : JpaRepository<DeviceToken, Long> {
         userId: Long,
     ): List<DeviceToken>
 
+    fun findAllByUserIdIn(
+        userIds: Collection<Long>,
+    ): List<DeviceToken>
+
+    fun findAllByTimezoneIn(
+        timezones: Collection<String>,
+    ): List<DeviceToken>
+
+    @Query("select distinct d.timezone from DeviceToken d")
+    fun findDistinctTimezones(): List<String>
+
     @Transactional
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("delete from DeviceToken d where d.userId = :userId and d.token = :token")

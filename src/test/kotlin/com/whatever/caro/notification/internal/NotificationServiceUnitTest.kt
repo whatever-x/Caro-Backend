@@ -10,6 +10,7 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import java.time.Instant
+import java.time.ZoneId
 
 class NotificationServiceUnitTest :
     DescribeSpec({
@@ -21,13 +22,20 @@ class NotificationServiceUnitTest :
             pushSender = pushSender,
         )
         val message = PushMessage(title = "title", body = "body")
+        val seoul = ZoneId.of("Asia/Seoul")
 
         fun deviceToken(
             userId: Long,
             token: String,
             platform: DevicePlatform = DevicePlatform.ANDROID,
             lastSeenAt: Instant = now.minusSeconds(3600),
-        ) = DeviceToken(userId = userId, token = token, platform = platform, lastSeenAt = lastSeenAt)
+        ) = DeviceToken(
+            userId = userId,
+            token = token,
+            platform = platform,
+            timezone = seoul.id,
+            lastSeenAt = lastSeenAt,
+        )
 
         beforeEach {
             clearAllMocks()
@@ -39,26 +47,42 @@ class NotificationServiceUnitTest :
             it("처음 보는 토큰이면 새로 저장한다") {
                 every { deviceTokenRepository.findByToken("new-token") } returns null
 
-                service.registerToken(userId = 1L, token = "new-token", platform = DevicePlatform.ANDROID, now = now)
+                service.registerToken(
+                    userId = 1L,
+                    token = "new-token",
+                    platform = DevicePlatform.ANDROID,
+                    timezone = seoul,
+                    now = now,
+                )
 
                 verify(exactly = 1) {
                     deviceTokenRepository.save(
                         match<DeviceToken> {
-                            it.userId == 1L && it.token == "new-token" && it.lastSeenAt == now
+                            it.userId == 1L &&
+                                it.token == "new-token" &&
+                                it.timezone == "Asia/Seoul" &&
+                                it.lastSeenAt == now
                         },
                     )
                 }
             }
 
-            it("이미 있는 토큰이면 소유자/플랫폼/lastSeenAt을 갱신하고 새로 저장하지 않는다") {
+            it("이미 있는 토큰이면 소유자/플랫폼/타임존/lastSeenAt을 갱신하고 새로 저장하지 않는다") {
                 val existing = deviceToken(userId = 1L, token = "shared-device")
                 every { deviceTokenRepository.findByToken("shared-device") } returns existing
 
                 // 같은 기기에서 다른 계정(2)으로 로그인
-                service.registerToken(userId = 2L, token = "shared-device", platform = DevicePlatform.IOS, now = now)
+                service.registerToken(
+                    userId = 2L,
+                    token = "shared-device",
+                    platform = DevicePlatform.IOS,
+                    timezone = ZoneId.of("America/New_York"),
+                    now = now,
+                )
 
                 existing.userId shouldBe 2L
                 existing.platform shouldBe DevicePlatform.IOS
+                existing.timezone shouldBe "America/New_York"
                 existing.lastSeenAt shouldBe now
                 verify(exactly = 0) { deviceTokenRepository.save(any<DeviceToken>()) }
             }

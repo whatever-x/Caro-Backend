@@ -1,5 +1,6 @@
 package com.whatever.caro.study.internal.streak
 
+import com.whatever.caro.study.StreakApi
 import com.whatever.caro.study.StreakType
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Service
@@ -16,7 +17,20 @@ class StreakService(
     private val streakStateRepository: StreakStateRepository,
     private val studyDayRepository: StudyDayRepository,
     private val restDayCheckService: RestDayCheckService,
-) {
+) : StreakApi {
+    @Transactional(readOnly = true)
+    override fun findStreaksAtRisk(
+        userIds: Collection<Long>,
+        today: LocalDate,
+    ): Map<Long, Int> {
+        if (userIds.isEmpty()) {
+            return emptyMap()
+        }
+        return streakStateRepository
+            .findAllAtRisk(userIds = userIds, lastRecordedDate = today.minusDays(1))
+            .associate { it.userId to it.currentStreak }
+    }
+
     @Transactional
     fun syncWithRestDayCheck(
         userId: Long,
