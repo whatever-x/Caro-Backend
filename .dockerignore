@@ -9,6 +9,7 @@ out
 .kotlin
 .omc
 .claude
+.agents
 .serena
 .codemap
 .env

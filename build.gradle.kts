@@ -210,6 +210,10 @@ springBoot {
     }
 }
 
+tasks.processResources {
+    exclude("**/AGENTS.md")
+}
+
 tasks.bootJar {
     archiveFileName = "app.jar" // entrypoint.sh에서 app.jar를 사용하므로 fix
 }
