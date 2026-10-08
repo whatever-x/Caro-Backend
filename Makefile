@@ -64,7 +64,7 @@ env: ## Infisical 시크릿으로 .env 생성 (기존 파일은 .env.bak로 보�
 test: ## 테스트 (Testcontainers 사용, make up 불필요)
 	$(GRADLE) test
 
-check: ## CI와 같은 검증 (테스트 + 포맷 검사 + 커버리지)
+check: ## CI의 테스트 + 포맷 검사 + 커버리지 검증 (Docker 이미지 빌드 검사는 제외)
 	$(GRADLE) check
 
 format: ## 포맷 자동 수정
