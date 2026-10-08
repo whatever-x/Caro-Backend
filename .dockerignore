@@ -9,6 +9,7 @@ out
 .kotlin
 .omc
 .claude
+.agents
 .serena
 .codemap
 .env
@@ -20,5 +21,6 @@ README.md
 .lefthook.yaml
 .editorconfig
 Dockerfile
-docker-compose.yml
+docker-compose*.yml
+Makefile
 .dockerignore
