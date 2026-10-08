@@ -1,6 +1,7 @@
 package com.whatever.caro.auth.internal.filter
 
 import com.whatever.caro.auth.exception.InvalidAccessTokenException
+import com.whatever.caro.auth.internal.config.PublicEndpoints
 import com.whatever.caro.auth.internal.token.JwtTokenProvider
 import com.whatever.caro.auth.internal.token.TokenBlacklistRepository
 import com.whatever.caro.auth.internal.token.TokenClaims
@@ -9,6 +10,7 @@ import io.jsonwebtoken.JwtException
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.DescribeSpec
 import io.kotest.datatest.withData
+import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.mockk.clearAllMocks
@@ -29,25 +31,56 @@ class JwtAuthenticationFilterTest :
 
         val filter = JwtAuthenticationFilter(jwtTokenProvider, tokenBlacklistRepository)
 
-        afterEach {
+        afterTest {
             SecurityContextHolder.clearContext()
             clearAllMocks(answers = false)
         }
 
         describe("shouldNotFilter") {
-            withData(
-                "/api/v1/auth/social-login",
-                "/api/v1/auth/refresh",
-                "/actuator/health",
-            ) { uri ->
-                val request = MockHttpServletRequest().apply { requestURI = uri }
-                val response = MockHttpServletResponse()
+            val invalidToken = "invalid.token.on.public.path"
+            fun stubInvalidToken() {
+                every { jwtTokenProvider.parseAccessToken(invalidToken) } throws JwtException("Invalid signature")
+            }
 
-                filter.doFilter(request, response, filterChain)
+            val expectedPublicAuthPaths = listOf("/auth/social-login", "/auth/refresh")
+            it("public api 목록은 이 테스트의 기대값과 같아야한다") {
+                PublicEndpoints.AUTH shouldContainExactlyInAnyOrder expectedPublicAuthPaths
+            }
 
-                SecurityContextHolder.getContext().authentication shouldBe null
-                verify { filterChain.doFilter(request, response) }
-                verify(exactly = 0) { jwtTokenProvider.parseAccessToken(any()) }
+            context("공개 경로는 토큰을 검사하지 않고 통과한다") {
+                withData(
+                    expectedPublicAuthPaths +
+                        listOf("/actuator/health", "/swagger", "/swagger-ui/index.html", "/v3/api-docs/version-1", "/v3/api-docs.yaml"),
+                ) { uri ->
+                    stubInvalidToken()
+                    val request = MockHttpServletRequest().apply {
+                        requestURI = uri
+                        addHeader("Authorization", "Bearer $invalidToken")
+                    }
+                    val response = MockHttpServletResponse()
+
+                    filter.doFilter(request, response, filterChain)
+
+                    SecurityContextHolder.getContext().authentication shouldBe null
+                    verify { filterChain.doFilter(request, response) }
+                    verify(exactly = 0) { jwtTokenProvider.parseAccessToken(any()) }
+                }
+            }
+
+            context("공개 경로가 아니면 같은 토큰으로 예외가 난다") {
+                withData("/decks", "/auth/logout", "/api/v1/auth/social-login") { uri ->
+                    stubInvalidToken()
+                    val request = MockHttpServletRequest().apply {
+                        requestURI = uri
+                        addHeader("Authorization", "Bearer $invalidToken")
+                    }
+                    val response = MockHttpServletResponse()
+
+                    shouldThrow<InvalidAccessTokenException> {
+                        filter.doFilter(request, response, filterChain)
+                    }
+                    verify(exactly = 0) { filterChain.doFilter(any(), any()) }
+                }
             }
         }
 
