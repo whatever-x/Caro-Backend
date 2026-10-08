@@ -16,6 +16,7 @@ import com.whatever.caro.card.internal.deck.event.created.DeckCreatedEvent
 import com.whatever.caro.card.internal.deck.exception.DeckForbiddenException
 import com.whatever.caro.card.internal.deck.exception.DeckNotFoundException
 import com.whatever.caro.card.internal.deck.toInfo
+import com.whatever.caro.card.internal.library.LibraryCopyReceiptRepository
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -26,6 +27,7 @@ class DeckService(
     private val deckRepository: DeckRepository,
     private val deckPresetRepository: DeckPresetRepository,
     private val eventPublisher: ApplicationEventPublisher,
+    private val libraryCopyReceiptRepository: LibraryCopyReceiptRepository,
 ) : DeckApi {
     override fun getDecks(
         userId: Long,
@@ -47,6 +49,7 @@ class DeckService(
         userId: Long,
     ) {
         // FK 순서: decks(자식, deck_preset_id) → deck_presets(부모).
+        libraryCopyReceiptRepository.deleteAllByUserId(userId)
         deckRepository.hardDeleteAllByUserId(userId)
         deckPresetRepository.hardDeleteAllByUserId(userId)
     }
