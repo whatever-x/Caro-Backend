@@ -4,6 +4,7 @@ import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
 import org.springframework.transaction.annotation.Transactional
+import java.time.ZoneId
 
 interface DeviceTokenRepository : JpaRepository<DeviceToken, Long> {
     fun findByToken(
@@ -19,11 +20,11 @@ interface DeviceTokenRepository : JpaRepository<DeviceToken, Long> {
     ): List<DeviceToken>
 
     fun findAllByTimezoneIn(
-        timezones: Collection<String>,
+        timezones: Collection<ZoneId>,
     ): List<DeviceToken>
 
     @Query("select distinct d.timezone from DeviceToken d")
-    fun findDistinctTimezones(): List<String>
+    fun findDistinctTimezones(): List<ZoneId>
 
     @Transactional
     @Modifying(clearAutomatically = true, flushAutomatically = true)

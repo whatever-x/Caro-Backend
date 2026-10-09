@@ -9,8 +9,11 @@ import io.mockk.clearAllMocks
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import java.time.Clock
 import java.time.Instant
 import java.time.ZoneId
+import java.time.ZoneOffset
+import java.util.Locale
 
 class NotificationServiceUnitTest :
     DescribeSpec({
@@ -20,6 +23,7 @@ class NotificationServiceUnitTest :
         val service = NotificationService(
             deviceTokenRepository = deviceTokenRepository,
             pushSender = pushSender,
+            clock = Clock.fixed(now, ZoneOffset.UTC),
         )
         val message = PushMessage(title = "title", body = "body")
         val seoul = ZoneId.of("Asia/Seoul")
@@ -33,7 +37,8 @@ class NotificationServiceUnitTest :
             userId = userId,
             token = token,
             platform = platform,
-            timezone = seoul.id,
+            timezone = seoul,
+            locale = Locale.KOREAN,
             lastSeenAt = lastSeenAt,
         )
 
@@ -52,7 +57,7 @@ class NotificationServiceUnitTest :
                     token = "new-token",
                     platform = DevicePlatform.ANDROID,
                     timezone = seoul,
-                    now = now,
+                    locale = Locale.KOREAN,
                 )
 
                 verify(exactly = 1) {
@@ -60,14 +65,15 @@ class NotificationServiceUnitTest :
                         match<DeviceToken> {
                             it.userId == 1L &&
                                 it.token == "new-token" &&
-                                it.timezone == "Asia/Seoul" &&
+                                it.timezone == seoul &&
+                                it.locale == Locale.KOREAN &&
                                 it.lastSeenAt == now
                         },
                     )
                 }
             }
 
-            it("이미 있는 토큰이면 소유자/플랫폼/타임존/lastSeenAt을 갱신하고 새로 저장하지 않는다") {
+            it("이미 있는 토큰이면 소유자/플랫폼/타임존/언어/lastSeenAt을 갱신하고 새로 저장하지 않는다") {
                 val existing = deviceToken(userId = 1L, token = "shared-device")
                 every { deviceTokenRepository.findByToken("shared-device") } returns existing
 
@@ -77,12 +83,13 @@ class NotificationServiceUnitTest :
                     token = "shared-device",
                     platform = DevicePlatform.IOS,
                     timezone = ZoneId.of("America/New_York"),
-                    now = now,
+                    locale = Locale.ENGLISH,
                 )
 
                 existing.userId shouldBe 2L
                 existing.platform shouldBe DevicePlatform.IOS
-                existing.timezone shouldBe "America/New_York"
+                existing.timezone shouldBe ZoneId.of("America/New_York")
+                existing.locale shouldBe Locale.ENGLISH
                 existing.lastSeenAt shouldBe now
                 verify(exactly = 0) { deviceTokenRepository.save(any<DeviceToken>()) }
             }

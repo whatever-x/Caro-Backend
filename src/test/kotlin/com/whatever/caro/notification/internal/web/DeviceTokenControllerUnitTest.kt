@@ -10,6 +10,7 @@ import io.mockk.mockk
 import io.mockk.verify
 import org.springframework.http.HttpStatus
 import java.time.ZoneId
+import java.util.Locale
 
 class DeviceTokenControllerUnitTest :
     DescribeSpec({
@@ -25,6 +26,7 @@ class DeviceTokenControllerUnitTest :
                 val response = controller.registerToken(
                     request = request,
                     timezone = ZoneId.of("Asia/Seoul"),
+                    locale = Locale.KOREAN,
                     userId = 1L,
                 )
 
@@ -35,7 +37,7 @@ class DeviceTokenControllerUnitTest :
                         token = "fcm-token",
                         platform = DevicePlatform.ANDROID,
                         timezone = ZoneId.of("Asia/Seoul"),
-                        now = any(),
+                        locale = Locale.KOREAN,
                     )
                 }
             }
