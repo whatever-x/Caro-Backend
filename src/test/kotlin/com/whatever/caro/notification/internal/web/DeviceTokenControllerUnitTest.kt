@@ -9,6 +9,8 @@ import io.mockk.clearAllMocks
 import io.mockk.mockk
 import io.mockk.verify
 import org.springframework.http.HttpStatus
+import java.time.ZoneId
+import java.util.Locale
 
 class DeviceTokenControllerUnitTest :
     DescribeSpec({
@@ -21,7 +23,12 @@ class DeviceTokenControllerUnitTest :
             it("토큰을 등록하고 204를 반환한다") {
                 val request = RegisterDeviceTokenRequest(token = "fcm-token", platform = DevicePlatform.ANDROID)
 
-                val response = controller.registerToken(request = request, userId = 1L)
+                val response = controller.registerToken(
+                    request = request,
+                    timezone = ZoneId.of("Asia/Seoul"),
+                    locale = Locale.KOREAN,
+                    userId = 1L,
+                )
 
                 response.statusCode shouldBe HttpStatus.NO_CONTENT
                 verify(exactly = 1) {
@@ -29,7 +36,8 @@ class DeviceTokenControllerUnitTest :
                         userId = 1L,
                         token = "fcm-token",
                         platform = DevicePlatform.ANDROID,
-                        now = any(),
+                        timezone = ZoneId.of("Asia/Seoul"),
+                        locale = Locale.KOREAN,
                     )
                 }
             }

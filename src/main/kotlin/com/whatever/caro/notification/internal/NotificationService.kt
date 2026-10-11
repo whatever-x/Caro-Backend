@@ -6,7 +6,10 @@ import com.whatever.caro.notification.internal.push.PushSender
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.Clock
 import java.time.Instant
+import java.time.ZoneId
+import java.util.Locale
 
 private val logger = KotlinLogging.logger {}
 
@@ -14,19 +17,20 @@ private val logger = KotlinLogging.logger {}
 class NotificationService(
     private val deviceTokenRepository: DeviceTokenRepository,
     private val pushSender: PushSender,
+    private val clock: Clock,
 ) {
     /**
      * 기기 토큰을 등록(upsert)한다. 앱 실행 시, FirebaseMessagingService.onNewToken 시점에 호출된다.
-     *
-     * @param now lastSeenAt 기록 시각. 테스트에서 고정 시각을 넘길 수 있도록 파라미터로 받는다.
      */
     @Transactional
     fun registerToken(
         userId: Long,
         token: String,
         platform: DevicePlatform,
-        now: Instant = Instant.now(),
+        timezone: ZoneId,
+        locale: Locale,
     ) {
+        val now = Instant.now(clock)
         val existing = deviceTokenRepository.findByToken(token = token)
         if (existing == null) {
             deviceTokenRepository.save(
@@ -34,12 +38,20 @@ class NotificationService(
                     userId = userId,
                     token = token,
                     platform = platform,
+                    timezone = timezone,
+                    locale = locale,
                     lastSeenAt = now,
                 ),
             )
             return
         }
-        existing.refresh(userId = userId, platform = platform, now = now)
+        existing.refresh(
+            userId = userId,
+            platform = platform,
+            timezone = timezone,
+            locale = locale,
+            now = now,
+        )
     }
 
     /**
