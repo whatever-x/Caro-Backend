@@ -29,7 +29,7 @@ class DeckServiceUnitTest :
         val deckRepository = mockk<DeckRepository>()
         val deckPresetRepository = mockk<DeckPresetRepository>(relaxed = true)
         val eventPublisher = mockk<ApplicationEventPublisher>(relaxed = true)
-        val deckService = DeckService(deckRepository, deckPresetRepository, eventPublisher)
+        val deckService = DeckService(deckRepository, deckPresetRepository, eventPublisher, io.mockk.mockk(relaxed = true))
 
         fun createDeckWithId(
             id: Long,
