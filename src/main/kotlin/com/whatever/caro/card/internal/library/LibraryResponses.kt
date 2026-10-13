@@ -25,3 +25,11 @@ data class LibraryCopyResponse(
     val description: String,
     val cardCount: Int,
 )
+
+fun LibraryCopyReceipt.toCopyResponse(): LibraryCopyResponse =
+    LibraryCopyResponse(
+        deckId = requireNotNull(deckId),
+        name = requireNotNull(name),
+        description = requireNotNull(description),
+        cardCount = requireNotNull(cardCount),
+    )

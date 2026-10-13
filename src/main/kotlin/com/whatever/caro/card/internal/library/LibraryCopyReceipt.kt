@@ -1,5 +1,6 @@
 package com.whatever.caro.card.internal.library
 
+import com.whatever.caro.card.internal.deck.Deck
 import com.whatever.caro.common.entity.BaseTimeEntity
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
@@ -26,19 +27,17 @@ class LibraryCopyReceipt(
     @Column(length = 500) var description: String? = null
     var cardCount: Int? = null
 
-    fun result(): LibraryCopyResponse? =
-        deckId?.let {
-            LibraryCopyResponse(it, requireNotNull(name), requireNotNull(description), requireNotNull(cardCount))
-        }
+    fun isCompleted(): Boolean = deckId != null
 
     fun complete(
         number: Long,
-        result: LibraryCopyResponse,
+        deck: Deck,
+        cardCount: Int,
     ) {
         ordinal = number
-        deckId = result.deckId
-        name = result.name
-        description = result.description
-        cardCount = result.cardCount
+        deckId = deck.id
+        name = deck.name
+        description = deck.description
+        this.cardCount = cardCount
     }
 }

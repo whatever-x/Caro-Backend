@@ -81,7 +81,7 @@ class LibraryServiceTest(
         service.copy(8101, deck.id, UUID.randomUUID()).name shouldBe "토익 단어"
     }
 
-    it("추가 후 원본 수정과 게시 종료가 개인 카드와 기존 request replay에 영향을 주지 않는다") {
+    it("원본 게시 종료와 개인 덱 수정 및 삭제 후에도 request replay는 최초 복사 결과를 반환한다") {
         val deck = fixture()
         val key = UUID.randomUUID()
         val copied = service.copy(8102, deck.id, key)
@@ -97,6 +97,9 @@ class LibraryServiceTest(
             String::class.java,
             copied.deckId,
         ) shouldBe "지원하다"
+        jdbc.update("UPDATE decks SET name = '내 이름', description = '내 설명' WHERE id = ?", copied.deckId)
+        service.copy(8102, deck.id, key) shouldBe copied
+        personal.deleteDeck(8102, DeleteDeckDto(copied.deckId))
         service.copy(8102, deck.id, key) shouldBe copied
         shouldThrow<BusinessException> { service.copy(8102, deck.id, UUID.randomUUID()) }.errorCode shouldBe LibraryErrorCode.UNAVAILABLE
     }

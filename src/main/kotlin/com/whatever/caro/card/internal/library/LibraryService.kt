@@ -58,24 +58,22 @@ class LibraryService(
         receipts.claim(userId, key, libraryDeckId)
         val receipt = requireNotNull(receipts.lockByKey(userId, key))
         if (receipt.libraryDeckId != libraryDeckId) throw BusinessException(CommonErrorCode.IDEMPOTENCY_KEY_CONFLICT)
-        receipt.result()?.let { return it }
+        if (receipt.isCompleted()) return receipt.toCopyResponse()
 
         // Lock the source before numbering and reading cards. Publishing tools must use this same lock.
         val source = decks.lockById(libraryDeckId)?.takeIf { it.published }
             ?: throw BusinessException(LibraryErrorCode.UNAVAILABLE)
         val content = cards.findByLibraryDeckIdOrderByPositionAscIdAsc(source.id)
-        if (source.name.isBlank() || source.name.length > 50 ||
-            source.description.isBlank() || source.description.length > 500 ||
-            content.isEmpty() || content.size > 200 || content.any { it.front.isBlank() || it.back.isBlank() }
-        ) {
+        if (!source.isValidForCopy(content)) {
             throw BusinessException(LibraryErrorCode.INVALID_CONTENT)
         }
         val ordinal = receipts.countByUserIdAndLibraryDeckIdAndDeckIdIsNotNull(userId, source.id) + 1
         val name = personalName(source.name, ordinal)
         val deck = deckService.createDeck(userId, CreateDeckDto(name, source.description))
         // The detail endpoint requires a preset immediately after the copy response.
-        personalDecks.findById(deck.id).orElseThrow().deckPreset =
-            presets.findById(1L).orElseThrow { BusinessException(LibraryErrorCode.INVALID_CONTENT) }
+        val personalDeck = personalDecks.findById(deck.id).orElseThrow()
+        val defaultPreset = presets.findById(1L).orElseThrow { BusinessException(LibraryErrorCode.INVALID_CONTENT) }
+        personalDeck.deckPreset = defaultPreset
         val created = cardService.createCards(
             userId,
             CreateCardsDto(
@@ -85,11 +83,10 @@ class LibraryService(
                 },
             ),
         )
-        val result = LibraryCopyResponse(deck.id, name, source.description, created.items.size)
-        receipt.complete(ordinal, result)
+        receipt.complete(ordinal, personalDeck, created.items.size)
         // CardService clears the persistence context after updating the card count.
         receipts.save(receipt)
-        return result
+        return receipt.toCopyResponse()
     }
 
     internal fun personalName(

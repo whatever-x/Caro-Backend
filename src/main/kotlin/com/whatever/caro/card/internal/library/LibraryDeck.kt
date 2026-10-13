@@ -1,5 +1,6 @@
 package com.whatever.caro.card.internal.library
 
+import com.whatever.caro.card.internal.deck.Deck
 import com.whatever.caro.common.entity.BaseTimeEntity
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
@@ -19,4 +20,12 @@ class LibraryDeck(
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     var id: Long = 0
         protected set
+
+    fun isValidForCopy(
+        cards: List<LibraryCard>,
+    ): Boolean =
+        name.isNotBlank() && name.length <= 50 &&
+            description.isNotBlank() && description.length <= 500 &&
+            cards.size in 1..Deck.MAX_CARD_COUNT &&
+            cards.all { it.front.isNotBlank() && it.back.isNotBlank() }
 }
