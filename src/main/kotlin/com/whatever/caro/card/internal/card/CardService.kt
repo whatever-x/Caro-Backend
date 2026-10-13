@@ -13,7 +13,9 @@ import com.whatever.caro.card.internal.card.dto.update.UpdateCardDto
 import com.whatever.caro.card.internal.card.dto.update.UpdateCardResponseDto
 import com.whatever.caro.card.internal.card.exception.CardForbiddenException
 import com.whatever.caro.card.internal.card.exception.CardInvalidFieldsException
+import com.whatever.caro.card.internal.card.exception.CardLimitExceededException
 import com.whatever.caro.card.internal.card.exception.CardNotFoundException
+import com.whatever.caro.card.internal.deck.Deck
 import com.whatever.caro.card.internal.deck.DeckRepository
 import com.whatever.caro.card.internal.deck.exception.DeckForbiddenException
 import com.whatever.caro.card.internal.deck.exception.DeckNotFoundException
@@ -71,7 +73,7 @@ class CardService(
         userId: Long,
         dto: CreateCardsDto,
     ): CreateCardsResponseDto {
-        val deck = deckRepository.findByIdAndDeletedAtIsNull(dto.deckId)
+        val deck = deckRepository.lockByIdAndDeletedAtIsNull(dto.deckId)
             ?: throw DeckNotFoundException("deckId=${dto.deckId} 덱을 찾을 수 없습니다")
 
         if (deck.userId != userId) {
@@ -100,6 +102,19 @@ class CardService(
             }
         }
 
+        val newCardCount = dto.items.sumOf { templatesByNoteType.getValue(it.noteTypeId).size.toLong() }
+        val storedCardCount = cardRepository.countByDeckIdAndDeletedAtIsNull(deck.id)
+        if (storedCardCount > Deck.MAX_CARD_COUNT) throw CardLimitExceededException()
+        deck.cardCount = storedCardCount.toInt()
+        if (!deck.canAddCards(newCardCount)) throw CardLimitExceededException()
+
+        // Reserve capacity before card inserts acquire FK locks on the same deck row.
+        val updated = deckRepository.increaseCardCount(
+            deckId = deck.id,
+            amount = newCardCount.toInt(),
+        )
+        if (updated != 1) throw CardLimitExceededException()
+
         val notes = noteRepository.saveAll(
             dto.items.map { Note(userId = userId, fields = it.fields) },
         )
@@ -122,10 +137,6 @@ class CardService(
             )
         }
 
-        deckRepository.increaseCardCount(
-            deckId = deck.id,
-            amount = createdCards.size,
-        )
         eventPublisher.publishEvent(
             CardsCreatedEvent(cardIds = createdCards.map { it.cardId }, deckId = deck.id, userId = userId),
         )

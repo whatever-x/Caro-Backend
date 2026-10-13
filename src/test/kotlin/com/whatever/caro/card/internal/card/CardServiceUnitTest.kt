@@ -8,6 +8,7 @@ import com.whatever.caro.card.internal.card.dto.delete.DeleteCardDto
 import com.whatever.caro.card.internal.card.dto.update.UpdateCardDto
 import com.whatever.caro.card.internal.card.exception.CardForbiddenException
 import com.whatever.caro.card.internal.card.exception.CardInvalidFieldsException
+import com.whatever.caro.card.internal.card.exception.CardLimitExceededException
 import com.whatever.caro.card.internal.card.exception.CardNotFoundException
 import com.whatever.caro.card.internal.deck.Deck
 import com.whatever.caro.card.internal.deck.DeckRepository
@@ -88,6 +89,7 @@ class CardServiceUnitTest :
         ): Deck {
             val deck = Deck(userId = userId, name = "덱", description = "설명", cardCount = cardCount)
             setId(deck, id)
+            every { cardRepository.countByDeckIdAndDeletedAtIsNull(id) } returns cardCount.toLong()
             return deck
         }
 
@@ -154,7 +156,7 @@ class CardServiceUnitTest :
                     ),
                 )
 
-                every { deckRepository.findByIdAndDeletedAtIsNull(deckId) } returns deck
+                every { deckRepository.lockByIdAndDeletedAtIsNull(deckId) } returns deck
                 every { noteTypeRepository.findAllByIdIn(setOf(noteTypeId)) } returns listOf(noteType)
                 every {
                     cardTemplateRepository.findAllByNoteTypeIdIn(setOf(noteTypeId))
@@ -201,7 +203,7 @@ class CardServiceUnitTest :
                     ),
                 )
 
-                every { deckRepository.findByIdAndDeletedAtIsNull(deckId) } returns deck
+                every { deckRepository.lockByIdAndDeletedAtIsNull(deckId) } returns deck
                 every { noteTypeRepository.findAllByIdIn(setOf(noteTypeId)) } returns listOf(noteType)
                 every {
                     cardTemplateRepository.findAllByNoteTypeIdIn(setOf(noteTypeId))
@@ -224,8 +226,40 @@ class CardServiceUnitTest :
                 result.items.map { it.cardId } shouldContainExactlyInAnyOrder listOf(300L, 301L, 302L, 303L)
             }
 
+            it("입력 한 항목에서 두 카드가 생성되면 실제 카드 수로 상한을 검사한다") {
+                val deck = newDeck(10L, 1L, 199)
+                val noteType = newNoteType(1L)
+                every { deckRepository.lockByIdAndDeletedAtIsNull(10L) } returns deck
+                every { noteTypeRepository.findAllByIdIn(setOf(1L)) } returns listOf(noteType)
+                every { cardTemplateRepository.findAllByNoteTypeIdIn(setOf(1L)) } returns listOf(
+                    newTemplate(100L, noteType, listOf("front")),
+                    newTemplate(101L, noteType, listOf("back")),
+                )
+                shouldThrow<CardLimitExceededException> {
+                    cardService.createCards(1L, CreateCardsDto(10L, listOf(CreateCardItemDto(1L, mapOf("front" to "a", "back" to "b")))))
+                }
+                verify(exactly = 0) { noteRepository.saveAll(any<Iterable<Note>>()) }
+                verify(exactly = 0) { eventPublisher.publishEvent(any<CardsCreatedEvent>()) }
+            }
+
+            it("조회 후 다른 요청이 남은 수를 사용하면 저장과 이벤트 발행 전에 거부한다") {
+                val deck = newDeck(10L, 1L, 199)
+                val noteType = newNoteType(1L)
+                every { deckRepository.lockByIdAndDeletedAtIsNull(10L) } returns deck
+                every { noteTypeRepository.findAllByIdIn(setOf(1L)) } returns listOf(noteType)
+                every { cardTemplateRepository.findAllByNoteTypeIdIn(setOf(1L)) } returns listOf(
+                    newTemplate(100L, noteType, listOf("front")),
+                )
+                every { deckRepository.increaseCardCount(10L, 1) } returns 0
+                shouldThrow<CardLimitExceededException> {
+                    cardService.createCards(1L, CreateCardsDto(10L, listOf(CreateCardItemDto(1L, mapOf("front" to "a")))))
+                }
+                verify(exactly = 0) { noteRepository.saveAll(any<Iterable<Note>>()) }
+                verify(exactly = 0) { eventPublisher.publishEvent(any<CardsCreatedEvent>()) }
+            }
+
             it("덱이 없으면 DeckNotFoundException 을 던진다") {
-                every { deckRepository.findByIdAndDeletedAtIsNull(99L) } returns null
+                every { deckRepository.lockByIdAndDeletedAtIsNull(99L) } returns null
 
                 shouldThrow<DeckNotFoundException> {
                     cardService.createCards(
@@ -240,7 +274,7 @@ class CardServiceUnitTest :
 
             it("덱 소유자가 아니면 DeckForbiddenException 을 던진다") {
                 val deck = newDeck(id = 10L, userId = 2L)
-                every { deckRepository.findByIdAndDeletedAtIsNull(10L) } returns deck
+                every { deckRepository.lockByIdAndDeletedAtIsNull(10L) } returns deck
 
                 shouldThrow<DeckForbiddenException> {
                     cardService.createCards(
@@ -255,7 +289,7 @@ class CardServiceUnitTest :
 
             it("요청한 노트 타입 중 일부가 존재하지 않으면 NoteTypeNotFoundException 을 던진다") {
                 val deck = newDeck(id = 10L, userId = 1L)
-                every { deckRepository.findByIdAndDeletedAtIsNull(10L) } returns deck
+                every { deckRepository.lockByIdAndDeletedAtIsNull(10L) } returns deck
                 every { noteTypeRepository.findAllByIdIn(setOf(1L, 999L)) } returns listOf(newNoteType(id = 1L))
 
                 shouldThrow<NoteTypeNotFoundException> {
@@ -275,7 +309,7 @@ class CardServiceUnitTest :
             it("노트 타입에 템플릿이 하나도 없으면 NoteTypeNoTemplatesException 을 던진다") {
                 val deck = newDeck(id = 10L, userId = 1L)
                 val noteType = newNoteType(id = 1L)
-                every { deckRepository.findByIdAndDeletedAtIsNull(10L) } returns deck
+                every { deckRepository.lockByIdAndDeletedAtIsNull(10L) } returns deck
                 every { noteTypeRepository.findAllByIdIn(setOf(1L)) } returns listOf(noteType)
                 every { cardTemplateRepository.findAllByNoteTypeIdIn(setOf(1L)) } returns emptyList()
 
@@ -294,7 +328,7 @@ class CardServiceUnitTest :
                 val deck = newDeck(id = 10L, userId = 1L)
                 val noteType = newNoteType(id = 1L)
                 val tpl = newTemplate(id = 100L, noteType = noteType, requiredFields = listOf("front", "back"))
-                every { deckRepository.findByIdAndDeletedAtIsNull(10L) } returns deck
+                every { deckRepository.lockByIdAndDeletedAtIsNull(10L) } returns deck
                 every { noteTypeRepository.findAllByIdIn(setOf(1L)) } returns listOf(noteType)
                 every { cardTemplateRepository.findAllByNoteTypeIdIn(setOf(1L)) } returns listOf(tpl)
 

@@ -10,8 +10,10 @@ import jakarta.persistence.Id
 import jakarta.persistence.JoinColumn
 import jakarta.persistence.ManyToOne
 import jakarta.persistence.Table
+import org.hibernate.annotations.DynamicUpdate
 
 @Entity
+@DynamicUpdate
 @Table(name = "decks")
 class Deck(
     @Column(name = "user_id", nullable = false)
@@ -33,6 +35,14 @@ class Deck(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0L
+
+    fun canAddCards(
+        count: Long,
+    ): Boolean = count >= 0 && cardCount.toLong() + count <= MAX_CARD_COUNT
+
+    companion object {
+        const val MAX_CARD_COUNT = 200
+    }
 
     fun updateDeckInfo(
         name: String,

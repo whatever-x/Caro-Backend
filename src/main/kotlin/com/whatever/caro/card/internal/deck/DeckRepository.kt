@@ -1,11 +1,19 @@
 package com.whatever.caro.card.internal.deck
 
+import jakarta.persistence.LockModeType
 import org.springframework.data.jpa.repository.JpaRepository
+import org.springframework.data.jpa.repository.Lock
 import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
 
 interface DeckRepository : JpaRepository<Deck, Long> {
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select d from Deck d where d.id = :id and d.deletedAt is null")
+    fun lockByIdAndDeletedAtIsNull(
+        id: Long,
+    ): Deck?
+
     @Query(
         """
         select d from Deck d
@@ -48,10 +56,17 @@ interface DeckRepository : JpaRepository<Deck, Long> {
     ): Int
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
-    @Query("update Deck d set d.cardCount = d.cardCount + :amount where d.id = :deckId")
+    @Query(
+        """
+        update Deck d set d.cardCount = d.cardCount + :amount
+        where d.id = :deckId and d.deletedAt is null
+            and d.cardCount <= :maxCardCount - :amount
+        """,
+    )
     fun increaseCardCount(
         deckId: Long,
         amount: Int,
+        maxCardCount: Int = Deck.MAX_CARD_COUNT,
     ): Int
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
