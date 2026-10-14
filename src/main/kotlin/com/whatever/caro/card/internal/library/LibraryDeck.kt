@@ -23,9 +23,17 @@ class LibraryDeck(
 
     fun isValidForCopy(
         cards: List<LibraryCard>,
-    ): Boolean =
-        name.isNotBlank() && name.length <= 50 &&
-            description.isNotBlank() && description.length <= 500 &&
-            cards.size in 1..Deck.MAX_CARD_COUNT &&
-            cards.all { it.front.isNotBlank() && it.back.isNotBlank() }
+    ): Boolean {
+        if (name.isBlank() || name.length > 50) {
+            return false
+        }
+        if (description.isBlank() || description.length > 500) {
+            return false
+        }
+        if (cards.size !in 1..Deck.MAX_CARD_COUNT) {
+            return false
+        }
+
+        return cards.all { card -> card.front.isNotBlank() && card.back.isNotBlank() }
+    }
 }

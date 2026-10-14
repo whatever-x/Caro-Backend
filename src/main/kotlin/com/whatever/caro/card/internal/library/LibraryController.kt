@@ -5,6 +5,7 @@ import com.whatever.caro.common.response.ApiResponse
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.constraints.Positive
+import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -37,8 +38,9 @@ class LibraryController(
     fun copy(
         @Positive @PathVariable libraryDeckId: Long,
         @RequestHeader("Idempotency-Key") requestKey: UUID,
-    ): ResponseEntity<ApiResponse<LibraryCopyResponse>> =
-        ResponseEntity.status(
-            201,
-        ).body(ApiResponse.ok(service.copy(SecurityUtil.currentUser().userId, libraryDeckId, requestKey)))
+    ): ResponseEntity<ApiResponse<LibraryCopyResponse>> {
+        val userId = SecurityUtil.currentUser().userId
+        val result = service.copy(userId, libraryDeckId, requestKey)
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.ok(result))
+    }
 }

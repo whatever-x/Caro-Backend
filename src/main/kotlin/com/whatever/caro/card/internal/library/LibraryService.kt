@@ -16,35 +16,61 @@ import java.util.UUID
 
 @Service
 class LibraryService(
-    private val decks: LibraryDeckRepository,
-    private val cards: LibraryCardRepository,
-    private val receipts: LibraryCopyReceiptRepository,
+    private val libraryDeckRepository: LibraryDeckRepository,
+    private val libraryCardRepository: LibraryCardRepository,
+    private val copyReceiptRepository: LibraryCopyReceiptRepository,
     private val deckService: DeckService,
     private val cardService: CardService,
-    private val personalDecks: DeckRepository,
-    private val presets: DeckPresetRepository,
+    private val deckRepository: DeckRepository,
+    private val deckPresetRepository: DeckPresetRepository,
 ) {
     @Transactional(readOnly = true)
     fun list(): List<LibraryDeckResponse> {
-        val available = decks.findByPublishedTrueOrderBySortOrderAscIdAsc()
-        if (available.isEmpty()) return emptyList()
-        val counts = cards.counts(available.map { it.id }).associate { it.libraryDeckId to it.cardCount.toInt() }
-        return available.map { LibraryDeckResponse(it.id, it.name, it.description, counts[it.id] ?: 0) }
+        val availableDecks = libraryDeckRepository.findByPublishedTrueOrderBySortOrderAscIdAsc()
+        if (availableDecks.isEmpty()) {
+            return emptyList()
+        }
+
+        val deckIds = availableDecks.map { it.id }
+        val cardCounts = libraryCardRepository.counts(deckIds)
+            .associate { count -> count.libraryDeckId to count.cardCount.toInt() }
+
+        return availableDecks.map { deck ->
+            LibraryDeckResponse(
+                libraryDeckId = deck.id,
+                name = deck.name,
+                description = deck.description,
+                cardCount = cardCounts[deck.id] ?: 0,
+            )
+        }
     }
 
     @Transactional(readOnly = true)
     fun detail(
         libraryDeckId: Long,
     ): LibraryDetailResponse {
-        val deck = decks.findById(libraryDeckId).orElse(null)?.takeIf { it.published }
-            ?: throw BusinessException(LibraryErrorCode.UNAVAILABLE)
-        val content = cards.findByLibraryDeckIdOrderByPositionAscIdAsc(deck.id)
+        val deck = libraryDeckRepository.findById(libraryDeckId)
+            .orElseThrow { BusinessException(LibraryErrorCode.UNAVAILABLE) }
+        if (!deck.published) {
+            throw BusinessException(LibraryErrorCode.UNAVAILABLE)
+        }
+
+        val sourceCards = libraryCardRepository.findByLibraryDeckIdOrderByPositionAscIdAsc(deck.id)
+        val cardResponses = sourceCards.map { card ->
+            LibraryCardResponse(
+                libraryCardId = card.id,
+                front = card.front,
+                back = card.back,
+                position = card.position,
+            )
+        }
+
         return LibraryDetailResponse(
-            deck.id,
-            deck.name,
-            deck.description,
-            content.size,
-            content.map { LibraryCardResponse(it.id, it.front, it.back, it.position) },
+            libraryDeckId = deck.id,
+            name = deck.name,
+            description = deck.description,
+            cardCount = sourceCards.size,
+            cards = cardResponses,
         )
     }
 
@@ -55,37 +81,54 @@ class LibraryService(
         requestKey: UUID,
     ): LibraryCopyResponse {
         val key = requestKey.toString()
-        receipts.claim(userId, key, libraryDeckId)
-        val receipt = requireNotNull(receipts.lockByKey(userId, key))
-        if (receipt.libraryDeckId != libraryDeckId) throw BusinessException(CommonErrorCode.IDEMPOTENCY_KEY_CONFLICT)
-        if (receipt.isCompleted()) return receipt.toCopyResponse()
+        copyReceiptRepository.claim(userId, key, libraryDeckId)
+        val receipt = requireNotNull(copyReceiptRepository.lockByKey(userId, key))
+        if (receipt.libraryDeckId != libraryDeckId) {
+            throw BusinessException(CommonErrorCode.IDEMPOTENCY_KEY_CONFLICT)
+        }
+        if (receipt.isCompleted()) {
+            return receipt.toCopyResponse()
+        }
 
         // Lock the source before numbering and reading cards. Publishing tools must use this same lock.
-        val source = decks.lockById(libraryDeckId)?.takeIf { it.published }
+        val source = libraryDeckRepository.lockById(libraryDeckId)
             ?: throw BusinessException(LibraryErrorCode.UNAVAILABLE)
-        val content = cards.findByLibraryDeckIdOrderByPositionAscIdAsc(source.id)
-        if (!source.isValidForCopy(content)) {
+        if (!source.published) {
+            throw BusinessException(LibraryErrorCode.UNAVAILABLE)
+        }
+
+        val sourceCards = libraryCardRepository.findByLibraryDeckIdOrderByPositionAscIdAsc(source.id)
+        if (!source.isValidForCopy(sourceCards)) {
             throw BusinessException(LibraryErrorCode.INVALID_CONTENT)
         }
-        val ordinal = receipts.countByUserIdAndLibraryDeckIdAndDeckIdIsNotNull(userId, source.id) + 1
-        val name = personalName(source.name, ordinal)
-        val deck = deckService.createDeck(userId, CreateDeckDto(name, source.description))
-        // The detail endpoint requires a preset immediately after the copy response.
-        val personalDeck = personalDecks.findById(deck.id).orElseThrow()
-        val defaultPreset = presets.findById(1L).orElseThrow { BusinessException(LibraryErrorCode.INVALID_CONTENT) }
-        personalDeck.deckPreset = defaultPreset
-        val created = cardService.createCards(
-            userId,
-            CreateCardsDto(
-                deck.id,
-                content.map {
-                    CreateCardItemDto(CardType.BASIC.noteTypeId, mapOf("front" to it.front, "back" to it.back))
-                },
-            ),
+
+        val ordinal = copyReceiptRepository.countByUserIdAndLibraryDeckIdAndDeckIdIsNotNull(userId, source.id) + 1
+        val deckName = personalName(source.name, ordinal)
+        val createdDeck = deckService.createDeck(
+            userId = userId,
+            createDeckDto = CreateDeckDto(name = deckName, description = source.description),
         )
-        receipt.complete(ordinal, personalDeck, created.items.size)
+
+        // The detail endpoint requires a preset immediately after the copy response.
+        val personalDeck = deckRepository.findById(createdDeck.id).orElseThrow()
+        val defaultPreset = deckPresetRepository.findById(1L)
+            .orElseThrow { BusinessException(LibraryErrorCode.INVALID_CONTENT) }
+        personalDeck.deckPreset = defaultPreset
+
+        val cardItems = sourceCards.map { card ->
+            CreateCardItemDto(
+                noteTypeId = CardType.BASIC.noteTypeId,
+                fields = mapOf("front" to card.front, "back" to card.back),
+            )
+        }
+        val createdCards = cardService.createCards(
+            userId = userId,
+            dto = CreateCardsDto(deckId = createdDeck.id, items = cardItems),
+        )
+
+        receipt.complete(number = ordinal, deck = personalDeck, cardCount = createdCards.items.size)
         // CardService clears the persistence context after updating the card count.
-        receipts.save(receipt)
+        copyReceiptRepository.save(receipt)
         return receipt.toCopyResponse()
     }
 
@@ -93,10 +136,18 @@ class LibraryService(
         original: String,
         ordinal: Long,
     ): String {
-        if (ordinal == 1L) return original
+        if (ordinal == 1L) {
+            return original
+        }
+
         val suffix = " ($ordinal)"
-        val limit = 50 - suffix.length
-        val prefix = original.take(limit)
-        return prefix.dropLast(if (prefix.lastOrNull()?.isHighSurrogate() == true) 1 else 0) + suffix
+        val maxBaseNameLength = 50 - suffix.length
+        val baseName = original.take(maxBaseNameLength)
+        val truncatedName = if (baseName.lastOrNull()?.isHighSurrogate() == true) {
+            baseName.dropLast(1)
+        } else {
+            baseName
+        }
+        return truncatedName + suffix
     }
 }

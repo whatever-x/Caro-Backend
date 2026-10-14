@@ -19,12 +19,16 @@ class LibraryCopyReceipt(
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     var id: Long = 0
         protected set
+
     var ordinal: Long? = null
     var deckId: Long? = null
 
-    @Column(length = 50) var name: String? = null
+    @Column(length = 50)
+    var name: String? = null
 
-    @Column(length = 500) var description: String? = null
+    @Column(length = 500)
+    var description: String? = null
+
     var cardCount: Int? = null
 
     fun isCompleted(): Boolean = deckId != null
