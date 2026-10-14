@@ -9,6 +9,12 @@ import org.springframework.data.repository.query.Param
 
 interface DeckRepository : JpaRepository<Deck, Long> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select d from Deck d where d.id = :id")
+    fun lockById(
+        id: Long,
+    ): Deck?
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select d from Deck d where d.id = :id and d.deletedAt is null")
     fun lockByIdAndDeletedAtIsNull(
         id: Long,

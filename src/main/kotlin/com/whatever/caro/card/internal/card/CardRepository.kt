@@ -1,6 +1,8 @@
 package com.whatever.caro.card.internal.card
 
+import jakarta.persistence.LockModeType
 import org.springframework.data.jpa.repository.JpaRepository
+import org.springframework.data.jpa.repository.Lock
 import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
 
@@ -49,18 +51,41 @@ interface CardRepository : JpaRepository<Card, Long> {
         id: Long,
     ): Long
 
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query(
         """
-            select distinct c.note.id from Card c
-            where c.note.id in :referencedNoteIds
-            and c.deletedAt IS NULL
+        select c from Card c
+        where c.note.id in :referencedNoteIds
+            and c.deletedAt is null
             and c.id not in :deletingCardIds
+        order by c.id
         """,
     )
-    fun findSurvivorNoteIdsByNoteIdInExcludingCards(
+    fun lockSurvivingCardsByNoteIdInExcludingCards(
         referencedNoteIds: Collection<Long>,
         deletingCardIds: Collection<Long>,
+    ): List<Card>
+
+    @Query("select distinct c.deck.id from Card c where c.id in :ids")
+    fun findDeckIdsByCardIdIn(
+        ids: Collection<Long>,
     ): List<Long>
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query(
+        """
+        select c from Card c
+            join fetch c.note
+        where c.id in :ids
+            and c.userId = :userId
+            and c.deletedAt is null
+        order by c.id
+        """,
+    )
+    fun lockAllActiveByIdInAndUserId(
+        ids: Collection<Long>,
+        userId: Long,
+    ): List<Card>
 
     @Query(
         """
