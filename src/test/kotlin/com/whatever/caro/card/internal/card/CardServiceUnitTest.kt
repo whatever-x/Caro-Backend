@@ -58,7 +58,7 @@ class CardServiceUnitTest :
             clock = clock,
         )
 
-        beforeEach {
+        beforeTest {
             clearMocks(
                 cardRepository,
                 noteRepository,
@@ -222,6 +222,44 @@ class CardServiceUnitTest :
                 result.items shouldHaveSize 4
                 verify { deckRepository.increaseCardCount(deckId, 4) }
                 result.items.map { it.cardId } shouldContainExactlyInAnyOrder listOf(300L, 301L, 302L, 303L)
+            }
+
+            it("여러 카드 생성 시 저장된 cardId 목록으로 CardsCreatedEvent를 한 번만 발행한다") {
+                val userId = 1L
+                val deckId = 10L
+                val noteTypeId = 1L
+                val deck = newDeck(id = deckId, userId = userId)
+                val noteType = newNoteType(id = noteTypeId)
+                val template = newTemplate(id = 100L, noteType = noteType, requiredFields = listOf("front", "back"))
+                val dto = CreateCardsDto(
+                    deckId = deckId,
+                    items = (1..3).map {
+                        CreateCardItemDto(noteTypeId = noteTypeId, fields = mapOf("front" to "f$it", "back" to "b$it"))
+                    },
+                )
+
+                every { deckRepository.findByIdAndDeletedAtIsNull(deckId) } returns deck
+                every { noteTypeRepository.findAllByIdIn(setOf(noteTypeId)) } returns listOf(noteType)
+                every { cardTemplateRepository.findAllByNoteTypeIdIn(setOf(noteTypeId)) } returns listOf(template)
+                every { noteRepository.saveAll(any<Iterable<Note>>()) } answers {
+                    val saved = firstArg<Iterable<Note>>().toList()
+                    saved.forEachIndexed { i, note -> setId(note, (200 + i).toLong()) }
+                    saved
+                }
+                every { cardRepository.saveAll(any<Iterable<Card>>()) } answers {
+                    val saved = firstArg<Iterable<Card>>().toList()
+                    saved.forEachIndexed { i, card -> setId(card, (300 + i).toLong()) }
+                    saved
+                }
+
+                cardService.createCards(userId, dto)
+
+                verify(exactly = 1) { eventPublisher.publishEvent(any<Any>()) }
+                verify {
+                    eventPublisher.publishEvent(
+                        CardsCreatedEvent(cardIds = listOf(300L, 301L, 302L), deckId = deckId, userId = userId),
+                    )
+                }
             }
 
             it("덱이 없으면 DeckNotFoundException 을 던진다") {
