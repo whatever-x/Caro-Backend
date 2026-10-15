@@ -24,7 +24,11 @@ fun CreateCardsRequest.toDto(
     deckId: Long,
 ) = CreateCardsDto(
     deckId = deckId,
-    items = items.map {
-        CreateCardItemDto(noteTypeId = it.cardType.noteTypeId, fields = it.fields)
-    },
+    items = items.map { it.toDto() },
 )
+
+fun CreateCardItem.toDto() =
+    CreateCardItemDto(
+        noteTypeId = cardType.noteTypeId,
+        fields = fields,
+    )

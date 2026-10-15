@@ -14,13 +14,18 @@ import com.whatever.caro.study.internal.studysession.StudySessionRepository
 import io.kotest.core.spec.style.DescribeSpec
 import io.kotest.inspectors.forAll
 import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
+import io.kotest.matchers.collections.shouldHaveSize
+import io.kotest.matchers.comparables.shouldBeGreaterThan
 import io.kotest.matchers.ints.shouldBeLessThan
 import io.kotest.matchers.shouldBe
 import org.awaitility.Awaitility.await
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.context.annotation.Import
 import org.springframework.data.repository.findByIdOrNull
+import org.springframework.jdbc.core.JdbcTemplate
+import org.springframework.jdbc.core.queryForList
 import org.springframework.transaction.support.TransactionTemplate
+import org.springframework.util.ClassUtils
 import java.math.BigDecimal
 import java.time.Clock
 import java.time.Instant
@@ -36,9 +41,13 @@ class CardLearningStateEventListenerTest(
     private val cardLearningStateRepository: CardLearningStateRepository,
     private val studySessionRepository: StudySessionRepository,
     private val clock: Clock,
+    private val jdbcTemplate: JdbcTemplate,
 ) : DescribeSpec({
 
     val kstZoneId = ZoneId.of("Asia/Seoul")
+
+    // event_publication 필드의 `SERIALIZED_EVENT` 기본 상한값은 4000자이며, card id가 8자리에 600개일 때 직렬화 값이 그 이상이 된다.
+    val manyLongCardIds = (10_000_000L until 10_000_600L).toList()
 
     fun createCls(
         cardId: Long,
@@ -93,6 +102,28 @@ class CardLearningStateEventListenerTest(
                 reviewCardsGoal = reviewCardsGoal,
             ),
         )
+
+    fun listenerIdFor(
+        eventType: Class<*>,
+    ): String {
+        val method = CardLearningStateEventListener::class.java.declaredMethods
+            .single { it.parameterTypes.contentEquals(arrayOf(eventType)) }
+        return ClassUtils.getQualifiedMethodName(method) +
+            method.parameterTypes.joinToString(separator = ",", prefix = "(", postfix = ")") { it.name }
+    }
+
+    fun archivedEventLengths(
+        listenerId: String,
+        deckId: Long,
+    ): List<Long> =
+        jdbcTemplate.queryForList<Long>(
+            """
+            SELECT LENGTH(serialized_event) FROM event_publication_archive
+            WHERE listener_id = ? AND JSON_EXTRACT(serialized_event, '$.deckId') = ?
+            """.trimIndent(),
+            listenerId,
+            deckId,
+        ).filterNotNull()
 
     afterTest {
         studySessionRepository.deleteAllInBatch()
@@ -204,6 +235,22 @@ class CardLearningStateEventListenerTest(
                     cardIds = listOf(1L, 2L),
                 )
                 activeStates.map { it.cardId } shouldContainExactlyInAnyOrder listOf(2L)
+            }
+        }
+
+        it("직렬화 값이 4,000자를 넘는 CardsCreatedEvent도 처리되고 발행 기록이 archive 테이블로 옮겨진다") {
+            val deckId = 9_201L
+            transactionTemplate.execute {
+                publisher.publishEvent(
+                    CardsCreatedEvent(cardIds = manyLongCardIds, deckId = deckId, userId = 1L),
+                )
+            }
+
+            val listenerId = listenerIdFor(CardsCreatedEvent::class.java)
+            await().atMost(10, TimeUnit.SECONDS).untilAsserted {
+                val lengths = archivedEventLengths(listenerId, deckId)
+                lengths shouldHaveSize 1
+                lengths.single() shouldBeGreaterThan 4000L
             }
         }
     }
@@ -358,6 +405,29 @@ class CardLearningStateEventListenerTest(
 
             val savedCls = cardLearningStateRepository.findByIdOrNull(cls.id)!!
             savedCls.deletedAt shouldBe null
+        }
+
+        it("직렬화 값이 4,000자를 넘는 CardsDeletedEvent도 처리되고 발행 기록이 archive 테이블로 옮겨진다") {
+            val deckId = 9_202L
+            transactionTemplate.execute {
+                publisher.publishEvent(
+                    CardsDeletedEvent(
+                        deckId = deckId,
+                        deletedCount = manyLongCardIds.size,
+                        userId = 1L,
+                        deletedCardIds = manyLongCardIds.toSet(),
+                        deletedAt = Instant.now(clock),
+                        clientTimezone = kstZoneId,
+                    ),
+                )
+            }
+
+            val listenerId = listenerIdFor(CardsDeletedEvent::class.java)
+            await().atMost(10, TimeUnit.SECONDS).untilAsserted {
+                val lengths = archivedEventLengths(listenerId, deckId)
+                lengths shouldHaveSize 1
+                lengths.single() shouldBeGreaterThan 4000L
+            }
         }
     }
 })

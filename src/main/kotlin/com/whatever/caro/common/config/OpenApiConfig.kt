@@ -106,6 +106,14 @@ class OpenApiConfig {
             .build()
 
     @Bean
+    fun apiGroupV1Point1(): GroupedOpenApi =
+        GroupedOpenApi.builder()
+            .group("version-1.1")
+            .displayName("API version 1.1")
+            .addOpenApiMethodFilter(versionMethodFilter("1.1"))
+            .build()
+
+    @Bean
     fun apiGroupV2(): GroupedOpenApi =
         GroupedOpenApi.builder()
             .group("version-2")
