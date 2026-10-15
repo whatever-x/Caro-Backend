@@ -13,8 +13,18 @@
   시드가 없는 DB에서는 카드 생성이 `NoteTypeNotFoundException`(404)으로 실패하고, `DeckPresetEventListener`는 preset 1이 없으면 예외 없이 끝나 새 덱에 프리셋이 연결되지 않는다.
 - 프리셋이 없는 덱이 있을 수 있다고 전제하고 코드를 짠다. `DeckPresetEventListener`가 `DeckCreatedEvent`를 커밋 뒤 비동기로 받아 연결하므로 그 전까지 `decks.deck_preset_id`는 NULL이다.
   `DeckRepository.findAllByIdInWithPreset`은 inner join이라 프리셋이 없는 덱을 결과에서 제외하고, `DeckPresetService.getLatestDeckPresetByUser`는 그 덱에 `DeckPresetNotFoundException`(404)을 던진다.
-- 카드를 만들거나 지우는 `CardService.createCards`·`deleteCard`는 같은 트랜잭션에서 `DeckRepository.increaseCardCount`/`decreaseCardCount`를 부른다. 탈퇴 purge는 덱까지 hard delete 하므로 예외다.
+- 카드를 만들거나 지우는 `CardService.createCards`·`createCardChunk`·`deleteCard`는 같은 트랜잭션에서 `DeckRepository.increaseCardCount`/`decreaseCardCount`를 부른다. 탈퇴 purge는 덱까지 hard delete 하므로 예외다.
   `decks.card_count`는 비정규화 값이고 `chk_deck_card_count`(`card_count >= 0`)가 정의돼 있다. 증가를 빠뜨리면 이후 삭제에서 값이 음수가 돼 UPDATE가 CHECK 위반으로 실패하고 삭제 요청이 롤백되며, 감소를 빠뜨리면 카드 수가 실제보다 큰 값으로 유지된다.
+- 카드 생성 이벤트는 `CardsCreatedEvent`(1.0 `createCards`)와 `CardChunkCreatedEvent`(1.1 `createCardChunk`) 두 가지다. 카드 생성에 반응하는 새 리스너는 둘 다 구독한다.
+  하나만 구독하면 다른 버전으로 만든 카드에는 반응하지 않고, 이를 잡는 테스트는 없다.
+- 1.1 노트·카드는 `NoteBulkRepositoryImpl`·`CardBulkRepositoryImpl`이 다중 행 INSERT로 저장하고, 드라이버가 `LAST_INSERT_ID`와 증가값으로 계산한 키를 그대로 쓴다.
+  `notes`·`cards`에 `INSERT … SELECT`, `LOAD DATA`, `REPLACE`, `ON DUPLICATE KEY UPDATE`, id를 지정한 INSERT 같은 bulk·mixed-mode insert를 추가하지 않고, 세션의 `auto_increment_increment`를 바꾸지 않는다. 운영 데이터 보정도 같다.
+  어기면 1.1 묶음 저장의 키가 실제 id와 어긋나 카드가 다른 노트에 연결될 수 있고, 런타임 검사는 이를 잡지 못한다. 저장소의 코드와 마이그레이션만 `NotesCardsInsertGuardTest`가 텍스트로 검사한다.
+- `notes`·`cards`에 컬럼을 더하면 두 Impl의 컬럼 목록과 바인딩을 같이 고친다.
+  빠뜨리면 DEFAULT 없는 NOT NULL 컬럼은 1.1 저장이 실패해 `NoteBulkRepositoryTest`·`CardBulkRepositoryTest`가 실패한다.
+  DEFAULT 있는 컬럼은 엔티티 값 대신 DEFAULT로 저장되고, 엔티티 기본값과 다르면 `NoteBulkRepositoryTest`의 "JPA로 저장한 노트와 id, created_at, updated_at을 뺀 모든 컬럼이 같다"와 `CardBulkRepositoryTest`의 "JPA로 저장한 카드와 id, note_id, created_at, updated_at을 뺀 모든 컬럼이 같다"가 실패한다.
+- `createCardChunk`의 트랜잭션 timeout은 처리 마커 TTL(`app.idempotency.processing-ttl`)보다 10초 이상 짧게 유지한다(`CardServiceTest`).
+  TTL이 지나면 같은 키의 재시도가 다시 처리되므로, 그보다 늦게 커밋되는 트랜잭션이 있으면 같은 묶음이 두 번 저장된다.
 - 카드 삭제(`DELETE /cards`, `CardService.deleteCard`)는 삭제 후 참조하는 카드가 없는 note도 함께 soft delete 한다. 한 note를 여러 카드가 참조할 수 있으므로, 같은 note를 참조하는 다른 카드가 남아 있으면 note를 지우지 않는다(`CardServiceUnitTest`).
 - `card_templates.required_fields`를 바꿀 때는 그 템플릿을 쓰는 기존 카드와 클라이언트 요청까지 확인한다.
   응답은 `required_fields`에 있는 키만 담고 note에 값이 없는 키는 빈 문자열로 채운다. 생성 요청에 `required_fields`의 키가 없거나 수정 요청에 `required_fields`에 없는 키가 있으면 `CardInvalidFieldsException`이다.
