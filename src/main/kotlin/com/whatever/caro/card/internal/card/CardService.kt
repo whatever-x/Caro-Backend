@@ -2,6 +2,7 @@ package com.whatever.caro.card.internal.card
 
 import com.whatever.caro.card.api.card.CardApi
 import com.whatever.caro.card.api.card.CardContentDto
+import com.whatever.caro.card.api.event.CardChunkCreatedEvent
 import com.whatever.caro.card.api.event.CardsCreatedEvent
 import com.whatever.caro.card.api.event.CardsDeletedEvent
 import com.whatever.caro.card.internal.card.dto.create.CreateCardsDto
@@ -19,6 +20,7 @@ import com.whatever.caro.card.internal.deck.DeckRepository
 import com.whatever.caro.card.internal.deck.exception.DeckForbiddenException
 import com.whatever.caro.card.internal.deck.exception.DeckNotFoundException
 import com.whatever.caro.card.internal.note.Note
+import com.whatever.caro.card.internal.note.NoteInsertRow
 import com.whatever.caro.card.internal.note.NoteRepository
 import com.whatever.caro.card.internal.notetype.CardTemplate
 import com.whatever.caro.card.internal.notetype.CardTemplateRepository
@@ -104,6 +106,41 @@ class CardService(
         )
         eventPublisher.publishEvent(
             CardsCreatedEvent(cardIds = createdCards.map { it.cardId }, deckId = deck.id, userId = userId),
+        )
+
+        return CreateCardsResponseDto(items = createdCards)
+    }
+
+    @Transactional(timeout = CARD_CHUNK_TRANSACTION_TIMEOUT_SECONDS)
+    fun createCardChunk(
+        userId: Long,
+        dto: CreateCardsDto,
+    ): CreateCardsResponseDto {
+        val target = validateCreation(userId = userId, dto = dto)
+        val now = Instant.now(clock)
+        val templatesPerItem = dto.items.map { target.templatesByNoteType.getValue(it.noteTypeId) }
+
+        val noteIds = noteRepository.insertAll(
+            rows = dto.items.map { NoteInsertRow(userId = userId, fields = it.fields) },
+            now = now,
+        )
+        val cardRows = templatesPerItem.zip(noteIds).flatMap { (templates, noteId) ->
+            templates.map { template ->
+                CardInsertRow(cardTemplateId = template.id, noteId = noteId, deckId = target.deck.id, userId = userId)
+            }
+        }
+        val cardFields = dto.items.zip(templatesPerItem).flatMap { (item, templates) ->
+            templates.map { template -> projectFields(template, item.fields) }
+        }
+        val createdCards = cardRepository.insertAll(rows = cardRows, now = now)
+            .zip(cardFields) { cardId, fields -> CardResponseDto(cardId = cardId, fields = fields) }
+
+        deckRepository.increaseCardCount(
+            deckId = target.deck.id,
+            amount = createdCards.size,
+        )
+        eventPublisher.publishEvent(
+            CardChunkCreatedEvent(cardIds = createdCards.map { it.cardId }, deckId = target.deck.id, userId = userId),
         )
 
         return CreateCardsResponseDto(items = createdCards)
@@ -296,4 +333,9 @@ class CardService(
         val deck: Deck,
         val templatesByNoteType: Map<Long, List<CardTemplate>>,
     )
+
+    companion object {
+        // 처리 마커 TTL보다 짧아야 TTL 만료 뒤 같은 키 재시도와 이 트랜잭션이 함께 커밋되지 않는다.
+        private const val CARD_CHUNK_TRANSACTION_TIMEOUT_SECONDS = 20
+    }
 }

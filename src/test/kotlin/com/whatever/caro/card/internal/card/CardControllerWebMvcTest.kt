@@ -102,6 +102,15 @@ class CardControllerWebMvcTest : DescribeSpec() {
         given(cardService.createCards(1L, createCardsDto(count))).willReturn(result)
     }
 
+    fun stubCreateCardChunk(
+        count: Int,
+    ) {
+        val result = CreateCardsResponseDto(
+            items = (1..count).map { CardResponseDto(cardId = it.toLong(), fields = mapOf("front" to "f$it", "back" to "b$it")) },
+        )
+        given(cardService.createCardChunk(1L, createCardsDto(count))).willReturn(result)
+    }
+
     init {
         beforeEach {
             SecurityContextHolder.getContext().authentication =
@@ -176,7 +185,7 @@ class CardControllerWebMvcTest : DescribeSpec() {
 
             listOf(API_VERSION, API_VERSION_1_1).forEach { version ->
                 it("API-Version $version 요청은 서비스가 반환한 카드 목록의 내용과 순서를 유지한다") {
-                    stubCreateCards(3)
+                    if (version == API_VERSION_1_1) stubCreateCardChunk(3) else stubCreateCards(3)
                     val mvc = if (version == API_VERSION_1_1) {
                         idempotentMockMvc()
                     } else {
@@ -200,7 +209,11 @@ class CardControllerWebMvcTest : DescribeSpec() {
                         jsonPath("$.success") { value(true) }
                         jsonPath("$.data.items") { value(equalTo(expectedItems)) }
                     }
-                    verify(cardService).createCards(1L, createCardsDto(3))
+                    if (version == API_VERSION_1_1) {
+                        verify(cardService).createCardChunk(1L, createCardsDto(3))
+                    } else {
+                        verify(cardService).createCards(1L, createCardsDto(3))
+                    }
                 }
             }
         }
@@ -208,7 +221,7 @@ class CardControllerWebMvcTest : DescribeSpec() {
         describe("POST /decks/{deckId}/cards - cardType 기본값") {
             listOf(API_VERSION, API_VERSION_1_1).forEach { version ->
                 it("API-Version $version 요청은 cardType을 생략하면 noteTypeId 1L로 서비스를 호출한다") {
-                    stubCreateCards(1)
+                    if (version == API_VERSION_1_1) stubCreateCardChunk(1) else stubCreateCards(1)
                     val mvc = if (version == API_VERSION_1_1) idempotentMockMvc() else mockMvc
 
                     mvc.post("/decks/1/cards") {
@@ -223,7 +236,11 @@ class CardControllerWebMvcTest : DescribeSpec() {
                         jsonPath("$.success") { value(true) }
                         jsonPath("$.data.items[0].cardId") { value(1) }
                     }
-                    verify(cardService).createCards(1L, createCardsDto(1))
+                    if (version == API_VERSION_1_1) {
+                        verify(cardService).createCardChunk(1L, createCardsDto(1))
+                    } else {
+                        verify(cardService).createCards(1L, createCardsDto(1))
+                    }
                 }
             }
         }
@@ -257,7 +274,7 @@ class CardControllerWebMvcTest : DescribeSpec() {
 
         describe("POST /decks/{deckId}/cards v1.1 - items 개수 검증") {
             it("1,000개는 생성한다") {
-                stubCreateCards(CHUNK_MAX_ITEMS)
+                stubCreateCardChunk(CHUNK_MAX_ITEMS)
 
                 idempotentMockMvc().post("/decks/1/cards") {
                     header(API_VERSION_HEADER, API_VERSION_1_1)
@@ -268,7 +285,7 @@ class CardControllerWebMvcTest : DescribeSpec() {
                     status { isOk() }
                     jsonPath("$.data.items.length()") { value(CHUNK_MAX_ITEMS) }
                 }
-                verify(cardService).createCards(1L, createCardsDto(CHUNK_MAX_ITEMS))
+                verify(cardService).createCardChunk(1L, createCardsDto(CHUNK_MAX_ITEMS))
             }
 
             it("1,001개면 items 필드 오류와 함께 400 C001을 반환하고 카드를 만들지 않는다") {

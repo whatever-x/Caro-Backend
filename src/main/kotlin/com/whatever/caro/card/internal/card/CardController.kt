@@ -81,7 +81,7 @@ class CardController(
         @Valid @RequestBody request: CreateCardChunkRequest,
     ): ResponseEntity<ApiResponse<CreateCardsResponse>> {
         val userId = SecurityUtil.currentUser().userId
-        val result = cardService.createCards(userId = userId, dto = request.toDto(deckId)).toResponse()
+        val result = cardService.createCardChunk(userId = userId, dto = request.toDto(deckId)).toResponse()
         return ResponseEntity.ok(ApiResponse.ok(result))
     }
 
