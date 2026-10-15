@@ -1,5 +1,6 @@
 package com.whatever.caro.card.internal.card
 
+import com.whatever.caro.card.api.event.CardChunkCreatedEvent
 import com.whatever.caro.card.api.event.CardsCreatedEvent
 import com.whatever.caro.card.api.event.CardsDeletedEvent
 import com.whatever.caro.card.internal.card.dto.create.CreateCardItemDto
@@ -14,6 +15,7 @@ import com.whatever.caro.card.internal.deck.DeckRepository
 import com.whatever.caro.card.internal.deck.exception.DeckForbiddenException
 import com.whatever.caro.card.internal.deck.exception.DeckNotFoundException
 import com.whatever.caro.card.internal.note.Note
+import com.whatever.caro.card.internal.note.NoteInsertRow
 import com.whatever.caro.card.internal.note.NoteRepository
 import com.whatever.caro.card.internal.notetype.CardTemplate
 import com.whatever.caro.card.internal.notetype.CardTemplateRepository
@@ -29,9 +31,11 @@ import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.shouldBe
+import io.mockk.CapturingSlot
 import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.slot
 import io.mockk.verify
 import java.time.Clock
 import java.time.Instant
@@ -345,6 +349,141 @@ class CardServiceUnitTest :
                         ),
                     )
                 }
+            }
+        }
+
+        describe("createCardChunk") {
+            val userId = 1L
+            val deckId = 10L
+            val noteTypeId = 1L
+            val noteType = newNoteType(id = noteTypeId)
+            val frontTpl = newTemplate(id = 100L, noteType = noteType, requiredFields = listOf("front"), position = 0)
+            val backTpl = newTemplate(id = 101L, noteType = noteType, requiredFields = listOf("back"), position = 1)
+            val dto = CreateCardsDto(
+                deckId = deckId,
+                items = listOf(
+                    CreateCardItemDto(noteTypeId = noteTypeId, fields = mapOf("front" to "f1", "back" to "b1")),
+                    CreateCardItemDto(noteTypeId = noteTypeId, fields = mapOf("front" to "f2", "back" to "b2")),
+                ),
+            )
+
+            fun stubChunkSave(): CapturingSlot<List<CardInsertRow>> {
+                every { deckRepository.findByIdAndDeletedAtIsNull(deckId) } returns newDeck(id = deckId, userId = userId)
+                every { noteTypeRepository.findAllByIdIn(setOf(noteTypeId)) } returns listOf(noteType)
+                every { cardTemplateRepository.findAllByNoteTypeIdIn(setOf(noteTypeId)) } returns listOf(frontTpl, backTpl)
+                every { noteRepository.insertAll(any(), any()) } answers {
+                    firstArg<List<NoteInsertRow>>().indices.map { 200L + it }
+                }
+                val cardRows = slot<List<CardInsertRow>>()
+                every { cardRepository.insertAll(capture(cardRows), any()) } answers {
+                    firstArg<List<CardInsertRow>>().indices.map { 300L + it }
+                }
+                return cardRows
+            }
+
+            it("카드 행은 노트 키마다 템플릿 순서대로 짝지어지고 응답은 그 순서의 cardId와 템플릿 필드를 담는다") {
+                val cardRows = stubChunkSave()
+
+                val result = cardService.createCardChunk(userId, dto)
+
+                verify {
+                    noteRepository.insertAll(
+                        listOf(
+                            NoteInsertRow(userId = userId, fields = mapOf("front" to "f1", "back" to "b1")),
+                            NoteInsertRow(userId = userId, fields = mapOf("front" to "f2", "back" to "b2")),
+                        ),
+                        any(),
+                    )
+                }
+                cardRows.captured shouldBe listOf(
+                    CardInsertRow(cardTemplateId = 100L, noteId = 200L, deckId = deckId, userId = userId),
+                    CardInsertRow(cardTemplateId = 101L, noteId = 200L, deckId = deckId, userId = userId),
+                    CardInsertRow(cardTemplateId = 100L, noteId = 201L, deckId = deckId, userId = userId),
+                    CardInsertRow(cardTemplateId = 101L, noteId = 201L, deckId = deckId, userId = userId),
+                )
+                result.items.map { it.cardId } shouldBe listOf(300L, 301L, 302L, 303L)
+                result.items.map { it.fields } shouldBe listOf(
+                    mapOf("front" to "f1"),
+                    mapOf("back" to "b1"),
+                    mapOf("front" to "f2"),
+                    mapOf("back" to "b2"),
+                )
+            }
+
+            it("템플릿 1개 유형과 2개 유형이 섞이면 카드 행은 항목 순서대로 각 노트 키에 그 유형의 템플릿 수만큼 짝지어진다") {
+                val cardRows = stubChunkSave()
+                val singleNoteTypeId = 2L
+                val singleNoteType = newNoteType(id = singleNoteTypeId, name = "Single")
+                val singleTpl = newTemplate(id = 102L, noteType = singleNoteType, requiredFields = listOf("front"))
+                every { noteTypeRepository.findAllByIdIn(setOf(singleNoteTypeId, noteTypeId)) } returns listOf(noteType, singleNoteType)
+                every { cardTemplateRepository.findAllByNoteTypeIdIn(setOf(noteTypeId, singleNoteTypeId)) } returns
+                    listOf(frontTpl, backTpl, singleTpl)
+                val mixed = dto.copy(
+                    items = listOf(
+                        CreateCardItemDto(noteTypeId = singleNoteTypeId, fields = mapOf("front" to "s1")),
+                        CreateCardItemDto(noteTypeId = noteTypeId, fields = mapOf("front" to "f1", "back" to "b1")),
+                        CreateCardItemDto(noteTypeId = singleNoteTypeId, fields = mapOf("front" to "s2")),
+                    ),
+                )
+
+                val result = cardService.createCardChunk(userId, mixed)
+
+                cardRows.captured shouldBe listOf(
+                    CardInsertRow(cardTemplateId = 102L, noteId = 200L, deckId = deckId, userId = userId),
+                    CardInsertRow(cardTemplateId = 100L, noteId = 201L, deckId = deckId, userId = userId),
+                    CardInsertRow(cardTemplateId = 101L, noteId = 201L, deckId = deckId, userId = userId),
+                    CardInsertRow(cardTemplateId = 102L, noteId = 202L, deckId = deckId, userId = userId),
+                )
+                result.items.map { it.cardId } shouldBe listOf(300L, 301L, 302L, 303L)
+                result.items.map { it.fields } shouldBe listOf(
+                    mapOf("front" to "s1"),
+                    mapOf("front" to "f1"),
+                    mapOf("back" to "b1"),
+                    mapOf("front" to "s2"),
+                )
+            }
+
+            it("노트와 카드 저장에 Clock의 같은 현재 시각을 넘긴다") {
+                stubChunkSave()
+
+                cardService.createCardChunk(userId, dto)
+
+                verify { noteRepository.insertAll(any(), fixedNow) }
+                verify { cardRepository.insertAll(any(), fixedNow) }
+            }
+
+            it("응답 순서의 cardId로 CardChunkCreatedEvent를 한 번만 발행하고 CardsCreatedEvent는 발행하지 않는다") {
+                stubChunkSave()
+
+                cardService.createCardChunk(userId, dto)
+
+                verify(exactly = 1) { eventPublisher.publishEvent(any<Any>()) }
+                verify {
+                    eventPublisher.publishEvent(
+                        CardChunkCreatedEvent(cardIds = listOf(300L, 301L, 302L, 303L), deckId = deckId, userId = userId),
+                    )
+                }
+            }
+
+            it("card_count를 생성한 카드 수만큼 늘린다") {
+                stubChunkSave()
+
+                cardService.createCardChunk(userId, dto)
+
+                verify(exactly = 1) { deckRepository.increaseCardCount(deckId, 4) }
+            }
+
+            it("검증이 실패하면 노트와 카드를 저장하지 않고 이벤트도 발행하지 않는다") {
+                stubChunkSave()
+                val invalid = dto.copy(items = listOf(CreateCardItemDto(noteTypeId = noteTypeId, fields = mapOf("front" to "f1"))))
+
+                shouldThrow<CardInvalidFieldsException> {
+                    cardService.createCardChunk(userId, invalid)
+                }
+
+                verify(exactly = 0) { noteRepository.insertAll(any(), any()) }
+                verify(exactly = 0) { cardRepository.insertAll(any(), any()) }
+                verify(exactly = 0) { eventPublisher.publishEvent(any<Any>()) }
             }
         }
 

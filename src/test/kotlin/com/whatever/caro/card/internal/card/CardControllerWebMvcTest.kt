@@ -18,6 +18,7 @@ import org.mockito.ArgumentMatchers.anyString
 import org.mockito.BDDMockito.given
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoInteractions
+import org.mockito.Mockito.verifyNoMoreInteractions
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.security.autoconfigure.SecurityAutoConfiguration
 import org.springframework.boot.security.autoconfigure.UserDetailsServiceAutoConfiguration
@@ -329,6 +330,37 @@ class CardControllerWebMvcTest : DescribeSpec() {
                     jsonPath("$.error.code") { value(INVALID_INPUT_CODE) }
                 }
                 verifyNoInteractions(cardService)
+            }
+        }
+
+        describe("POST /decks/{deckId}/cards - 버전별 서비스 진입점") {
+            it("API-Version 1.0 요청은 createCards만 부르고 createCardChunk를 부르지 않는다") {
+                stubCreateCards(1)
+
+                mockMvc.post("/decks/1/cards") {
+                    header(API_VERSION_HEADER, API_VERSION)
+                    contentType = MediaType.APPLICATION_JSON
+                    content = itemsJson(1)
+                }.andExpect {
+                    status { isOk() }
+                }
+                verify(cardService).createCards(1L, createCardsDto(1))
+                verifyNoMoreInteractions(cardService)
+            }
+
+            it("API-Version 1.1 요청은 createCardChunk만 부르고 createCards를 부르지 않는다") {
+                stubCreateCardChunk(1)
+
+                idempotentMockMvc().post("/decks/1/cards") {
+                    header(API_VERSION_HEADER, API_VERSION_1_1)
+                    header(IDEMPOTENCY_KEY_HEADER, UUID.randomUUID().toString())
+                    contentType = MediaType.APPLICATION_JSON
+                    content = itemsJson(1)
+                }.andExpect {
+                    status { isOk() }
+                }
+                verify(cardService).createCardChunk(1L, createCardsDto(1))
+                verifyNoMoreInteractions(cardService)
             }
         }
 

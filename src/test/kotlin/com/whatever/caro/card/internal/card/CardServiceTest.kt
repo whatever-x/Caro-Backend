@@ -3,6 +3,7 @@ package com.whatever.caro.card.internal.card
 import com.whatever.caro.CaroModuleTest
 import com.whatever.caro.card.internal.card.dto.create.CreateCardItemDto
 import com.whatever.caro.card.internal.card.dto.create.CreateCardsDto
+import com.whatever.caro.card.internal.card.dto.read.CardResponseDto
 import com.whatever.caro.card.internal.card.exception.CardInvalidFieldsException
 import com.whatever.caro.card.internal.deck.Deck
 import com.whatever.caro.card.internal.deck.DeckRepository
@@ -19,9 +20,20 @@ import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldBeStrictlyIncreasing
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.comparables.shouldBeGreaterThan
+import io.kotest.matchers.comparables.shouldBeLessThanOrEqualTo
+import io.kotest.matchers.longs.shouldBeLessThanOrEqual
 import io.kotest.matchers.shouldBe
+import org.springframework.core.annotation.AnnotatedElementUtils
+import org.springframework.core.env.Environment
 import org.springframework.dao.DataAccessException
+import org.springframework.jdbc.core.JdbcTemplate
+import org.springframework.transaction.TransactionDefinition
+import org.springframework.transaction.annotation.Transactional
+import org.springframework.transaction.support.TransactionTemplate
+import java.time.Duration
 import java.time.Instant
+import kotlin.reflect.KFunction
+import kotlin.reflect.jvm.javaMethod
 
 @CaroModuleTest(extraIncludes = ["common"])
 class CardServiceTest(
@@ -31,11 +43,17 @@ class CardServiceTest(
     private val deckRepository: DeckRepository,
     private val noteTypeRepository: NoteTypeRepository,
     private val cardTemplateRepository: CardTemplateRepository,
+    private val transactionTemplate: TransactionTemplate,
+    private val jdbcTemplate: JdbcTemplate,
+    private val environment: Environment,
 ) : DescribeSpec({
 
     val userId = 1L
     lateinit var noteType: NoteType
     lateinit var cardTemplate: CardTemplate
+    lateinit var pairNoteType: NoteType
+    lateinit var pairFrontTemplate: CardTemplate
+    lateinit var pairBackTemplate: CardTemplate
 
     beforeSpec {
         noteType = noteTypeRepository.save(NoteType(name = "card-service-test"))
@@ -46,6 +64,13 @@ class CardServiceTest(
                 template = mapOf("front" to "front", "back" to "back"),
                 position = 0,
             ),
+        )
+        pairNoteType = noteTypeRepository.save(NoteType(name = "card-service-test-pair"))
+        pairFrontTemplate = cardTemplateRepository.save(
+            CardTemplate(noteType = pairNoteType, requiredFields = listOf("front"), template = mapOf("front" to "front"), position = 0),
+        )
+        pairBackTemplate = cardTemplateRepository.save(
+            CardTemplate(noteType = pairNoteType, requiredFields = listOf("back"), template = mapOf("back" to "back"), position = 1),
         )
     }
 
@@ -63,6 +88,8 @@ class CardServiceTest(
     afterSpec {
         cardTemplateRepository.delete(cardTemplate)
         noteTypeRepository.delete(noteType)
+        cardTemplateRepository.deleteAll(listOf(pairFrontTemplate, pairBackTemplate))
+        noteTypeRepository.delete(pairNoteType)
     }
 
     fun saveDeck(
@@ -88,6 +115,32 @@ class CardServiceTest(
     fun storedCardCountOf(
         deckId: Long,
     ): Int = deckRepository.findById(deckId).get().cardCount
+
+    fun sessionStatus(): Map<String, Long> =
+        jdbcTemplate.query("SHOW SESSION STATUS WHERE Variable_name IN ('Com_insert', 'Questions')") { rs, _ ->
+            rs.getString("Variable_name") to rs.getLong("Value")
+        }.toMap()
+
+    // 서비스가 바깥 트랜잭션에 참여해 같은 커넥션을 쓰므로, 전후 세션 카운터의 차이에 서비스 본문의 문장만 들어간다.
+    fun statementsDuring(
+        block: () -> Unit,
+    ): Map<String, Long> =
+        transactionTemplate.execute {
+            val before = sessionStatus()
+            block()
+            val after = sessionStatus()
+            after.mapValues { (name, value) -> value - before.getValue(name) }
+        }!!
+
+    // 앞뒤 각 500자 한글·한자로, 문자마다 UTF-8 3바이트라 실제 바이트가 추정치에 가장 가까운 1.1 요청 본문이다.
+    fun worstCaseChunk(
+        deckId: Long,
+    ) = CreateCardsDto(
+        deckId = deckId,
+        items = (1..1000).map {
+            CreateCardItemDto(noteTypeId = noteType.id, fields = mapOf("front" to "$it " + "가漢".repeat(250), "back" to "漢가".repeat(250)))
+        },
+    )
 
     describe("createCards") {
         it("1,000개를 한 번에 만들면 노트와 카드가 1,000개씩 저장되고 card_count가 1,000 늘어난다") {
@@ -217,6 +270,157 @@ class CardServiceTest(
             }
 
             noteRepository.count() shouldBe 0L
+        }
+    }
+
+    describe("createCardChunk") {
+        it("1,000개를 요청 순서대로 저장하고 cardId가 증가하며 card_count가 1,000 늘어난다") {
+            val deck = saveDeck()
+            val fronts = (1..1000).map { "단어$it" }
+
+            val result = cardService.createCardChunk(userId = userId, dto = chunk(deckId = deck.id, fronts = fronts))
+
+            result.items.map { it.fields.getValue("front") } shouldBe fronts
+            result.items.map { it.cardId }.shouldBeStrictlyIncreasing()
+            frontTextsInCardIdOrder(deckId = deck.id) shouldBe fronts
+            noteRepository.count() shouldBe 1000L
+            storedCardCountOf(deckId = deck.id) shouldBe 1000
+        }
+
+        it("1,000개의 노트와 카드를 INSERT 두 문장으로 저장하고 전체 문장 수는 10 이하다") {
+            val deck = saveDeck()
+            val fronts = (1..1000).map { "단어$it" }
+
+            val statements = statementsDuring {
+                cardService.createCardChunk(userId = userId, dto = chunk(deckId = deck.id, fronts = fronts))
+            }
+
+            statements.getValue("Com_insert") shouldBe 2L
+            statements.getValue("Questions") shouldBeLessThanOrEqual 10L
+            frontTextsInCardIdOrder(deckId = deck.id) shouldBe fronts
+        }
+
+        it("앞뒤 각 500자 한글·한자 본문 1,000개는 INSERT 3문장 이하로 요청 순서와 내용 그대로 저장된다") {
+            val deck = saveDeck()
+            val dto = worstCaseChunk(deckId = deck.id)
+
+            val statements = statementsDuring { cardService.createCardChunk(userId = userId, dto = dto) }
+
+            statements.getValue("Com_insert") shouldBeLessThanOrEqual 3L
+            cardRepository.findAllByDeckIdAndDeletedAtIsNullWithNoteAndTemplate(deck.id)
+                .sortedBy { it.id }
+                .map { it.note.fields } shouldBe dto.items.map { it.fields }
+        }
+
+        it("노트 유형에 템플릿이 2개면 노트마다 카드 2장이 같은 note_id로 저장되고 응답 순서는 항목 순서 다음 템플릿 순서다") {
+            val deck = saveDeck()
+            val dto = CreateCardsDto(
+                deckId = deck.id,
+                items = (1..2).map {
+                    CreateCardItemDto(noteTypeId = pairNoteType.id, fields = mapOf("front" to "f$it", "back" to "b$it"))
+                },
+            )
+
+            val result = cardService.createCardChunk(userId = userId, dto = dto)
+
+            result.items.map { it.fields } shouldBe listOf(
+                mapOf("front" to "f1"),
+                mapOf("back" to "b1"),
+                mapOf("front" to "f2"),
+                mapOf("back" to "b2"),
+            )
+            val stored = cardRepository.findAllByDeckIdAndDeletedAtIsNullWithNoteAndTemplate(deck.id).sortedBy { it.id }
+            stored.map { it.id } shouldBe result.items.map { it.cardId }
+            stored.map { it.cardTemplate.id } shouldBe listOf(pairFrontTemplate.id, pairBackTemplate.id, pairFrontTemplate.id, pairBackTemplate.id)
+            stored.map { it.note.fields.getValue("front") } shouldBe listOf("f1", "f1", "f2", "f2")
+            stored.map { it.note.id }.distinct() shouldHaveSize 2
+            stored[0].note.id shouldBe stored[1].note.id
+        }
+
+        it("템플릿 2개 유형 600개는 카드 1,200행도 한 문장이라 INSERT가 2문장이고 note_id 짝과 응답 순서가 요청 순서와 같다") {
+            val deck = saveDeck()
+            val dto = CreateCardsDto(
+                deckId = deck.id,
+                items = (1..600).map {
+                    CreateCardItemDto(noteTypeId = pairNoteType.id, fields = mapOf("front" to "f$it", "back" to "b$it"))
+                },
+            )
+            val responses = mutableListOf<CardResponseDto>()
+
+            val statements = statementsDuring { responses += cardService.createCardChunk(userId = userId, dto = dto).items }
+
+            statements.getValue("Com_insert") shouldBe 2L
+            responses.map { it.fields } shouldBe (1..600).flatMap { listOf(mapOf("front" to "f$it"), mapOf("back" to "b$it")) }
+            val stored = cardRepository.findAllByDeckIdAndDeletedAtIsNullWithNoteAndTemplate(deck.id).sortedBy { it.id }
+            stored.map { it.id } shouldBe responses.map { it.cardId }
+            stored.map { it.cardTemplate.id } shouldBe List(600) { listOf(pairFrontTemplate.id, pairBackTemplate.id) }.flatten()
+            val noteIds = stored.map { it.note.id }.distinct()
+            noteIds shouldHaveSize 600
+            stored.map { it.note.id } shouldBe noteIds.flatMap { listOf(it, it) }
+            stored.map { it.note.fields } shouldBe dto.items.flatMap { listOf(it.fields, it.fields) }
+        }
+
+        it("노트와 카드의 created_at과 updated_at은 모두 같은 값이고 deleted_at은 NULL이다") {
+            val deck = saveDeck()
+
+            cardService.createCardChunk(userId = userId, dto = chunk(deckId = deck.id, fronts = listOf("a", "b", "c")))
+
+            val times = jdbcTemplate.queryForList(
+                """
+                SELECT created_at, updated_at, deleted_at FROM notes WHERE user_id = ?
+                UNION ALL
+                SELECT created_at, updated_at, deleted_at FROM cards WHERE deck_id = ?
+                """.trimIndent(),
+                userId,
+                deck.id,
+            )
+            times shouldHaveSize 6
+            times.map { it["created_at"] }.distinct() shouldHaveSize 1
+            times.map { it["updated_at"] }.distinct() shouldBe times.map { it["created_at"] }.distinct()
+            times.map { it["deleted_at"] }.distinct() shouldBe listOf(null)
+        }
+
+        it("카드 저장 뒤 card_count 갱신이 실패하면 같은 요청의 노트와 카드도 저장되지 않는다") {
+            val deck = saveDeck(cardCount = Int.MAX_VALUE)
+
+            shouldThrow<DataAccessException> {
+                cardService.createCardChunk(userId = userId, dto = chunk(deckId = deck.id, fronts = listOf("a", "b", "c")))
+            }
+
+            cardRepository.findAllByDeckIdAndDeletedAtIsNullWithNoteAndTemplate(deck.id).shouldBeEmpty()
+            noteRepository.count() shouldBe 0L
+            storedCardCountOf(deck.id) shouldBe Int.MAX_VALUE
+        }
+
+        it("필수 필드가 빠진 항목이 하나라도 있으면 CardInvalidFieldsException을 던지고 아무것도 저장하지 않는다") {
+            val deck = saveDeck()
+            val dto = CreateCardsDto(
+                deckId = deck.id,
+                items = listOf(
+                    CreateCardItemDto(noteTypeId = noteType.id, fields = mapOf("front" to "a", "back" to "b")),
+                    CreateCardItemDto(noteTypeId = noteType.id, fields = mapOf("front" to "c")),
+                ),
+            )
+
+            shouldThrow<CardInvalidFieldsException> {
+                cardService.createCardChunk(userId = userId, dto = dto)
+            }
+
+            noteRepository.count() shouldBe 0L
+            storedCardCountOf(deck.id) shouldBe 0
+        }
+
+        it("트랜잭션 timeout은 처리 마커 TTL보다 10초 이상 짧고 createCards에는 timeout이 없다") {
+            fun transactionalOf(
+                method: KFunction<*>,
+            ): Transactional = AnnotatedElementUtils.findMergedAnnotation(method.javaMethod!!, Transactional::class.java)!!
+            val processingTtl = environment.getRequiredProperty("app.idempotency.processing-ttl", Duration::class.java)
+
+            val chunkTimeout = Duration.ofSeconds(transactionalOf(CardService::createCardChunk).timeout.toLong())
+
+            chunkTimeout shouldBeGreaterThan Duration.ZERO
+            chunkTimeout.plusSeconds(10) shouldBeLessThanOrEqualTo processingTtl
+            transactionalOf(CardService::createCards).timeout shouldBe TransactionDefinition.TIMEOUT_DEFAULT
         }
     }
 })
