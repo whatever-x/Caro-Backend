@@ -14,6 +14,7 @@ import com.whatever.caro.card.internal.card.dto.update.UpdateCardResponseDto
 import com.whatever.caro.card.internal.card.exception.CardForbiddenException
 import com.whatever.caro.card.internal.card.exception.CardInvalidFieldsException
 import com.whatever.caro.card.internal.card.exception.CardNotFoundException
+import com.whatever.caro.card.internal.deck.Deck
 import com.whatever.caro.card.internal.deck.DeckRepository
 import com.whatever.caro.card.internal.deck.exception.DeckForbiddenException
 import com.whatever.caro.card.internal.deck.exception.DeckNotFoundException
@@ -71,34 +72,9 @@ class CardService(
         userId: Long,
         dto: CreateCardsDto,
     ): CreateCardsResponseDto {
-        val deck = deckRepository.findByIdAndDeletedAtIsNull(dto.deckId)
-            ?: throw DeckNotFoundException("deckId=${dto.deckId} 덱을 찾을 수 없습니다")
-
-        if (deck.userId != userId) {
-            throw DeckForbiddenException("deckId=${dto.deckId} 에 대한 접근 권한이 없습니다")
-        }
-
-        // 여러개중에 하나라도 터지면, 실패시키는게 맞을까 ???
-        val noteTypeIds = dto.items.map { it.noteTypeId }.toSet()
-        val foundNoteTypeIds = noteTypeRepository.findAllByIdIn(noteTypeIds).map { it.id }.toSet()
-        val missingNoteTypeIds = noteTypeIds - foundNoteTypeIds
-        if (missingNoteTypeIds.isNotEmpty()) {
-            throw NoteTypeNotFoundException("noteTypeId=$missingNoteTypeIds 노트 타입을 찾을 수 없습니다")
-        }
-
-        val templatesByNoteType = cardTemplateRepository.findAllByNoteTypeIdIn(foundNoteTypeIds)
-            .groupBy { it.noteType.id }
-
-        dto.items.forEach { item ->
-            val cardTemplates = templatesByNoteType[item.noteTypeId]
-                ?: throw NoteTypeNoTemplatesException("noteTypeId=${item.noteTypeId} 에 카드 템플릿이 없습니다")
-            cardTemplates.forEach { template ->
-                val missing = template.requiredFields - item.fields.keys
-                if (missing.isNotEmpty()) {
-                    throw CardInvalidFieldsException("필수 필드가 누락되었습니다: $missing")
-                }
-            }
-        }
+        val target = validateCreation(userId = userId, dto = dto)
+        val deck = target.deck
+        val templatesByNoteType = target.templatesByNoteType
 
         val notes = noteRepository.saveAll(
             dto.items.map { Note(userId = userId, fields = it.fields) },
@@ -131,6 +107,42 @@ class CardService(
         )
 
         return CreateCardsResponseDto(items = createdCards)
+    }
+
+    private fun validateCreation(
+        userId: Long,
+        dto: CreateCardsDto,
+    ): CardCreationTarget {
+        val deck = deckRepository.findByIdAndDeletedAtIsNull(dto.deckId)
+            ?: throw DeckNotFoundException("deckId=${dto.deckId} 덱을 찾을 수 없습니다")
+
+        if (deck.userId != userId) {
+            throw DeckForbiddenException("deckId=${dto.deckId} 에 대한 접근 권한이 없습니다")
+        }
+
+        // 여러개중에 하나라도 터지면, 실패시키는게 맞을까 ???
+        val noteTypeIds = dto.items.map { it.noteTypeId }.toSet()
+        val foundNoteTypeIds = noteTypeRepository.findAllByIdIn(noteTypeIds).map { it.id }.toSet()
+        val missingNoteTypeIds = noteTypeIds - foundNoteTypeIds
+        if (missingNoteTypeIds.isNotEmpty()) {
+            throw NoteTypeNotFoundException("noteTypeId=$missingNoteTypeIds 노트 타입을 찾을 수 없습니다")
+        }
+
+        val templatesByNoteType = cardTemplateRepository.findAllByNoteTypeIdIn(foundNoteTypeIds)
+            .groupBy { it.noteType.id }
+
+        dto.items.forEach { item ->
+            val cardTemplates = templatesByNoteType[item.noteTypeId]
+                ?: throw NoteTypeNoTemplatesException("noteTypeId=${item.noteTypeId} 에 카드 템플릿이 없습니다")
+            cardTemplates.forEach { template ->
+                val missing = template.requiredFields - item.fields.keys
+                if (missing.isNotEmpty()) {
+                    throw CardInvalidFieldsException("필수 필드가 누락되었습니다: $missing")
+                }
+            }
+        }
+
+        return CardCreationTarget(deck = deck, templatesByNoteType = templatesByNoteType)
     }
 
     @Transactional(readOnly = true)
@@ -279,4 +291,9 @@ class CardService(
         template: CardTemplate,
         noteFields: Map<String, String>,
     ): Map<String, String> = template.requiredFields.associateWith { key -> noteFields[key].orEmpty() }
+
+    private class CardCreationTarget(
+        val deck: Deck,
+        val templatesByNoteType: Map<Long, List<CardTemplate>>,
+    )
 }
