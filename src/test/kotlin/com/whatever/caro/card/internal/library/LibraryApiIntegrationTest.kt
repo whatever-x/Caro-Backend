@@ -5,6 +5,9 @@ import com.whatever.caro.auth.internal.token.JwtTokenProvider
 import com.whatever.caro.user.UserStatus
 import io.kotest.core.spec.style.DescribeSpec
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
+import io.kotest.matchers.string.shouldNotBeBlank
+import io.kotest.matchers.string.shouldNotContain
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
@@ -13,6 +16,7 @@ import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.get
 import org.springframework.test.web.servlet.post
+import tools.jackson.databind.json.JsonMapper
 import java.util.UUID
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
@@ -24,6 +28,7 @@ class LibraryApiIntegrationTest(
     @Autowired sources: LibraryDeckRepository,
     @Autowired cards: LibraryCardRepository,
     @Autowired jdbc: JdbcTemplate,
+    @Autowired jsonMapper: JsonMapper,
 ) : DescribeSpec({
     var fixtureId = 0L
     fun auth(
@@ -99,17 +104,48 @@ class LibraryApiIntegrationTest(
             header("Authorization", "Bearer $token")
         }.andExpect { status { isOk() } }
     }
+    it("게시되지 않은 제공 덱 오류는 요청 언어로 응답한다") {
+        val source = fixture()
+        jdbc.update("UPDATE library_decks SET published = FALSE WHERE id = ?", source.id)
+        val token = auth()
+        val messages = listOf("en", "ko").map { language ->
+            val response = mockMvc.get("/library/decks/" + source.id) {
+                header("API-Version", "1.0")
+                header("Authorization", "Bearer $token")
+                header("Accept-Language", language)
+            }.andExpect {
+                status { isNotFound() }
+                jsonPath("$.error.code") { value("L001") }
+            }.andReturn().response.contentAsString
+            jsonMapper.readTree(response).get("error").get("message").asString()
+        }
+        messages.forEach { message ->
+            message.shouldNotBeBlank()
+            message shouldNotContain "{"
+        }
+        messages[0] shouldNotBe messages[1]
+    }
     it("201장의 제공 덱 추가는 422 L002이고 개인 덱을 만들지 않는다") {
         val source = fixture()
         cards.saveAll((1..200).map { LibraryCard(source.id, "word$it", "meaning$it", it) })
-        mockMvc.post("/library/decks/" + source.id + "/copies") {
-            header("API-Version", "1.0")
-            header("Authorization", "Bearer " + auth())
-            header("Idempotency-Key", UUID.randomUUID().toString())
-        }.andExpect {
-            status { isUnprocessableEntity() }
-            jsonPath("$.error.code") { value("L002") }
+        val token = auth()
+        val messages = listOf("en", "ko").map { language ->
+            val response = mockMvc.post("/library/decks/" + source.id + "/copies") {
+                header("API-Version", "1.0")
+                header("Authorization", "Bearer $token")
+                header("Idempotency-Key", UUID.randomUUID().toString())
+                header("Accept-Language", language)
+            }.andExpect {
+                status { isUnprocessableEntity() }
+                jsonPath("$.error.code") { value("L002") }
+            }.andReturn().response.contentAsString
+            jsonMapper.readTree(response).get("error").get("message").asString()
         }
+        messages.forEach { message ->
+            message.shouldNotBeBlank()
+            message shouldNotContain "{"
+        }
+        messages[0] shouldNotBe messages[1]
         jdbc.queryForObject("SELECT COUNT(*) FROM decks WHERE user_id = 8250", Long::class.java) shouldBe 0
     }
 

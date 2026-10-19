@@ -214,28 +214,15 @@ gradle-app.setting
 ### Env Patch ###
 .env*
 
-### Moltbot Agent Context ###
-# These files are for local AI agent context and should not be committed
-AGENTS.md
-SOUL.md
-USER.md
-TOOLS.md
-IDENTITY.md
-HEARTBEAT.md
-BOOTSTRAP.md
-MEMORY.md
-memory/
-skills/
-.clawdhub/
-
 ### Claude Code Context ###
 # Claude Code project-specific instructions - keep local
-CLAUDE.md
 CLAUDE.local.md
 .claudeignore
 .codemap/
-.claude/
-.serena/
+.claude/*
+!.claude/settings.json
+!.claude/skills/
+!.claude/rules/
 
 ### OMC Agent State ###
 # AI agent state files - keep local

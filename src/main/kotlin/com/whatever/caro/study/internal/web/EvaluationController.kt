@@ -67,5 +67,5 @@ private fun EvaluatedCardRequest.toDto(): EvaluatedCardDto =
     EvaluatedCardDto(
         cardId = cardId,
         rating = rating,
-        timeMs = timeMs.takeIf { it > 600_000 } ?: 600_000,
+        timeMs = timeMs.takeIf { it <= 600_000 } ?: 600_000,
     )

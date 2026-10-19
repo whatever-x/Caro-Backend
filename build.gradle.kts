@@ -52,6 +52,7 @@ dependencies {
     implementation("org.flywaydb:flyway-mysql")
 
     implementation("com.google.api-client:google-api-client:2.9.0")
+    implementation("com.google.firebase:firebase-admin:9.4.3")
     implementation("org.springframework.security:spring-security-oauth2-jose")
     implementation("io.jsonwebtoken:jjwt-api:0.13.0")
     runtimeOnly("io.jsonwebtoken:jjwt-impl:0.13.0")
@@ -208,6 +209,10 @@ springBoot {
             additional.put("buildTime", providers.gradleProperty("buildTime").orElse("unknown"))
         }
     }
+}
+
+tasks.processResources {
+    exclude("**/AGENTS.md")
 }
 
 tasks.bootJar {
