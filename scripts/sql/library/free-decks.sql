@@ -1,9 +1,11 @@
 -- 무료 제공 덱: 영어 기초 100장, 토익 업무 어휘 200장, 세계 수도 100장.
--- English: NGSL 1.2 / TSL 1.2, CC BY-SA 4.0. See content/README.md for attribution.
+-- English: NGSL 1.2 / TSL 1.2, CC BY-SA 4.0. Attribution and changes: content/english-basic-100.json, content/toeic-work-200.json.
 -- Capitals: Wikidata, 2026-10-01 Korean labels and current P36 statements, CC0 1.0.
 -- Requires MySQL 8.4 and card V4 migration. Run in a fresh mysql batch session without --force.
 -- First registration publishes the decks. Replay preserves existing metadata and publication state.
 -- Kept outside Flyway so deployment does not publish or overwrite content automatically.
+-- 실행: mysql --default-character-set=utf8mb4 --database=<DB> < scripts/sql/library/free-decks.sql
+-- 덱 이름을 바꿨다면 재실행 전에 기존 ID를 확인한다. 콘텐츠 수정 시 TSV, JSON과 이 SQL을 함께 맞춘다.
 
 SET NAMES utf8mb4;
 SET @library_seed_lock = GET_LOCK('caro.library.free-decks.v1', 30);
