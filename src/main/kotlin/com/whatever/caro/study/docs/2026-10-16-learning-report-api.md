@@ -2,13 +2,13 @@
 
 ## 정본과 상태
 
-이슈: https://github.com/whatever-x/Caro-Planning/issues/6
+이슈: https://github.com/whatever-x/Caro-Workflow/issues/12 (기존 Caro-Planning#6에서 이전)
 
 공통 정책·필드 타입·UI·수용 조건의 정본은 [Caro-Mobile 기능 스펙](https://github.com/whatever-x/Caro-Mobile/blob/docs/learning-report-spec/feature/learning/docs/2026-10-16-learning-report-spec.md)다. 이 문서는 서버 조회 책임·집계·삭제·검증 상세만 보완한다. 공유 브랜치는 Mobile `docs/learning-report-spec`, Backend `chore/learning-report-spec`이며 API 계약은 구현 전 제안이다.
 
 상태는 Step3 초안이다. 삭제 이력 처리는 사용자 답변 대기다. 제품 코드·DDL·기존 평가 동작은 변경하지 않았다.
 
-기준: Backend `develop` `8b9b8418e7e7518860ba8e6a96fd7de7a748cbcb`, Mobile `develop` `36397502b3086acb10883c0c2c2fdbe817c5894f`, Planning `main` `43fb43c6f3fa9e60e7263bd81fcd8831187a1a20`. 2026-10-16에 원격 HEAD와 일치를 확인했다. workflow 미러는 FE·BE가 뒤처져 직접 원본 clone을 사용했다.
+기준: Backend `develop` `8b9b8418e7e7518860ba8e6a96fd7de7a748cbcb`, Mobile `develop` `36397502b3086acb10883c0c2c2fdbe817c5894f`, Planning `main` `43fb43c6f3fa9e60e7263bd81fcd8831187a1a20`. 2026-10-16에 원격 HEAD와 일치를 확인했고 2026-10-20 재개 때도 같은 SHA다. workflow 미러는 FE·BE가 뒤처져 직접 원본 clone을 사용했다.
 
 ## 기존 저장·조회와 차이
 
@@ -20,6 +20,7 @@
 - `CardLearningStateEventListener`는 카드 삭제 시 학습 상태를 soft delete하고 목표를 재계산한다. 평가 로그를 지우는 경로는 이 리스너에서 확인되지 않았다.
 - `CardApi.getCardsByIds(userId,ids)`는 활성 카드의 현재 내용을 일괄 반환한다. 삭제/누락 카드는 결과에 없으므로 리포트에서는 placeholder로 처리할 수 있다. 누락만으로 타인 카드의 삭제 여부를 추론하지 않고 본인 로그의 cardId만 조회한다.
 - `DeckApi.getDecks/getDeck`은 활성 덱만 다룬다. 삭제 덱의 이름을 조회하기 위해 기존 API의 필터를 느슨하게 하지 않는다.
+- `DeckService.deleteDeck`은 덱만 soft delete하고 `DeckDeletedEvent` listener가 없다(`card/AGENTS.md`). 삭제 덱의 카드는 `deletedAt`이 null로 남으므로 `getCardsByIds`가 그 본문을 반환할 수 있다. 리포트는 카드 활성 여부와 별도로 덱 삭제 여부를 확인해 본문을 숨겨야 한다.
 - `StudyApi.deleteAllByUserId`와 withdrawal의 파기 순서는 유지한다. 새 로그 사본·통계 테이블을 만들지 않아 파기 경로를 추가할 필요가 없는 안이다.
 
 ## 모듈 경계
@@ -62,7 +63,7 @@
 삭제 후 이력 유지안의 상세다. 사용자 답변이 다르면 이 절과 공통 AC08을 수정한다.
 
 - 현재 소유의 활성 덱은 허용한다. 삭제 덱은 현재 사용자의 DAILY 세션으로 해당 deckId의 이력이 확인될 때만 허용한다. 타인의 현재 덱 또는 다른 사용자의 로그로 허용하면 안 된다.
-- 카드 이력은 본인 로그+요청 deckId에 해당하는 cardId만 허용한다. 식별자만으로 카드 본문을 읽지 않는다. 삭제 카드 이름/본문은 null, `deleted=true`다.
+- 카드 이력은 본인 로그+요청 deckId에 해당하는 cardId만 허용한다. 식별자만으로 카드 본문을 읽지 않는다. 삭제 카드와 삭제 덱에 속한 카드의 본문은 null, `deleted=true`다. 덱 삭제 여부는 card 모듈의 사용자 제한 공개 API로 같은 페이지의 deckId를 일괄 확인한다.
 - 기존 덱 API는 타인 덱에 403, 없는 덱에 404를 줄 수 있다. 새 리포트 API는 접근 불가·존재 안 함을 404로 통일하는 제안이며 기존 계약을 수정하지 않는다.
 - 덱이나 카드 수정 시 현재 내용만 바뀐다. 과거 수치와 평가 자체는 바꾸지 않는다. ‘평가 당시 내용’ 표시는 하지 않는다.
 - 카드 삭제로 목표 카운터가 재계산돼도 과거 보고 수치는 ReviewLog 기준으로 유지한다. 이름/본문의 복구 경로를 만들지 않는다.
@@ -83,4 +84,4 @@
 - 집계 불변식: ratings 합계=평가 횟수, buckets 합계=기간 평가 횟수, 전체 선택에서 누적>=선택 범위(같은 시점), 개별 덱 응답에 lifetime 없음, 고유 카드<=평가 횟수.
 - `./gradlew test --tests "com.whatever.caro.study.*" --tests "com.whatever.caro.bff.*" --tests "com.whatever.caro.ModularityTests"` 및 `make check`. migration/엔티티 변경 시 withdrawal 테스트도 포함.
 
-이번 단계에서 실행한 것은 원본/참조 확인과 설계 문서·시안 검사다. 위 제품 테스트·EXPLAIN·부하 검증은 실행하지 않았다.
+이번 단계에서 실행한 것은 원본/참조 확인과 설계 문서·시안 검사다. 2026-10-20 재개 때 카드·덱 삭제 경로를 다시 읽고 삭제 덱 카드의 본문 숨김을 추가했다. 위 제품 테스트·EXPLAIN·부하 검증은 실행하지 않았다.
