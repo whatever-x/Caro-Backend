@@ -6,7 +6,7 @@
 
 공통 정책·필드 타입·UI·수용 조건의 정본은 [Caro-Mobile 기능 스펙](https://github.com/whatever-x/Caro-Mobile/blob/docs/learning-report-spec/feature/learning/docs/2026-10-16-learning-report-spec.md)다. 이 문서는 서버 조회 책임·집계·삭제·검증 상세만 보완한다. 공유 브랜치는 Mobile `docs/learning-report-spec`, Backend `chore/learning-report-spec`이며 API 계약은 구현 전 제안이다.
 
-상태는 Step3 초안이다. 삭제 이력 처리는 사용자 답변 대기다. 제품 코드·DDL·기존 평가 동작은 변경하지 않았다.
+상태는 Step3 설계다. 삭제 이력 처리는 A안(유지·이름/본문 숨김)으로 확정했다(담당자(RyuSw-cs)가 2026-10-20 Agent 대화에서 A안 확정). 제품 코드·DDL·기존 평가 동작은 변경하지 않았다.
 
 기준: Backend `develop` `8b9b8418e7e7518860ba8e6a96fd7de7a748cbcb`, Mobile `develop` `36397502b3086acb10883c0c2c2fdbe817c5894f`, Planning `main` `43fb43c6f3fa9e60e7263bd81fcd8831187a1a20`. 2026-10-16에 원격 HEAD와 일치를 확인했고 2026-10-20 재개 때도 같은 SHA다. workflow 미러는 FE·BE가 뒤처져 직접 원본 clone을 사용했다.
 
@@ -45,7 +45,7 @@
 
 ## 집계 원칙과 쿼리
 
-기본 조건은 `rl.userId=:userId AND ss.userId=:userId AND rl.studySession=ss AND ss.studyType=DAILY`, deckId 지정 시 `ss.deckId=:deckId`, 날짜 지정 시 `ss.sessionDate BETWEEN :from AND :to`다. 삭제 정책이 유지로 확정되면 현재 카드/덱의 deletedAt을 집계 조건에 넣지 않는다. 모든 세션·카드를 읽어 Kotlin에서 집계하는 구현을 피한다.
+기본 조건은 `rl.userId=:userId AND ss.userId=:userId AND rl.studySession=ss AND ss.studyType=DAILY`, deckId 지정 시 `ss.deckId=:deckId`, 날짜 지정 시 `ss.sessionDate BETWEEN :from AND :to`다. 삭제 정책이 유지(A안)로 확정됐으므로 현재 카드/덱의 deletedAt을 집계 조건에 넣지 않는다. 모든 세션·카드를 읽어 Kotlin에서 집계하는 구현을 피한다.
 
 - Counts는 DB count/count distinct/조건부 합계로 구한다. `count(distinct rl.cardId)`와 `count(distinct ss.sessionDate)`는 선택 범위 전체에서 계산한다.
 - 버킷은 DB의 학습일별 집계를 기반으로 최대 선택 구간만 반환하고, 긴 기간은 주/월 집계로 축약한다. 모든 원시 로그를 앱으로 보내지 않는다.
@@ -60,7 +60,7 @@
 
 ## 삭제·수정·권한
 
-삭제 후 이력 유지안의 상세다. 사용자 답변이 다르면 이 절과 공통 AC08을 수정한다.
+확정된 A안(삭제 후 이력 유지)의 상세다. 공통 AC08과 함께 검증한다.
 
 - 현재 소유의 활성 덱은 허용한다. 삭제 덱은 현재 사용자의 DAILY 세션으로 해당 deckId의 이력이 확인될 때만 허용한다. 타인의 현재 덱 또는 다른 사용자의 로그로 허용하면 안 된다.
 - 카드 이력은 본인 로그+요청 deckId에 해당하는 cardId만 허용한다. 식별자만으로 카드 본문을 읽지 않는다. 삭제 카드와 삭제 덱에 속한 카드의 본문은 null, `deleted=true`다. 덱 삭제 여부는 card 모듈의 사용자 제한 공개 API로 같은 페이지의 deckId를 일괄 확인한다.
