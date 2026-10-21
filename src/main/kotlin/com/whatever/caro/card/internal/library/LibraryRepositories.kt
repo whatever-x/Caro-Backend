@@ -9,6 +9,12 @@ import org.springframework.data.jpa.repository.Query
 interface LibraryDeckRepository : JpaRepository<LibraryDeck, Long> {
     fun findByPublishedTrueOrderBySortOrderAscIdAsc(): List<LibraryDeck>
 
+    @Lock(LockModeType.PESSIMISTIC_READ)
+    @Query("select d from LibraryDeck d where d.id = :id")
+    fun lockForCopy(
+        id: Long,
+    ): LibraryDeck?
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select d from LibraryDeck d where d.id = :id")
     fun lockById(

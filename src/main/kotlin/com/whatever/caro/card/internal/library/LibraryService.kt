@@ -10,8 +10,14 @@ import com.whatever.caro.card.internal.deck.dto.create.CreateDeckDto
 import com.whatever.caro.card.internal.deck.service.DeckService
 import com.whatever.caro.common.exception.BusinessException
 import com.whatever.caro.common.response.CommonErrorCode
+import org.hibernate.exception.ConstraintViolationException
+import org.springframework.dao.DataIntegrityViolationException
+import org.springframework.dao.PessimisticLockingFailureException
 import org.springframework.stereotype.Service
+import org.springframework.transaction.PlatformTransactionManager
+import org.springframework.transaction.TransactionDefinition
 import org.springframework.transaction.annotation.Transactional
+import org.springframework.transaction.support.TransactionTemplate
 import java.util.UUID
 
 @Service
@@ -23,7 +29,13 @@ class LibraryService(
     private val cardService: CardService,
     private val deckRepository: DeckRepository,
     private val deckPresetRepository: DeckPresetRepository,
+    transactionManager: PlatformTransactionManager,
 ) {
+    // A failed attempt must finish rolling back before a new transaction and snapshot are used.
+    private val copyTransaction = TransactionTemplate(transactionManager).apply {
+        propagationBehavior = TransactionDefinition.PROPAGATION_REQUIRES_NEW
+    }
+
     @Transactional(readOnly = true)
     fun list(): List<LibraryDeckResponse> {
         val availableDecks = libraryDeckRepository.findByPublishedTrueOrderBySortOrderAscIdAsc()
@@ -74,8 +86,36 @@ class LibraryService(
         )
     }
 
-    @Transactional
     fun copy(
+        userId: Long,
+        libraryDeckId: Long,
+        requestKey: UUID,
+    ): LibraryCopyResponse {
+        var failures = 0
+        while (true) {
+            try {
+                return requireNotNull(copyTransaction.execute { copyInTransaction(userId, libraryDeckId, requestKey) })
+            } catch (exception: RuntimeException) {
+                if (++failures >= MAX_COPY_ATTEMPTS || !isRetryableCopyFailure(exception)) {
+                    throw exception
+                }
+            }
+        }
+    }
+
+    private fun isRetryableCopyFailure(
+        exception: RuntimeException,
+    ): Boolean {
+        if (exception is PessimisticLockingFailureException) {
+            return true
+        }
+        return exception is DataIntegrityViolationException &&
+            generateSequence<Throwable>(exception) { it.cause }
+                .filterIsInstance<ConstraintViolationException>()
+                .any { it.constraintName?.substringAfterLast('.') == "uk_library_copy_ordinal" }
+    }
+
+    private fun copyInTransaction(
         userId: Long,
         libraryDeckId: Long,
         requestKey: UUID,
@@ -90,8 +130,8 @@ class LibraryService(
             return receipt.toCopyResponse()
         }
 
-        // Lock the source before numbering and reading cards. Publishing tools must use this same lock.
-        val source = libraryDeckRepository.lockById(libraryDeckId)
+        // Publishers must take an exclusive source lock; concurrent copies share this read lock.
+        val source = libraryDeckRepository.lockForCopy(libraryDeckId)
             ?: throw BusinessException(LibraryErrorCode.UNAVAILABLE)
         if (!source.published) {
             throw BusinessException(LibraryErrorCode.UNAVAILABLE)
@@ -130,6 +170,10 @@ class LibraryService(
         // CardService clears the persistence context after updating the card count.
         copyReceiptRepository.save(receipt)
         return receipt.toCopyResponse()
+    }
+
+    companion object {
+        private const val MAX_COPY_ATTEMPTS = 3
     }
 
     internal fun personalName(

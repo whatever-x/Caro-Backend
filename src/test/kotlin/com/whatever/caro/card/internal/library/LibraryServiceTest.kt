@@ -4,6 +4,7 @@ import com.whatever.caro.CaroModuleTest
 import com.whatever.caro.card.internal.card.CardService
 import com.whatever.caro.card.internal.card.dto.create.CreateCardItemDto
 import com.whatever.caro.card.internal.card.dto.create.CreateCardsDto
+import com.whatever.caro.card.internal.deck.dto.create.CreateDeckDto
 import com.whatever.caro.card.internal.deck.dto.delete.DeleteDeckDto
 import com.whatever.caro.card.internal.deck.service.DeckService
 import com.whatever.caro.common.exception.BusinessException
@@ -12,9 +13,11 @@ import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.DescribeSpec
 import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.shouldBe
+import org.awaitility.Awaitility.await
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.transaction.PlatformTransactionManager
+import org.springframework.transaction.TransactionDefinition
 import org.springframework.transaction.support.TransactionTemplate
 import java.util.UUID
 import java.util.concurrent.CountDownLatch
@@ -149,16 +152,107 @@ class LibraryServiceTest(
         receipts.countByUserIdAndLibraryDeckIdAndDeckIdIsNotNull(8104, other.id) shouldBe 0
     }
 
-    it("카드 생성 중 실패하면 덱과 receipt가 함께 rollback된다") {
+    it("원본 덱에 공유 잠금이 있어도 서로 다른 사용자들이 복사할 수 있다") {
         val deck = fixture()
-        shouldThrow<BusinessException> {
+        val locked = CountDownLatch(1)
+        val release = CountDownLatch(1)
+        val pool = Executors.newFixedThreadPool(3)
+        val holder = pool.submit {
             tx.executeWithoutResult {
-                jdbc.update("""UPDATE card_templates SET required_fields = '["front","back","missing"]' WHERE id = 1""")
-                service.copy(8105, deck.id, UUID.randomUUID())
+                jdbc.queryForObject("SELECT id FROM library_decks WHERE id = ? FOR SHARE", Long::class.java, deck.id)
+                locked.countDown()
+                check(release.await(30, TimeUnit.SECONDS))
             }
         }
-        jdbc.queryForObject("SELECT COUNT(*) FROM decks WHERE user_id = 8105", Long::class.java) shouldBe 0
-        receipts.countByUserIdAndLibraryDeckIdAndDeckIdIsNotNull(8105, deck.id) shouldBe 0
+        val copies = mutableListOf<java.util.concurrent.Future<LibraryCopyResponse>>()
+        try {
+            check(locked.await(10, TimeUnit.SECONDS))
+            listOf(8108L, 8109L).forEach { userId ->
+                copies.add(pool.submit<LibraryCopyResponse> { service.copy(userId, deck.id, UUID.randomUUID()) })
+            }
+            copies.map { it.get(10, TimeUnit.SECONDS).name } shouldContainExactly listOf("토익 단어", "토익 단어")
+        } finally {
+            release.countDown()
+            holder.get(10, TimeUnit.SECONDS)
+            pool.shutdown()
+            check(pool.awaitTermination(30, TimeUnit.SECONDS))
+        }
+    }
+
+    it("ordinal이 충돌하면 첫 복사의 덱과 카드를 rollback하고 새 transaction에서 다음 번호로 복사한다") {
+        val deck = fixture()
+        val userId = 8110L
+        val existingDeck = personal.createDeck(userId, CreateDeckDto("경합 검증용", "기존 덱"))
+        val key = UUID.randomUUID()
+        val claimed = CountDownLatch(1)
+        val commit = CountDownLatch(1)
+        val pool = Executors.newFixedThreadPool(2)
+        val contender = pool.submit {
+            tx.executeWithoutResult {
+                jdbc.update(
+                    """
+                    INSERT INTO library_copy_receipts
+                        (user_id, request_key, library_deck_id, ordinal, deck_id, name, description, card_count, created_at, updated_at)
+                    VALUES (?, ?, ?, 1, ?, '경합 검증용', '기존 덱', 0, UTC_TIMESTAMP(6), UTC_TIMESTAMP(6))
+                    """.trimIndent(),
+                    userId,
+                    UUID.randomUUID().toString(),
+                    deck.id,
+                    existingDeck.id,
+                )
+                claimed.countDown()
+                check(commit.await(30, TimeUnit.SECONDS))
+            }
+        }
+        try {
+            check(claimed.await(10, TimeUnit.SECONDS))
+            val copy = pool.submit<LibraryCopyResponse> { service.copy(userId, deck.id, key) }
+            val dirtyRead = TransactionTemplate(transactionManager).apply {
+                isolationLevel = TransactionDefinition.ISOLATION_READ_UNCOMMITTED
+            }
+            await().atMost(10, TimeUnit.SECONDS).until {
+                dirtyRead.execute {
+                    jdbc.queryForObject(
+                        "SELECT COUNT(*) FROM decks WHERE user_id = ? AND name = ?",
+                        Long::class.java,
+                        userId,
+                        deck.name,
+                    )
+                } == 1L
+            }
+            commit.countDown()
+            contender.get(10, TimeUnit.SECONDS)
+            val result = copy.get(20, TimeUnit.SECONDS)
+            result.name shouldBe "토익 단어 (2)"
+            service.copy(userId, deck.id, key) shouldBe result
+            jdbc.queryForList(
+                "SELECT ordinal FROM library_copy_receipts WHERE user_id = ? ORDER BY ordinal",
+                Long::class.java,
+                userId,
+            ) shouldContainExactly listOf(1L, 2L)
+            jdbc.queryForObject("SELECT COUNT(*) FROM decks WHERE user_id = ?", Long::class.java, userId) shouldBe 2
+            jdbc.queryForObject("SELECT COUNT(*) FROM cards WHERE user_id = ?", Long::class.java, userId) shouldBe 2
+            jdbc.queryForObject("SELECT COUNT(*) FROM notes WHERE user_id = ?", Long::class.java, userId) shouldBe 2
+        } finally {
+            commit.countDown()
+            contender.get(10, TimeUnit.SECONDS)
+            pool.shutdown()
+            check(pool.awaitTermination(30, TimeUnit.SECONDS))
+        }
+    }
+
+    it("카드 생성 중 실패하면 덱과 receipt가 함께 rollback된다") {
+        val deck = fixture()
+        jdbc.update("""UPDATE card_templates SET required_fields = '["front","back","missing"]' WHERE id = 1""")
+        try {
+            shouldThrow<BusinessException> {
+                service.copy(8105, deck.id, UUID.randomUUID())
+            }
+            jdbc.queryForObject("SELECT COUNT(*) FROM decks WHERE user_id = 8105", Long::class.java) shouldBe 0
+            receipts.countByUserIdAndLibraryDeckIdAndDeckIdIsNotNull(8105, deck.id) shouldBe 0
+        } finally {
+            jdbc.update("""UPDATE card_templates SET required_fields = '["front","back"]' WHERE id = 1""")
+        }
         service.copy(8105, deck.id, UUID.randomUUID()).name shouldBe "토익 단어"
     }
 
