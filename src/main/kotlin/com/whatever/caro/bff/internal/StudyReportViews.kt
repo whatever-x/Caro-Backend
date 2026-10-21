@@ -40,7 +40,6 @@ data class ReportBucket(
 data class ReportSummaryView(
     val scope: ReportScope,
     val range: ReportRange,
-    val lifetime: StudyReportCountsDto?,
     val selected: StudyReportCountsDto,
     val buckets: List<ReportBucket>,
     val restDates: List<LocalDate>,

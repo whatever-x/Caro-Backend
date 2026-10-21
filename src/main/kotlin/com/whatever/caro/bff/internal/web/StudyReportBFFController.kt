@@ -64,7 +64,6 @@ class StudyReportBFFController(
         summary = "학습 리포트 요약 조회",
         description = """
         선택한 덱(생략하면 전체)과 기간의 평가 횟수, 학습한 카드 수, 학습일 수, 평가 분포와 차트 구간을 조회한다.
-        deckId를 생략한 경우에만 기간과 관계없는 전체 누적(lifetime)을 함께 준다.
         차트 구간은 31일 이하 DAY, 180일 이하 WEEK, 그보다 길면 MONTH다.
         지금 가진 덱이 아니고 본인 기록도 없는 deckId는 404(R003)다.
         $PERIOD_DESCRIPTION
@@ -216,7 +215,6 @@ private fun ReportSummaryView.toResponse(): StudyReportSummaryResponse =
     StudyReportSummaryResponse(
         scope = scope.toResponse(),
         range = range.toResponse(),
-        lifetime = lifetime?.toResponse(),
         selected = selected.toResponse(),
         buckets = buckets.map { it.toResponse() },
         restDates = restDates,

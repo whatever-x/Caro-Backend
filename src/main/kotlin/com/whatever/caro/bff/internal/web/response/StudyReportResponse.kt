@@ -1,6 +1,5 @@
 package com.whatever.caro.bff.internal.web.response
 
-import com.fasterxml.jackson.annotation.JsonInclude
 import com.whatever.caro.bff.internal.ReportBucketUnit
 import com.whatever.caro.study.Rating
 import com.whatever.caro.study.ReviewType
@@ -12,9 +11,6 @@ import java.time.LocalDate
 data class StudyReportSummaryResponse(
     val scope: ReportScopeResponse,
     val range: ReportRangeResponse,
-    @field:Schema(description = "전체 누적. 덱을 고르면(deckId 지정) 응답에 없다", nullable = true)
-    @get:JsonInclude(JsonInclude.Include.NON_NULL)
-    val lifetime: ReportCountsResponse?,
     val selected: ReportCountsResponse,
     @field:Schema(description = "범위 전체를 빈칸 없이 덮는 차트 구간. 평가가 없는 구간은 0")
     val buckets: List<ReportBucketResponse>,

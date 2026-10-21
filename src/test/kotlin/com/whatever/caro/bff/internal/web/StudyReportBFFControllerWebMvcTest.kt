@@ -78,16 +78,14 @@ class StudyReportBFFControllerWebMvcTest : DescribeSpec() {
         val end = LocalDate.parse("2026-10-21")
         val counts = StudyReportCountsDto(144, 96, 6, StudyReportRatingCountsDto(82, 38, 24))
 
-        fun summary(
-            lifetime: StudyReportCountsDto?,
-        ) = ReportSummaryView(
-            scope = ReportScope(null, null, false),
-            range = ReportRange(start, end, ReportBucketUnit.DAY),
-            lifetime = lifetime,
-            selected = counts,
-            buckets = emptyList(),
-            restDates = listOf(LocalDate.parse("2026-10-17")),
-        )
+        fun summary() =
+            ReportSummaryView(
+                scope = ReportScope(null, null, false),
+                range = ReportRange(start, end, ReportBucketUnit.DAY),
+                selected = counts,
+                buckets = emptyList(),
+                restDates = listOf(LocalDate.parse("2026-10-17")),
+            )
 
         beforeTest {
             SecurityContextHolder.getContext().authentication =
@@ -105,7 +103,7 @@ class StudyReportBFFControllerWebMvcTest : DescribeSpec() {
 
         describe("GET /study-reports/summary") {
             it("헤더의 시간대와 날짜를 서비스에 전달하고 ISO 날짜로 응답한다") {
-                given(studyReportBFFService.getSummary(fixedNow, kst, 1L, null, start, end)).willReturn(summary(counts))
+                given(studyReportBFFService.getSummary(fixedNow, kst, 1L, null, start, end)).willReturn(summary())
 
                 mockMvc.get("/study-reports/summary") {
                     header(API_VERSION_HEADER, API_VERSION)
@@ -116,7 +114,6 @@ class StudyReportBFFControllerWebMvcTest : DescribeSpec() {
                     status { isOk() }
                     jsonPath("$.data.range.startDate") { value("2026-10-15") }
                     jsonPath("$.data.range.bucketUnit") { value("DAY") }
-                    jsonPath("$.data.lifetime.reviewCount") { value(144) }
                     jsonPath("$.data.selected.ratings.again") { value(24) }
                     jsonPath("$.data.restDates[0]") { value("2026-10-17") }
                     jsonPath("$.data.scope.deckName") { value(null) }
@@ -125,23 +122,8 @@ class StudyReportBFFControllerWebMvcTest : DescribeSpec() {
                 verify(studyReportBFFService).getSummary(fixedNow, kst, 1L, null, start, end)
             }
 
-            it("덱을 골라 lifetime이 없으면 응답에서 그 필드를 뺀다") {
-                given(studyReportBFFService.getSummary(fixedNow, kst, 1L, 3L, start, end)).willReturn(summary(null))
-
-                mockMvc.get("/study-reports/summary") {
-                    header(API_VERSION_HEADER, API_VERSION)
-                    header(CLIENT_TIMEZONE_HEADER, "Asia/Seoul")
-                    param("deckId", "3")
-                    param("startDate", "2026-10-15")
-                    param("endDate", "2026-10-21")
-                }.andExpect {
-                    status { isOk() }
-                    jsonPath("$.data.lifetime") { doesNotExist() }
-                }
-            }
-
             it("API-Version 헤더가 없으면 기본 1.0으로 처리한다") {
-                given(studyReportBFFService.getSummary(fixedNow, kst, 1L, null, null, null)).willReturn(summary(counts))
+                given(studyReportBFFService.getSummary(fixedNow, kst, 1L, null, null, null)).willReturn(summary())
 
                 mockMvc.get("/study-reports/summary") {
                     header(CLIENT_TIMEZONE_HEADER, "Asia/Seoul")

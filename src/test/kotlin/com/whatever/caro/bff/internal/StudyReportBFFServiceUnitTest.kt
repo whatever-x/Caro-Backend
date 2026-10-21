@@ -75,10 +75,9 @@ class StudyReportBFFServiceUnitTest :
         afterTest { clearMocks(studyReportApi, deckApi, cardApi) }
 
         describe("getSummary") {
-            it("전체를 고르면 전체 누적과 휴식일을 함께 주고 빈 날짜도 0인 구간으로 채운다") {
+            it("전체를 고르면 휴식일을 함께 주고 빈 날짜도 0인 구간으로 채운다") {
                 val period = StudyReportPeriod(weekStart, today)
                 every { studyReportApi.getCounts(userId, null, period, max) } returns counts(5)
-                every { studyReportApi.getCounts(userId, null, null, max) } returns counts(40)
                 every { studyReportApi.getDailyCounts(userId, null, period, max) } returns
                     listOf(daily(weekStart, 2), daily(today, 3))
                 every { studyReportApi.getRestDates(userId, period) } returns
@@ -87,7 +86,6 @@ class StudyReportBFFServiceUnitTest :
                 val summary = service.getSummary(now, kst, userId, null, weekStart, today)
 
                 summary.scope shouldBe ReportScope(null, null, false)
-                summary.lifetime?.reviewCount shouldBe 40
                 summary.selected.reviewCount shouldBe 5
                 summary.range shouldBe ReportRange(weekStart, today, ReportBucketUnit.DAY)
                 summary.buckets.size shouldBe 7
@@ -97,7 +95,7 @@ class StudyReportBFFServiceUnitTest :
                 summary.restDates shouldContainExactly listOf(LocalDate.parse("2026-10-17"))
             }
 
-            it("덱을 고르면 전체 누적과 휴식일을 주지 않는다") {
+            it("덱을 고르면 휴식일을 주지 않는다") {
                 val period = StudyReportPeriod(weekStart, today)
                 every { studyReportApi.getCounts(userId, 1L, period, max) } returns counts(3)
                 every { studyReportApi.getDailyCounts(userId, 1L, period, max) } returns emptyList()
@@ -105,9 +103,7 @@ class StudyReportBFFServiceUnitTest :
                 val summary = service.getSummary(now, kst, userId, 1L, weekStart, today)
 
                 summary.scope shouldBe ReportScope(1L, "영어 단어", false)
-                summary.lifetime.shouldBeNull()
                 summary.restDates.shouldBeEmpty()
-                verify(exactly = 0) { studyReportApi.getCounts(userId, null, null, any()) }
                 verify(exactly = 0) { studyReportApi.getRestDates(any(), any()) }
             }
 
@@ -178,7 +174,7 @@ class StudyReportBFFServiceUnitTest :
         }
 
         describe("getDeckOptions") {
-            it("가진 덱과 기록이 남은 삭제 덱을 deckId 내림차순으로 나눠 준다") {
+            it("가진 덱만 deckId 내림차순으로 나눠 주고 기록이 남은 삭제 덱은 뺀다") {
                 every { deckApi.getDecks(userId) } returns listOf(deck(1L), deck(3L), deck(5L))
                 every { studyReportApi.getHistoryDeckIds(userId) } returns setOf(1L, 4L)
 
@@ -187,10 +183,9 @@ class StudyReportBFFServiceUnitTest :
 
                 first.items shouldContainExactly listOf(
                     ReportDeckOption(5L, "덱5", false),
-                    ReportDeckOption(4L, null, true),
+                    ReportDeckOption(3L, "덱3", false),
                 )
                 second.items shouldContainExactly listOf(
-                    ReportDeckOption(3L, "덱3", false),
                     ReportDeckOption(1L, "덱1", false),
                 )
                 second.nextCursor.shouldBeNull()

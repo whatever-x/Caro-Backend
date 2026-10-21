@@ -38,8 +38,6 @@ class StudyReportBFFService(
         val maxReviewId = studyReportApi.getMaxReviewId(userId)
 
         val selected = studyReportApi.getCounts(userId, deckId, period, maxReviewId)
-        // 전체 누적은 "전체"를 고른 경우에만 집계한다
-        val lifetime = if (deckId == null) studyReportApi.getCounts(userId, null, null, maxReviewId) else null
 
         val rangeStart = period?.startDate
             ?: studyReportApi.getFirstStudyDate(userId, deckId, maxReviewId)?.let { minOf(it, today) }
@@ -48,7 +46,6 @@ class StudyReportBFFService(
             return ReportSummaryView(
                 scope = scope,
                 range = ReportRange(startDate = null, endDate = rangeEnd, bucketUnit = ReportBucketUnit.DAY),
-                lifetime = lifetime,
                 selected = selected,
                 buckets = emptyList(),
                 restDates = emptyList(),
@@ -69,7 +66,6 @@ class StudyReportBFFService(
         return ReportSummaryView(
             scope = scope,
             range = ReportRange(startDate = rangeStart, endDate = rangeEnd, bucketUnit = unit),
-            lifetime = lifetime,
             selected = selected,
             buckets = ReportBuckets.build(rangeStart, rangeEnd, unit, dailyCounts),
             restDates = restDates,
@@ -77,7 +73,7 @@ class StudyReportBFFService(
     }
 
     /**
-     * 조회 조건 시트의 덱 목록. 지금 가진 덱과 기록이 남은 삭제 덱을 deckId 내림차순으로 반환한다.
+     * 덱 선택 시트의 덱 목록. 지금 가진 덱만 deckId 내림차순으로 반환한다. 삭제한 덱의 기록은 "전체" 수치에만 남는다.
      * 맨 위 "전체"는 클라이언트가 넣는다.
      */
     fun getDeckOptions(
@@ -89,15 +85,12 @@ class StudyReportBFFService(
             ReportCursor.decode(it, ReportCursor.Kind.DECKS, NO_FILTER, keyCount = 1).keys[0].toLongOrNull()
                 ?: throw InvalidReportCursorException("deck cursor has invalid key")
         }
-        val activeDeckNames = deckApi.getDecks(userId).associate { it.id to it.name }
-        val deckIds = (activeDeckNames.keys + studyReportApi.getHistoryDeckIds(userId))
-            .filter { after == null || it < after }
-            .sortedDescending()
+        val decks = deckApi.getDecks(userId)
+            .filter { after == null || it.id < after }
+            .sortedByDescending { it.id }
 
-        val items = deckIds.take(limit).map { id ->
-            ReportDeckOption(deckId = id, name = activeDeckNames[id], deleted = id !in activeDeckNames)
-        }
-        val nextCursor = if (deckIds.size > limit) {
+        val items = decks.take(limit).map { ReportDeckOption(deckId = it.id, name = it.name, deleted = false) }
+        val nextCursor = if (decks.size > limit) {
             ReportCursor(ReportCursor.Kind.DECKS, NO_FILTER, 0, listOf(items.last().deckId.toString())).encode()
         } else {
             null
