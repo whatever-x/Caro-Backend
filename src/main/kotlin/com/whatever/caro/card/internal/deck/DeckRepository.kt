@@ -62,18 +62,6 @@ interface DeckRepository : JpaRepository<Deck, Long> {
     ): Int
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
-    @Query(
-        """
-        update Deck d set d.cardCount = d.cardCount + :amount
-        where d.id = :deckId and d.deletedAt is null
-        """,
-    )
-    fun increaseCardCount(
-        deckId: Long,
-        amount: Int,
-    ): Int
-
-    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("delete from Deck d where d.userId = :userId")
     fun hardDeleteAllByUserId(
         userId: Long,

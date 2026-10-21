@@ -167,8 +167,6 @@ class LibraryService(
         )
 
         receipt.complete(number = ordinal, deck = personalDeck, cardCount = createdCards.items.size)
-        // CardService clears the persistence context after updating the card count.
-        copyReceiptRepository.save(receipt)
         return receipt.toCopyResponse()
     }
 

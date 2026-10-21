@@ -7,10 +7,6 @@ import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
 
 interface CardRepository : JpaRepository<Card, Long> {
-    fun countByDeckIdAndDeletedAtIsNull(
-        deckId: Long,
-    ): Long
-
     @Query(
         "SELECT c FROM Card c " +
             "JOIN FETCH c.note " +

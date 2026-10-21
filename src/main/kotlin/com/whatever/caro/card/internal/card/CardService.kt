@@ -105,16 +105,7 @@ class CardService(
             throw CardLimitExceededException()
         }
 
-        deck.cardCount = cardRepository.countByDeckIdAndDeletedAtIsNull(deck.id).toInt()
-
-        // Update the count before card inserts acquire FK locks on the same deck row.
-        val updated = deckRepository.increaseCardCount(
-            deckId = deck.id,
-            amount = newCardCount.toInt(),
-        )
-        if (updated != 1) {
-            throw DeckNotFoundException("deckId=${dto.deckId} 덱을 찾을 수 없습니다")
-        }
+        deck.cardCount += newCardCount.toInt()
 
         val notes = noteRepository.saveAll(
             dto.items.map { Note(userId = userId, fields = it.fields) },

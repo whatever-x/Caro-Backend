@@ -8,9 +8,6 @@ import com.whatever.caro.card.internal.card.exception.CardLimitExceededException
 import com.whatever.caro.card.internal.deck.DeckRepository
 import com.whatever.caro.card.internal.deck.dto.create.CreateDeckDto
 import com.whatever.caro.card.internal.deck.service.DeckService
-import com.whatever.caro.card.internal.note.Note
-import com.whatever.caro.card.internal.note.NoteRepository
-import com.whatever.caro.card.internal.notetype.CardTemplateRepository
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.DescribeSpec
 import io.kotest.matchers.shouldBe
@@ -31,9 +28,6 @@ class CardCapacityIntegrationTest(
     jdbc: JdbcTemplate,
     deckRepository: DeckRepository,
     transactionManager: PlatformTransactionManager,
-    cardEntities: CardRepository,
-    notes: NoteRepository,
-    templates: CardTemplateRepository,
 ) : DescribeSpec({
     val userId = 8200L
 
@@ -108,26 +102,22 @@ class CardCapacityIntegrationTest(
         }
     }
 
-    it("저장된 합계가 잘못되어도 새 카드 저장 시 실제 카드 수로 합계를 맞춘다") {
+    it("카드 생성 후 같은 transaction에서 관리하는 덱에도 증가한 카드 수가 반영된다") {
         val deckId = createDeck()
         add(deckId, 199)
-        jdbc.update("UPDATE decks SET card_count = 0 WHERE id = ?", deckId)
-        add(deckId, 2)
+        TransactionTemplate(transactionManager).executeWithoutResult {
+            val deck = requireNotNull(deckRepository.findByIdAndDeletedAtIsNull(deckId))
+            add(deckId, 2)
+            deck.cardCount shouldBe 201
+        }
         assertCount(deckId, 201)
     }
 
     it("기존에 200장을 넘은 덱에도 카드 생성 요청당 200장을 추가할 수 있다") {
         val deckId = createDeck()
         add(deckId, 200)
-        val note = notes.save(Note(userId = userId, fields = mapOf("front" to "legacy", "back" to "legacy")))
-        cardEntities.save(
-            Card(
-                cardTemplate = templates.findById(1L).orElseThrow(),
-                note = note,
-                deck = requireNotNull(deckRepository.findByIdAndDeletedAtIsNull(deckId)),
-                userId = userId,
-            ),
-        )
+        add(deckId, 1)
+        assertCount(deckId, 201)
         add(deckId, 200)
         assertCount(deckId, 401)
     }

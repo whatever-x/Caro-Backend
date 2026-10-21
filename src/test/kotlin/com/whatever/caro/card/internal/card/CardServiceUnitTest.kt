@@ -69,8 +69,6 @@ class CardServiceUnitTest :
                 cardTemplateRepository,
                 eventPublisher,
             )
-            // 카드 수 증감은 원자적 UPDATE(리포지토리 호출)로 처리 — 반환값은 검증에 쓰지 않으므로 공통 스텁
-            every { deckRepository.increaseCardCount(any(), any()) } returns 1
             every { deckRepository.decreaseCardCount(any(), any()) } returns 1
             every { cardRepository.findDeckIdsByCardIdIn(any()) } returns listOf(10L)
             every { deckRepository.lockById(any()) } returns mockk<Deck>()
@@ -92,7 +90,6 @@ class CardServiceUnitTest :
         ): Deck {
             val deck = Deck(userId = userId, name = "덱", description = "설명", cardCount = cardCount)
             setId(deck, id)
-            every { cardRepository.countByDeckIdAndDeletedAtIsNull(id) } returns cardCount.toLong()
             return deck
         }
 
@@ -182,7 +179,7 @@ class CardServiceUnitTest :
                 result.items[0].fields shouldBe mapOf("front" to "apple")
                 result.items[1].cardId shouldBe 301L
                 result.items[1].fields shouldBe mapOf("back" to "사과")
-                verify { deckRepository.increaseCardCount(deckId, 2) }
+                deck.cardCount shouldBe 7
                 verify {
                     eventPublisher.publishEvent(
                         CardsCreatedEvent(cardIds = listOf(300L, 301L), deckId = deckId, userId = userId),
@@ -224,7 +221,7 @@ class CardServiceUnitTest :
                 val result = cardService.createCards(userId, dto)
 
                 result.items shouldHaveSize 200
-                verify { deckRepository.increaseCardCount(deckId, 200) }
+                deck.cardCount shouldBe 200
                 result.items.map { it.cardId } shouldContainExactlyInAnyOrder (300L..499L).toList()
             }
 
@@ -245,9 +242,10 @@ class CardServiceUnitTest :
                 }
                 verify(exactly = 0) { noteRepository.saveAll(any<Iterable<Note>>()) }
                 verify(exactly = 0) { eventPublisher.publishEvent(any<CardsCreatedEvent>()) }
+                deck.cardCount shouldBe 199
             }
 
-            it("카드 수를 반영할 덱이 없으면 카드 저장과 이벤트 발행 전에 거부한다") {
+            it("카드 저장이 실패하면 오류를 전달하고 이벤트를 발행하지 않는다") {
                 val deck = newDeck(10L, 1L, 199)
                 val noteType = newNoteType(1L)
                 every { deckRepository.lockByIdAndDeletedAtIsNull(10L) } returns deck
@@ -255,11 +253,12 @@ class CardServiceUnitTest :
                 every { cardTemplateRepository.findAllByNoteTypeIdIn(setOf(1L)) } returns listOf(
                     newTemplate(100L, noteType, listOf("front")),
                 )
-                every { deckRepository.increaseCardCount(10L, 1) } returns 0
-                shouldThrow<DeckNotFoundException> {
+                every { noteRepository.saveAll(any<Iterable<Note>>()) } answers { firstArg<Iterable<Note>>().toList() }
+                val failure = IllegalStateException("card storage failed")
+                every { cardRepository.saveAll(any<Iterable<Card>>()) } throws failure
+                shouldThrow<IllegalStateException> {
                     cardService.createCards(1L, CreateCardsDto(10L, listOf(CreateCardItemDto(1L, mapOf("front" to "a")))))
-                }
-                verify(exactly = 0) { noteRepository.saveAll(any<Iterable<Note>>()) }
+                } shouldBe failure
                 verify(exactly = 0) { eventPublisher.publishEvent(any<CardsCreatedEvent>()) }
             }
 
