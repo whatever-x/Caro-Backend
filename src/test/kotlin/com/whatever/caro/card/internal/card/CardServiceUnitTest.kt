@@ -190,7 +190,7 @@ class CardServiceUnitTest :
                 }
             }
 
-            it("여러 카드 묶음 요청 시 묶음마다 템플릿 수만큼 카드를 생성한다") {
+            it("100개 입력에서 템플릿 두 개씩 실제 카드 200장을 생성한다") {
                 val userId = 1L
                 val deckId = 10L
                 val noteTypeId = 1L
@@ -200,10 +200,9 @@ class CardServiceUnitTest :
                 val backTpl = newTemplate(id = 101L, noteType = noteType, requiredFields = listOf("back"), position = 1)
                 val dto = CreateCardsDto(
                     deckId = deckId,
-                    items = listOf(
-                        CreateCardItemDto(noteTypeId = noteTypeId, fields = mapOf("front" to "f1", "back" to "b1")),
-                        CreateCardItemDto(noteTypeId = noteTypeId, fields = mapOf("front" to "f2", "back" to "b2")),
-                    ),
+                    items = List(100) {
+                        CreateCardItemDto(noteTypeId = noteTypeId, fields = mapOf("front" to "f$it", "back" to "b$it"))
+                    },
                 )
 
                 every { deckRepository.lockByIdAndDeletedAtIsNull(deckId) } returns deck
@@ -224,12 +223,12 @@ class CardServiceUnitTest :
 
                 val result = cardService.createCards(userId, dto)
 
-                result.items shouldHaveSize 4
-                verify { deckRepository.increaseCardCount(deckId, 4) }
-                result.items.map { it.cardId } shouldContainExactlyInAnyOrder listOf(300L, 301L, 302L, 303L)
+                result.items shouldHaveSize 200
+                verify { deckRepository.increaseCardCount(deckId, 200) }
+                result.items.map { it.cardId } shouldContainExactlyInAnyOrder (300L..499L).toList()
             }
 
-            it("입력 한 항목에서 두 카드가 생성되면 실제 카드 수로 상한을 검사한다") {
+            it("입력 101개에서 두 장씩 생성되면 요청당 실제 카드 202장으로 상한을 검사한다") {
                 val deck = newDeck(10L, 1L, 199)
                 val noteType = newNoteType(1L)
                 every { deckRepository.lockByIdAndDeletedAtIsNull(10L) } returns deck
@@ -239,13 +238,16 @@ class CardServiceUnitTest :
                     newTemplate(101L, noteType, listOf("back")),
                 )
                 shouldThrow<CardLimitExceededException> {
-                    cardService.createCards(1L, CreateCardsDto(10L, listOf(CreateCardItemDto(1L, mapOf("front" to "a", "back" to "b")))))
+                    cardService.createCards(
+                        1L,
+                        CreateCardsDto(10L, List(101) { CreateCardItemDto(1L, mapOf("front" to "a", "back" to "b")) }),
+                    )
                 }
                 verify(exactly = 0) { noteRepository.saveAll(any<Iterable<Note>>()) }
                 verify(exactly = 0) { eventPublisher.publishEvent(any<CardsCreatedEvent>()) }
             }
 
-            it("조회 후 다른 요청이 남은 수를 사용하면 저장과 이벤트 발행 전에 거부한다") {
+            it("카드 수를 반영할 덱이 없으면 카드 저장과 이벤트 발행 전에 거부한다") {
                 val deck = newDeck(10L, 1L, 199)
                 val noteType = newNoteType(1L)
                 every { deckRepository.lockByIdAndDeletedAtIsNull(10L) } returns deck
@@ -254,7 +256,7 @@ class CardServiceUnitTest :
                     newTemplate(100L, noteType, listOf("front")),
                 )
                 every { deckRepository.increaseCardCount(10L, 1) } returns 0
-                shouldThrow<CardLimitExceededException> {
+                shouldThrow<DeckNotFoundException> {
                     cardService.createCards(1L, CreateCardsDto(10L, listOf(CreateCardItemDto(1L, mapOf("front" to "a")))))
                 }
                 verify(exactly = 0) { noteRepository.saveAll(any<Iterable<Note>>()) }

@@ -1,6 +1,5 @@
 package com.whatever.caro.card.internal.library
 
-import com.whatever.caro.card.internal.deck.Deck
 import com.whatever.caro.common.entity.BaseTimeEntity
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
@@ -30,10 +29,14 @@ class LibraryDeck(
         if (description.isBlank() || description.length > 500) {
             return false
         }
-        if (cards.size !in 1..Deck.MAX_CARD_COUNT) {
+        if (cards.size !in 1..MAX_CARD_COUNT) {
             return false
         }
 
         return cards.all { card -> card.front.isNotBlank() && card.back.isNotBlank() }
+    }
+
+    companion object {
+        const val MAX_CARD_COUNT = 200
     }
 }

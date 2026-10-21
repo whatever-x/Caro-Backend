@@ -15,7 +15,6 @@ import com.whatever.caro.card.internal.card.exception.CardForbiddenException
 import com.whatever.caro.card.internal.card.exception.CardInvalidFieldsException
 import com.whatever.caro.card.internal.card.exception.CardLimitExceededException
 import com.whatever.caro.card.internal.card.exception.CardNotFoundException
-import com.whatever.caro.card.internal.deck.Deck
 import com.whatever.caro.card.internal.deck.DeckRepository
 import com.whatever.caro.card.internal.deck.exception.DeckForbiddenException
 import com.whatever.caro.card.internal.deck.exception.DeckNotFoundException
@@ -102,23 +101,19 @@ class CardService(
         }
 
         val newCardCount = dto.items.sumOf { templatesByNoteType.getValue(it.noteTypeId).size.toLong() }
-        val storedCardCount = cardRepository.countByDeckIdAndDeletedAtIsNull(deck.id)
-        if (storedCardCount > Deck.MAX_CARD_COUNT) {
+        if (newCardCount > MAX_CARDS_PER_REQUEST) {
             throw CardLimitExceededException()
         }
 
-        deck.cardCount = storedCardCount.toInt()
-        if (!deck.canAddCards(newCardCount)) {
-            throw CardLimitExceededException()
-        }
+        deck.cardCount = cardRepository.countByDeckIdAndDeletedAtIsNull(deck.id).toInt()
 
-        // Reserve capacity before card inserts acquire FK locks on the same deck row.
+        // Update the count before card inserts acquire FK locks on the same deck row.
         val updated = deckRepository.increaseCardCount(
             deckId = deck.id,
             amount = newCardCount.toInt(),
         )
         if (updated != 1) {
-            throw CardLimitExceededException()
+            throw DeckNotFoundException("deckId=${dto.deckId} 덱을 찾을 수 없습니다")
         }
 
         val notes = noteRepository.saveAll(
@@ -303,4 +298,8 @@ class CardService(
         template: CardTemplate,
         noteFields: Map<String, String>,
     ): Map<String, String> = template.requiredFields.associateWith { key -> noteFields[key].orEmpty() }
+
+    companion object {
+        private const val MAX_CARDS_PER_REQUEST = 200
+    }
 }

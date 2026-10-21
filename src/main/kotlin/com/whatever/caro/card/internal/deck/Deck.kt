@@ -36,14 +36,6 @@ class Deck(
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0L
 
-    fun canAddCards(
-        count: Long,
-    ): Boolean = count >= 0 && cardCount.toLong() + count <= MAX_CARD_COUNT
-
-    companion object {
-        const val MAX_CARD_COUNT = 200
-    }
-
     fun updateDeckInfo(
         name: String,
         description: String,

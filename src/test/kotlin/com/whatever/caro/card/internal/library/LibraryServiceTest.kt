@@ -1,6 +1,9 @@
 package com.whatever.caro.card.internal.library
 
 import com.whatever.caro.CaroModuleTest
+import com.whatever.caro.card.internal.card.CardService
+import com.whatever.caro.card.internal.card.dto.create.CreateCardItemDto
+import com.whatever.caro.card.internal.card.dto.create.CreateCardsDto
 import com.whatever.caro.card.internal.deck.dto.delete.DeleteDeckDto
 import com.whatever.caro.card.internal.deck.service.DeckService
 import com.whatever.caro.common.exception.BusinessException
@@ -28,6 +31,7 @@ class LibraryServiceTest(
     personal: DeckService,
     jdbc: JdbcTemplate,
     transactionManager: PlatformTransactionManager,
+    cards: CardService,
 ) : DescribeSpec({
     val tx = TransactionTemplate(transactionManager)
     val sourceIds = mutableListOf<Long>()
@@ -158,7 +162,7 @@ class LibraryServiceTest(
         service.copy(8105, deck.id, UUID.randomUUID()).name shouldBe "토익 단어"
     }
 
-    it("201장 복사는 전체 rollback되고 같은 key로 200장을 다시 요청하면 전체를 복사한다") {
+    it("201장 복사는 거부하고 200장 복사 후 개인 덱에 카드를 더 추가할 수 있다") {
         val deck = fixture()
         content.saveAll((3..201).map { LibraryCard(deck.id, "word$it", "meaning$it", it) })
         val key = UUID.randomUUID()
@@ -172,6 +176,12 @@ class LibraryServiceTest(
         result.name shouldBe "토익 단어"
         result.cardCount shouldBe 200
         jdbc.queryForObject("SELECT COUNT(*) FROM cards WHERE deck_id = ?", Long::class.java, result.deckId) shouldBe 200
+        cards.createCards(
+            8107,
+            CreateCardsDto(result.deckId, listOf(CreateCardItemDto(1L, mapOf("front" to "extra", "back" to "추가")))),
+        )
+        jdbc.queryForObject("SELECT card_count FROM decks WHERE id = ?", Long::class.java, result.deckId) shouldBe 201
+        content.findByLibraryDeckIdOrderByPositionAscIdAsc(deck.id).size shouldBe 200
     }
 
     it("누적 번호를 포함해 50자로 자르고 surrogate pair를 나누지 않는다") {

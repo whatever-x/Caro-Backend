@@ -66,13 +66,11 @@ interface DeckRepository : JpaRepository<Deck, Long> {
         """
         update Deck d set d.cardCount = d.cardCount + :amount
         where d.id = :deckId and d.deletedAt is null
-            and d.cardCount <= :maxCardCount - :amount
         """,
     )
     fun increaseCardCount(
         deckId: Long,
         amount: Int,
-        maxCardCount: Int = Deck.MAX_CARD_COUNT,
     ): Int
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)

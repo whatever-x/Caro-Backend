@@ -111,7 +111,7 @@ class CardControllerWebMvcTest : DescribeSpec() {
                 }
             }
 
-            it("카드 상한 초과는 기존 계약인 409 C101을 반환한다") {
+            it("카드 생성 요청 상한 초과는 409 CD101을 반환한다") {
                 val dto = CreateCardsDto(
                     deckId = 1L,
                     items = listOf(CreateCardItemDto(noteTypeId = 1L, fields = mapOf("front" to "word", "back" to "뜻"))),
@@ -125,7 +125,7 @@ class CardControllerWebMvcTest : DescribeSpec() {
                     content = """{"items": [{"cardType": "BASIC", "fields": {"front": "word", "back": "뜻"}}]}"""
                 }.andExpect {
                     status { isConflict() }
-                    jsonPath("$.error.code") { value("C101") }
+                    jsonPath("$.error.code") { value("CD101") }
                 }
             }
         }
