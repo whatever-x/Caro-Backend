@@ -2,6 +2,7 @@ package com.whatever.caro.card.internal.deck
 
 import com.whatever.caro.CaroModuleTest
 import io.kotest.core.spec.style.DescribeSpec
+import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.shouldBe
 import org.springframework.transaction.PlatformTransactionManager
 import org.springframework.transaction.support.TransactionTemplate
@@ -42,6 +43,24 @@ class DeckRepositoryTest(
 
             // then
             updated shouldBe 0
+        }
+    }
+
+    describe("lockAllByIdIn") {
+        it("존재하는 대상 덱을 id 오름차순으로 한 번에 조회한다") {
+            val first = saveDeck(cardCount = 1)
+            val second = saveDeck(cardCount = 2)
+            val third = saveDeck(cardCount = 3)
+
+            val lockedIds = tx.execute {
+                deckRepository.lockAllByIdIn(listOf(third.id, Long.MAX_VALUE, first.id, second.id)).map { it.id }
+            }
+
+            lockedIds shouldContainExactly listOf(first.id, second.id, third.id)
+        }
+
+        it("대상 id가 비어 있으면 빈 목록을 반환한다") {
+            tx.execute { deckRepository.lockAllByIdIn(emptyList()) } shouldBe emptyList()
         }
     }
 

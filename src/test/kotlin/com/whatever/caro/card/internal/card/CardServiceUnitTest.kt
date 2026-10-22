@@ -71,7 +71,11 @@ class CardServiceUnitTest :
             )
             every { deckRepository.decreaseCardCount(any(), any()) } returns 1
             every { cardRepository.findDeckIdsByCardIdIn(any()) } returns listOf(10L)
-            every { deckRepository.lockById(any()) } returns mockk<Deck>()
+            every { deckRepository.lockAllByIdIn(any()) } answers {
+                firstArg<Collection<Long>>().map { deckId ->
+                    mockk<Deck>().also { deck -> every { deck.id } returns deckId }
+                }
+            }
         }
 
         fun setId(
@@ -620,9 +624,9 @@ class CardServiceUnitTest :
 
                 verify { deckRepository.decreaseCardCount(10L, 1) }
                 verify { deckRepository.decreaseCardCount(11L, 1) }
+                verify(exactly = 1) { deckRepository.lockAllByIdIn(listOf(10L, 11L)) }
                 verifyOrder {
-                    deckRepository.lockById(10L)
-                    deckRepository.lockById(11L)
+                    deckRepository.lockAllByIdIn(listOf(10L, 11L))
                     cardRepository.lockAllActiveByIdInAndUserId(listOf(300L, 301L), userId)
                 }
                 verify {
@@ -647,6 +651,23 @@ class CardServiceUnitTest :
                         ),
                     )
                 }
+            }
+
+            it("대상 덱 일부를 잠그지 못하면 카드 잠금과 삭제 및 이벤트 발행 전에 거부한다") {
+                every { cardRepository.findAllByIds(setOf(300L, 301L)) } returns listOf(
+                    CardOwnership(id = 300L, userId = 1L, deletedAt = null),
+                    CardOwnership(id = 301L, userId = 1L, deletedAt = null),
+                )
+                every { cardRepository.findDeckIdsByCardIdIn(listOf(300L, 301L)) } returns listOf(11L, 10L)
+                every { deckRepository.lockAllByIdIn(listOf(10L, 11L)) } returns listOf(newDeck(10L, 1L))
+
+                shouldThrow<DeckNotFoundException> {
+                    cardService.deleteCard(1L, clientTimezone, DeleteCardDto(setOf(300L, 301L)))
+                }
+
+                verify(exactly = 0) { cardRepository.lockAllActiveByIdInAndUserId(any(), any()) }
+                verify(exactly = 0) { deckRepository.decreaseCardCount(any(), any()) }
+                verify(exactly = 0) { eventPublisher.publishEvent(any()) }
             }
 
             it("일부는 살아있고 일부는 이미 삭제된 경우, 산 카드만 삭제하고 응답 카운트는 요청 중 존재하는 전체 수(정책 B)다") {

@@ -6,6 +6,7 @@ import com.whatever.caro.card.internal.card.dto.create.CreateCardsDto
 import com.whatever.caro.card.internal.card.dto.delete.DeleteCardDto
 import com.whatever.caro.card.internal.deck.dto.create.CreateDeckDto
 import com.whatever.caro.card.internal.deck.service.DeckService
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.DescribeSpec
 import io.kotest.matchers.shouldBe
 import org.springframework.jdbc.core.JdbcTemplate
@@ -118,6 +119,31 @@ class CardDeletionConcurrencyIntegrationTest(
 
         assertCount(firstDeckId, 1)
         assertCount(secondDeckId, 1)
+    }
+
+    it("여러 덱의 카드 삭제 후 실패하면 카드와 노트 및 덱별 카드 수를 함께 rollback한다") {
+        val (firstDeckId, firstCards) = createDeckWithCards()
+        val (secondDeckId, secondCards) = createDeckWithCards()
+        val first = firstCards.first()
+        val second = secondCards.first()
+        val firstNote = jdbc.queryForObject("SELECT note_id FROM cards WHERE id = ?", Long::class.java, first)!!
+        val secondNote = jdbc.queryForObject("SELECT note_id FROM cards WHERE id = ?", Long::class.java, second)!!
+
+        shouldThrow<IllegalStateException> {
+            TransactionTemplate(transactionManager).executeWithoutResult {
+                cards.deleteCard(userId, timezone, DeleteCardDto(setOf(first, second)))
+                error("failure after card deletion")
+            }
+        }
+
+        assertCount(firstDeckId, 2)
+        assertCount(secondDeckId, 2)
+        jdbc.queryForObject(
+            "SELECT COUNT(*) FROM notes WHERE id IN (?, ?) AND deleted_at IS NULL",
+            Long::class.java,
+            firstNote,
+            secondNote,
+        ) shouldBe 2L
     }
 
     it("같은 덱의 카드 추가와 삭제가 겹쳐도 실제 카드 수와 합계가 일치한다") {

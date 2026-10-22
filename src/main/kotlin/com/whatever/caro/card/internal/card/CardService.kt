@@ -236,9 +236,10 @@ class CardService(
         }
 
         val deckIds = cardRepository.findDeckIdsByCardIdIn(activeCardIds).sorted()
-        for (deckId in deckIds) {
-            deckRepository.lockById(deckId)
-                ?: throw DeckNotFoundException("deckId=$deckId 덱을 찾을 수 없습니다")
+        val lockedDeckIds = deckRepository.lockAllByIdIn(deckIds).map { it.id }.toSet()
+        val missingDeckId = deckIds.firstOrNull { it !in lockedDeckIds }
+        if (missingDeckId != null) {
+            throw DeckNotFoundException("deckId=$missingDeckId 덱을 찾을 수 없습니다")
         }
 
         // Locking reads see committed deletions even if the transaction already has an older snapshot.
