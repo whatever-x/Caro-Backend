@@ -1,11 +1,15 @@
+-- If a later DDL fails, drop the newly created tables in dependency order before retrying:
+-- DROP TABLE IF EXISTS library_copy_receipts;
+-- DROP TABLE IF EXISTS library_cards;
+-- DROP TABLE IF EXISTS library_decks;
 CREATE TABLE library_decks (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(50) NOT NULL,
     description VARCHAR(500) NOT NULL,
     published BOOLEAN NOT NULL DEFAULT FALSE,
     sort_order INT NOT NULL DEFAULT 0,
-    created_at DATETIME(6) NOT NULL,
-    updated_at DATETIME(6) NOT NULL,
+    created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
     INDEX idx_library_published_order (published, sort_order, id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -15,8 +19,8 @@ CREATE TABLE library_cards (
     front TEXT NOT NULL,
     back TEXT NOT NULL,
     position INT NOT NULL,
-    created_at DATETIME(6) NOT NULL,
-    updated_at DATETIME(6) NOT NULL,
+    created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
     CONSTRAINT fk_library_card_deck FOREIGN KEY (library_deck_id) REFERENCES library_decks(id),
     INDEX idx_library_card_order (library_deck_id, position, id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -32,8 +36,9 @@ CREATE TABLE library_copy_receipts (
     name VARCHAR(50) NULL,
     description VARCHAR(500) NULL,
     card_count INT NULL,
-    created_at DATETIME(6) NOT NULL,
-    updated_at DATETIME(6) NOT NULL,
+    created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
     UNIQUE KEY uk_library_copy_user_key (user_id, request_key),
+    UNIQUE KEY uk_library_copy_ordinal (user_id, library_deck_id, ordinal),
     INDEX idx_library_copy_number (user_id, library_deck_id, deck_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

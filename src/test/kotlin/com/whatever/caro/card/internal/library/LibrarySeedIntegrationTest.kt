@@ -1,5 +1,6 @@
 package com.whatever.caro.card.internal.library
 
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.assertions.throwables.shouldThrowAny
 import io.kotest.core.spec.style.DescribeSpec
 import io.kotest.matchers.shouldBe
@@ -9,6 +10,7 @@ import org.springframework.jdbc.datasource.init.ScriptUtils
 import org.testcontainers.mysql.MySQLContainer
 import org.testcontainers.utility.DockerImageName
 import java.sql.DriverManager
+import java.sql.SQLIntegrityConstraintViolationException
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
@@ -59,11 +61,37 @@ class LibrarySeedIntegrationTest :
         }
 
         afterEach {
+            execute("DELETE FROM library_copy_receipts")
             execute("DELETE FROM library_cards")
             execute("DELETE FROM library_decks")
         }
 
         afterSpec { mysql.stop() }
+
+        it("V4만 적용해도 같은 사용자와 원본 덱의 ordinal 중복을 거부한다") {
+            execute("INSERT INTO library_copy_receipts (user_id, request_key, library_deck_id, ordinal) VALUES (1, 'first', 1, 1)")
+            shouldThrow<SQLIntegrityConstraintViolationException> {
+                execute("INSERT INTO library_copy_receipts (user_id, request_key, library_deck_id, ordinal) VALUES (1, 'second', 1, 1)")
+            }
+            execute("INSERT INTO library_copy_receipts (user_id, request_key, library_deck_id, ordinal) VALUES (2, 'first', 1, 1)")
+            execute("INSERT INTO library_copy_receipts (user_id, request_key, library_deck_id) VALUES (1, 'pending-1', 1), (1, 'pending-2', 1)")
+            query("SELECT COUNT(*) FROM library_copy_receipts") shouldBe listOf("4")
+        }
+
+        it("시각 컬럼을 생략하면 기본값을 저장하고 행 수정 시 updated_at만 갱신한다") {
+            execute("INSERT INTO library_decks (id, name, description) VALUES (1, '기본 덱', '설명')")
+            execute("INSERT INTO library_cards (library_deck_id, front, back, position) VALUES (1, '앞', '뒤', 0)")
+            execute("INSERT INTO library_copy_receipts (user_id, request_key, library_deck_id) VALUES (1, 'pending', 1)")
+            listOf("library_decks" to "name = '수정 덱'", "library_cards" to "front = '수정 앞'", "library_copy_receipts" to "ordinal = 1")
+                .forEach { (table, update) ->
+                    query("SELECT COUNT(*) FROM $table WHERE created_at IS NOT NULL AND updated_at IS NOT NULL") shouldBe listOf("1")
+                    val createdAt = query("SELECT created_at FROM $table")
+                    execute("UPDATE $table SET updated_at = '2000-01-01 00:00:00.123456'")
+                    execute("UPDATE $table SET $update")
+                    query("SELECT created_at FROM $table") shouldBe createdAt
+                    query("SELECT COUNT(*) FROM $table WHERE updated_at > '2000-01-01 00:00:00.123456'") shouldBe listOf("1")
+                }
+        }
 
         it("세 무료 덱을 게시 상태로 등록하고 카드 400장의 순서와 내용을 저장한다") {
             register()
