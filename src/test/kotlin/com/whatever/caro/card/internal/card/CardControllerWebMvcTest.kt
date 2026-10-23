@@ -156,6 +156,20 @@ class CardControllerWebMvcTest : DescribeSpec() {
                     jsonPath("$.error.code") { value(INVALID_INPUT_CODE) }
                 }
             }
+
+            it("items가 201개면 items 필드 오류와 함께 400 C001을 반환하고 카드를 만들지 않는다") {
+                mockMvc.post("/decks/1/cards") {
+                    header(API_VERSION_HEADER, API_VERSION)
+                    contentType = MediaType.APPLICATION_JSON
+                    content = itemsJson(CREATE_MAX_ITEMS + 1)
+                }.andExpect {
+                    status { isBadRequest() }
+                    jsonPath("$.error.code") { value(INVALID_INPUT_CODE) }
+                    jsonPath("$.error.fieldErrors.length()") { value(1) }
+                    jsonPath("$.error.fieldErrors[0].field") { value("items") }
+                }
+                verifyNoInteractions(cardService)
+            }
         }
 
         describe("카드 오류 응답") {
@@ -468,6 +482,7 @@ class CardControllerWebMvcTest : DescribeSpec() {
         private const val API_VERSION = "1.0"
         private const val API_VERSION_1_1 = "1.1"
         private const val IDEMPOTENCY_KEY_HEADER = "Idempotency-Key"
+        private const val CREATE_MAX_ITEMS = 200
         private const val CHUNK_MAX_ITEMS = 1000
         private const val INVALID_INPUT_CODE = "C001"
         private const val MISSING_HEADER_CODE = "C007"

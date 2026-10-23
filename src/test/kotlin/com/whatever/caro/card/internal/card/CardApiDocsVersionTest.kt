@@ -45,12 +45,15 @@ class CardApiDocsVersionTest(
     ): String = operation.path("requestBody").path("content").path("application/json").path("schema").path("\$ref").asString()
 
     describe("POST /decks/{deckId}/cards 버전별 OpenAPI 문서") {
-        it("version-1 그룹은 Idempotency-Key 없는 1.0 계약을 그대로 담는다") {
-            val operation = createCardsOperation(apiDocs("/version-1"))
+        it("version-1 그룹은 Idempotency-Key 없는 1.0 계약과 items 최대 200개를 담는다") {
+            val docs = apiDocs("/version-1")
+            val operation = createCardsOperation(docs)
 
             operation.path("operationId").asString() shouldBe "createCards"
             hasHeader(operation, "Idempotency-Key") shouldBe false
             requestBodyRef(operation) shouldEndWith "/CreateCardsRequest"
+            docs.path("components").path("schemas").path("CreateCardsRequest")
+                .path("properties").path("items").path("maxItems").asInt() shouldBe 200
         }
 
         it("version-1.1 그룹은 Idempotency-Key 필수와 items 최대 1000개를 담는다") {

@@ -343,7 +343,7 @@ class CardService(
     )
 
     companion object {
-        private const val MAX_CARDS_PER_REQUEST = 200
+        const val MAX_CARDS_PER_REQUEST = 200
 
         // 처리 마커 TTL보다 짧아야 TTL 만료 뒤 같은 키 재시도와 이 트랜잭션이 함께 커밋되지 않는다.
         private const val CARD_CHUNK_TRANSACTION_TIMEOUT_SECONDS = 20

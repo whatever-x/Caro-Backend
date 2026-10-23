@@ -44,6 +44,7 @@ class CardController(
         description = """
         덱에 여러 카드를 한 번에 생성한다.
         새로 연동하는 클라이언트는 중복 저장 방지 키를 받는 1.1을 사용한다. 1.0은 기존 앱과 수동 카드 생성을 위해 유지한다.
+        한 요청의 `items`는 1~${CardService.MAX_CARDS_PER_REQUEST}개다. 항목마다 노트 타입의 템플릿 수만큼 카드가 만들어지며, 만들어질 카드가 ${CardService.MAX_CARDS_PER_REQUEST}장을 넘으면 409(CD101)를 반환한다.
         """,
     )
     @Deprecated(message = "1.1이 이 계약을 잇는다. 수동 카드 생성을 1.1로 옮기고 기존 앱 지원이 끝나면 제거할 수 있다")
