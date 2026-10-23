@@ -11,6 +11,9 @@ spring:
   datasource:
     hikari:
       connection-test-query: "SELECT 1"
+      data-source-properties:
+        rewriteBatchedStatements: true
+        continueBatchOnError: false
   jpa:
     open-in-view: false  # OSIV off
     properties:
