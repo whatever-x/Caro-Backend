@@ -6,7 +6,10 @@ import org.springframework.data.jpa.repository.Lock
 import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
 
-interface CardRepository : JpaRepository<Card, Long> {
+interface CardRepository :
+    JpaRepository<Card, Long>,
+    CardBulkRepository {
+
     @Query(
         "SELECT c FROM Card c " +
             "JOIN FETCH c.note " +
