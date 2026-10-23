@@ -143,19 +143,19 @@ class CardServiceTest(
     )
 
     describe("createCards") {
-        it("1,000개를 한 번에 만들면 노트와 카드가 1,000개씩 저장되고 card_count가 1,000 늘어난다") {
+        it("요청 상한인 200개를 한 번에 만들면 노트와 카드가 200개씩 저장되고 card_count가 200 늘어난다") {
             val deck = saveDeck()
-            val fronts = (1..1000).map { "단어$it" }
+            val fronts = (1..200).map { "단어$it" }
 
             val result = cardService.createCards(
                 userId = userId,
                 dto = chunk(deckId = deck.id, fronts = fronts),
             )
 
-            result.items shouldHaveSize 1000
-            cardRepository.findAllByDeckIdAndDeletedAtIsNullWithNoteAndTemplate(deckId = deck.id) shouldHaveSize 1000
-            noteRepository.count() shouldBe 1000L
-            storedCardCountOf(deckId = deck.id) shouldBe 1000
+            result.items shouldHaveSize 200
+            cardRepository.findAllByDeckIdAndDeletedAtIsNullWithNoteAndTemplate(deckId = deck.id) shouldHaveSize 200
+            noteRepository.count() shouldBe 200L
+            storedCardCountOf(deckId = deck.id) shouldBe 200
         }
 
         it("응답 순서와 cardId 오름차순이 요청 순서와 같다") {

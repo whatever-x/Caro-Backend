@@ -13,7 +13,8 @@
   시드가 없는 DB에서는 카드 생성이 `NoteTypeNotFoundException`(404)으로 실패하고, `DeckPresetEventListener`는 preset 1이 없으면 예외 없이 끝나 새 덱에 프리셋이 연결되지 않는다.
 - 프리셋이 없는 덱이 있을 수 있다고 전제하고 코드를 짠다. `DeckPresetEventListener`가 `DeckCreatedEvent`를 커밋 뒤 비동기로 받아 연결하므로 그 전까지 `decks.deck_preset_id`는 NULL이다.
   `DeckRepository.findAllByIdInWithPreset`은 inner join이라 프리셋이 없는 덱을 결과에서 제외하고, `DeckPresetService.getLatestDeckPresetByUser`는 그 덱에 `DeckPresetNotFoundException`(404)을 던진다.
-- 카드를 만들거나 지우는 `CardService.createCards`·`createCardChunk`·`deleteCard`는 같은 트랜잭션에서 `DeckRepository.increaseCardCount`/`decreaseCardCount`를 부른다. 탈퇴 purge는 덱까지 hard delete 하므로 예외다.
+- 카드를 만드는 `CardService.createCards`·`createCardChunk`는 `DeckRepository.lockByIdAndDeletedAtIsNull`로 잠근 덱의 `cardCount`를 같은 트랜잭션에서 생성 수만큼 올리고, 지우는 `deleteCard`는 덱을 잠근 뒤 `decreaseCardCount`를 부른다. 탈퇴 purge는 덱까지 hard delete 하므로 예외다.
+  잠그지 않고 `cardCount`를 올리면 같은 덱에 동시에 들어온 요청이 같은 값을 읽어 한쪽의 증가분이 사라진다(`CardCapacityIntegrationTest`).
   `decks.card_count`는 비정규화 값이고 `chk_deck_card_count`(`card_count >= 0`)가 정의돼 있다. 증가를 빠뜨리면 이후 삭제에서 값이 음수가 돼 UPDATE가 CHECK 위반으로 실패하고 삭제 요청이 롤백되며, 감소를 빠뜨리면 카드 수가 실제보다 큰 값으로 유지된다.
 - 카드 생성 이벤트는 `CardsCreatedEvent`(1.0 `createCards`)와 `CardChunkCreatedEvent`(1.1 `createCardChunk`) 두 가지다. 카드 생성에 반응하는 새 리스너는 둘 다 구독한다.
   하나만 구독하면 다른 버전으로 만든 카드에는 반응하지 않고, 이를 잡는 테스트는 없다.

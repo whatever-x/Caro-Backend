@@ -8,6 +8,8 @@ import com.whatever.caro.card.internal.card.dto.create.CreateCardItemDto
 import com.whatever.caro.card.internal.card.dto.create.CreateCardsDto
 import com.whatever.caro.card.internal.card.dto.create.CreateCardsResponseDto
 import com.whatever.caro.card.internal.card.dto.read.CardResponseDto
+import com.whatever.caro.card.internal.card.exception.CardLimitExceededException
+import com.whatever.caro.card.internal.card.exception.CardNotFoundException
 import com.whatever.caro.common.web.filter.RequestResponseCachingFilter
 import com.whatever.caro.common.web.idempotency.IdempotencyProperties
 import com.whatever.caro.common.web.idempotency.IdempotencyRepository
@@ -31,6 +33,7 @@ import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.delete
+import org.springframework.test.web.servlet.get
 import org.springframework.test.web.servlet.patch
 import org.springframework.test.web.servlet.post
 import org.springframework.test.web.servlet.setup.DefaultMockMvcBuilder
@@ -151,6 +154,38 @@ class CardControllerWebMvcTest : DescribeSpec() {
                 }.andExpect {
                     status { isBadRequest() }
                     jsonPath("$.error.code") { value(INVALID_INPUT_CODE) }
+                }
+            }
+        }
+
+        describe("카드 오류 응답") {
+            it("카드 조회 실패는 공통 오류와 구분되는 CD001을 반환한다") {
+                given(cardService.getCard(userId = 1L, cardId = 1L))
+                    .willThrow(CardNotFoundException("card not found"))
+
+                mockMvc.get("/cards/1") {
+                    header(API_VERSION_HEADER, API_VERSION)
+                }.andExpect {
+                    status { isNotFound() }
+                    jsonPath("$.error.code") { value("CD001") }
+                }
+            }
+
+            it("카드 생성 요청 상한 초과는 409 CD101을 반환한다") {
+                val dto = CreateCardsDto(
+                    deckId = 1L,
+                    items = listOf(CreateCardItemDto(noteTypeId = 1L, fields = mapOf("front" to "word", "back" to "뜻"))),
+                )
+                given(cardService.createCards(userId = 1L, dto = dto))
+                    .willThrow(CardLimitExceededException())
+
+                mockMvc.post("/decks/1/cards") {
+                    header(API_VERSION_HEADER, API_VERSION)
+                    contentType = MediaType.APPLICATION_JSON
+                    content = """{"items": [{"cardType": "BASIC", "fields": {"front": "word", "back": "뜻"}}]}"""
+                }.andExpect {
+                    status { isConflict() }
+                    jsonPath("$.error.code") { value("CD101") }
                 }
             }
         }
