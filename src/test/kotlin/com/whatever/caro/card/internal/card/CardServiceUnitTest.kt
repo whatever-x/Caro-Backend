@@ -8,6 +8,7 @@ import com.whatever.caro.card.internal.card.dto.delete.DeleteCardDto
 import com.whatever.caro.card.internal.card.dto.update.UpdateCardDto
 import com.whatever.caro.card.internal.card.exception.CardForbiddenException
 import com.whatever.caro.card.internal.card.exception.CardInvalidFieldsException
+import com.whatever.caro.card.internal.card.exception.CardLimitExceededException
 import com.whatever.caro.card.internal.card.exception.CardNotFoundException
 import com.whatever.caro.card.internal.deck.Deck
 import com.whatever.caro.card.internal.deck.DeckRepository
@@ -33,6 +34,7 @@ import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import io.mockk.verifyOrder
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneId
@@ -67,9 +69,13 @@ class CardServiceUnitTest :
                 cardTemplateRepository,
                 eventPublisher,
             )
-            // 카드 수 증감은 원자적 UPDATE(리포지토리 호출)로 처리 — 반환값은 검증에 쓰지 않으므로 공통 스텁
-            every { deckRepository.increaseCardCount(any(), any()) } returns 1
             every { deckRepository.decreaseCardCount(any(), any()) } returns 1
+            every { cardRepository.findDeckIdsByCardIdIn(any()) } returns listOf(10L)
+            every { deckRepository.lockAllByIdIn(any()) } answers {
+                firstArg<Collection<Long>>().map { deckId ->
+                    mockk<Deck>().also { deck -> every { deck.id } returns deckId }
+                }
+            }
         }
 
         fun setId(
@@ -154,7 +160,7 @@ class CardServiceUnitTest :
                     ),
                 )
 
-                every { deckRepository.findByIdAndDeletedAtIsNull(deckId) } returns deck
+                every { deckRepository.lockByIdAndDeletedAtIsNull(deckId) } returns deck
                 every { noteTypeRepository.findAllByIdIn(setOf(noteTypeId)) } returns listOf(noteType)
                 every {
                     cardTemplateRepository.findAllByNoteTypeIdIn(setOf(noteTypeId))
@@ -177,7 +183,7 @@ class CardServiceUnitTest :
                 result.items[0].fields shouldBe mapOf("front" to "apple")
                 result.items[1].cardId shouldBe 301L
                 result.items[1].fields shouldBe mapOf("back" to "사과")
-                verify { deckRepository.increaseCardCount(deckId, 2) }
+                deck.cardCount shouldBe 7
                 verify {
                     eventPublisher.publishEvent(
                         CardsCreatedEvent(cardIds = listOf(300L, 301L), deckId = deckId, userId = userId),
@@ -185,7 +191,7 @@ class CardServiceUnitTest :
                 }
             }
 
-            it("여러 카드 묶음 요청 시 묶음마다 템플릿 수만큼 카드를 생성한다") {
+            it("100개 입력에서 템플릿 두 개씩 실제 카드 200장을 생성한다") {
                 val userId = 1L
                 val deckId = 10L
                 val noteTypeId = 1L
@@ -195,13 +201,12 @@ class CardServiceUnitTest :
                 val backTpl = newTemplate(id = 101L, noteType = noteType, requiredFields = listOf("back"), position = 1)
                 val dto = CreateCardsDto(
                     deckId = deckId,
-                    items = listOf(
-                        CreateCardItemDto(noteTypeId = noteTypeId, fields = mapOf("front" to "f1", "back" to "b1")),
-                        CreateCardItemDto(noteTypeId = noteTypeId, fields = mapOf("front" to "f2", "back" to "b2")),
-                    ),
+                    items = List(100) {
+                        CreateCardItemDto(noteTypeId = noteTypeId, fields = mapOf("front" to "f$it", "back" to "b$it"))
+                    },
                 )
 
-                every { deckRepository.findByIdAndDeletedAtIsNull(deckId) } returns deck
+                every { deckRepository.lockByIdAndDeletedAtIsNull(deckId) } returns deck
                 every { noteTypeRepository.findAllByIdIn(setOf(noteTypeId)) } returns listOf(noteType)
                 every {
                     cardTemplateRepository.findAllByNoteTypeIdIn(setOf(noteTypeId))
@@ -219,13 +224,50 @@ class CardServiceUnitTest :
 
                 val result = cardService.createCards(userId, dto)
 
-                result.items shouldHaveSize 4
-                verify { deckRepository.increaseCardCount(deckId, 4) }
-                result.items.map { it.cardId } shouldContainExactlyInAnyOrder listOf(300L, 301L, 302L, 303L)
+                result.items shouldHaveSize 200
+                deck.cardCount shouldBe 200
+                result.items.map { it.cardId } shouldContainExactlyInAnyOrder (300L..499L).toList()
+            }
+
+            it("입력 101개에서 두 장씩 생성되면 요청당 실제 카드 202장으로 상한을 검사한다") {
+                val deck = newDeck(10L, 1L, 199)
+                val noteType = newNoteType(1L)
+                every { deckRepository.lockByIdAndDeletedAtIsNull(10L) } returns deck
+                every { noteTypeRepository.findAllByIdIn(setOf(1L)) } returns listOf(noteType)
+                every { cardTemplateRepository.findAllByNoteTypeIdIn(setOf(1L)) } returns listOf(
+                    newTemplate(100L, noteType, listOf("front")),
+                    newTemplate(101L, noteType, listOf("back")),
+                )
+                shouldThrow<CardLimitExceededException> {
+                    cardService.createCards(
+                        1L,
+                        CreateCardsDto(10L, List(101) { CreateCardItemDto(1L, mapOf("front" to "a", "back" to "b")) }),
+                    )
+                }
+                verify(exactly = 0) { noteRepository.saveAll(any<Iterable<Note>>()) }
+                verify(exactly = 0) { eventPublisher.publishEvent(any<CardsCreatedEvent>()) }
+                deck.cardCount shouldBe 199
+            }
+
+            it("카드 저장이 실패하면 오류를 전달하고 이벤트를 발행하지 않는다") {
+                val deck = newDeck(10L, 1L, 199)
+                val noteType = newNoteType(1L)
+                every { deckRepository.lockByIdAndDeletedAtIsNull(10L) } returns deck
+                every { noteTypeRepository.findAllByIdIn(setOf(1L)) } returns listOf(noteType)
+                every { cardTemplateRepository.findAllByNoteTypeIdIn(setOf(1L)) } returns listOf(
+                    newTemplate(100L, noteType, listOf("front")),
+                )
+                every { noteRepository.saveAll(any<Iterable<Note>>()) } answers { firstArg<Iterable<Note>>().toList() }
+                val failure = IllegalStateException("card storage failed")
+                every { cardRepository.saveAll(any<Iterable<Card>>()) } throws failure
+                shouldThrow<IllegalStateException> {
+                    cardService.createCards(1L, CreateCardsDto(10L, listOf(CreateCardItemDto(1L, mapOf("front" to "a")))))
+                } shouldBe failure
+                verify(exactly = 0) { eventPublisher.publishEvent(any<CardsCreatedEvent>()) }
             }
 
             it("덱이 없으면 DeckNotFoundException 을 던진다") {
-                every { deckRepository.findByIdAndDeletedAtIsNull(99L) } returns null
+                every { deckRepository.lockByIdAndDeletedAtIsNull(99L) } returns null
 
                 shouldThrow<DeckNotFoundException> {
                     cardService.createCards(
@@ -240,7 +282,7 @@ class CardServiceUnitTest :
 
             it("덱 소유자가 아니면 DeckForbiddenException 을 던진다") {
                 val deck = newDeck(id = 10L, userId = 2L)
-                every { deckRepository.findByIdAndDeletedAtIsNull(10L) } returns deck
+                every { deckRepository.lockByIdAndDeletedAtIsNull(10L) } returns deck
 
                 shouldThrow<DeckForbiddenException> {
                     cardService.createCards(
@@ -255,7 +297,7 @@ class CardServiceUnitTest :
 
             it("요청한 노트 타입 중 일부가 존재하지 않으면 NoteTypeNotFoundException 을 던진다") {
                 val deck = newDeck(id = 10L, userId = 1L)
-                every { deckRepository.findByIdAndDeletedAtIsNull(10L) } returns deck
+                every { deckRepository.lockByIdAndDeletedAtIsNull(10L) } returns deck
                 every { noteTypeRepository.findAllByIdIn(setOf(1L, 999L)) } returns listOf(newNoteType(id = 1L))
 
                 shouldThrow<NoteTypeNotFoundException> {
@@ -275,7 +317,7 @@ class CardServiceUnitTest :
             it("노트 타입에 템플릿이 하나도 없으면 NoteTypeNoTemplatesException 을 던진다") {
                 val deck = newDeck(id = 10L, userId = 1L)
                 val noteType = newNoteType(id = 1L)
-                every { deckRepository.findByIdAndDeletedAtIsNull(10L) } returns deck
+                every { deckRepository.lockByIdAndDeletedAtIsNull(10L) } returns deck
                 every { noteTypeRepository.findAllByIdIn(setOf(1L)) } returns listOf(noteType)
                 every { cardTemplateRepository.findAllByNoteTypeIdIn(setOf(1L)) } returns emptyList()
 
@@ -294,7 +336,7 @@ class CardServiceUnitTest :
                 val deck = newDeck(id = 10L, userId = 1L)
                 val noteType = newNoteType(id = 1L)
                 val tpl = newTemplate(id = 100L, noteType = noteType, requiredFields = listOf("front", "back"))
-                every { deckRepository.findByIdAndDeletedAtIsNull(10L) } returns deck
+                every { deckRepository.lockByIdAndDeletedAtIsNull(10L) } returns deck
                 every { noteTypeRepository.findAllByIdIn(setOf(1L)) } returns listOf(noteType)
                 every { cardTemplateRepository.findAllByNoteTypeIdIn(setOf(1L)) } returns listOf(tpl)
 
@@ -499,11 +541,11 @@ class CardServiceUnitTest :
                     CardOwnership(id = 301L, userId = userId, deletedAt = null),
                 )
                 every {
-                    cardRepository.findAllByIdInAndUserIdAndDeletedAtIsNullWithNoteAndTemplate(listOf(300L, 301L), userId)
+                    cardRepository.lockAllActiveByIdInAndUserId(listOf(300L, 301L), userId)
                 } returns listOf(card1, card2)
                 // 두 노트 모두 이번에 지우는 카드 외에 남는 산 카드가 없음 → survivor 없음 → 둘 다 고아
                 every {
-                    cardRepository.findSurvivorNoteIdsByNoteIdInExcludingCards(setOf(200L, 201L), listOf(300L, 301L))
+                    cardRepository.lockSurvivingCardsByNoteIdInExcludingCards(setOf(200L, 201L), listOf(300L, 301L))
                 } returns emptyList()
 
                 val result = cardService.deleteCard(userId, clientTimezone, DeleteCardDto(cardIds = setOf(300L, 301L)))
@@ -540,12 +582,12 @@ class CardServiceUnitTest :
                     CardOwnership(id = 300L, userId = userId, deletedAt = null),
                 )
                 every {
-                    cardRepository.findAllByIdInAndUserIdAndDeletedAtIsNullWithNoteAndTemplate(listOf(300L), userId)
+                    cardRepository.lockAllActiveByIdInAndUserId(listOf(300L), userId)
                 } returns listOf(card)
                 // 노트 200 은 삭제 대상(300) 외에 아직 산 카드가 있어 survivor 로 반환됨 → 고아 아님
                 every {
-                    cardRepository.findSurvivorNoteIdsByNoteIdInExcludingCards(setOf(200L), listOf(300L))
-                } returns listOf(200L)
+                    cardRepository.lockSurvivingCardsByNoteIdInExcludingCards(setOf(200L), listOf(300L))
+                } returns listOf(newCard(id = 302L, template = tpl, note = sharedNote, deck = deck, userId = userId))
 
                 cardService.deleteCard(userId, clientTimezone, DeleteCardDto(cardIds = setOf(300L)))
 
@@ -565,21 +607,28 @@ class CardServiceUnitTest :
                 val cardA = newCard(id = 300L, template = tpl, note = noteA, deck = deckA, userId = userId)
                 val cardB = newCard(id = 301L, template = tpl, note = noteB, deck = deckB, userId = userId)
 
+                every { cardRepository.findDeckIdsByCardIdIn(listOf(300L, 301L)) } returns listOf(11L, 10L)
+
                 every { cardRepository.findAllByIds(setOf(300L, 301L)) } returns listOf(
                     CardOwnership(id = 300L, userId = userId, deletedAt = null),
                     CardOwnership(id = 301L, userId = userId, deletedAt = null),
                 )
                 every {
-                    cardRepository.findAllByIdInAndUserIdAndDeletedAtIsNullWithNoteAndTemplate(listOf(300L, 301L), userId)
+                    cardRepository.lockAllActiveByIdInAndUserId(listOf(300L, 301L), userId)
                 } returns listOf(cardA, cardB)
                 every {
-                    cardRepository.findSurvivorNoteIdsByNoteIdInExcludingCards(setOf(200L, 201L), listOf(300L, 301L))
+                    cardRepository.lockSurvivingCardsByNoteIdInExcludingCards(setOf(200L, 201L), listOf(300L, 301L))
                 } returns emptyList()
 
                 cardService.deleteCard(userId, clientTimezone, DeleteCardDto(cardIds = setOf(300L, 301L)))
 
                 verify { deckRepository.decreaseCardCount(10L, 1) }
                 verify { deckRepository.decreaseCardCount(11L, 1) }
+                verify(exactly = 1) { deckRepository.lockAllByIdIn(listOf(10L, 11L)) }
+                verifyOrder {
+                    deckRepository.lockAllByIdIn(listOf(10L, 11L))
+                    cardRepository.lockAllActiveByIdInAndUserId(listOf(300L, 301L), userId)
+                }
                 verify {
                     eventPublisher.publishEvent(
                         CardsDeletedEvent(
@@ -604,6 +653,23 @@ class CardServiceUnitTest :
                 }
             }
 
+            it("대상 덱 일부를 잠그지 못하면 카드 잠금과 삭제 및 이벤트 발행 전에 거부한다") {
+                every { cardRepository.findAllByIds(setOf(300L, 301L)) } returns listOf(
+                    CardOwnership(id = 300L, userId = 1L, deletedAt = null),
+                    CardOwnership(id = 301L, userId = 1L, deletedAt = null),
+                )
+                every { cardRepository.findDeckIdsByCardIdIn(listOf(300L, 301L)) } returns listOf(11L, 10L)
+                every { deckRepository.lockAllByIdIn(listOf(10L, 11L)) } returns listOf(newDeck(10L, 1L))
+
+                shouldThrow<DeckNotFoundException> {
+                    cardService.deleteCard(1L, clientTimezone, DeleteCardDto(setOf(300L, 301L)))
+                }
+
+                verify(exactly = 0) { cardRepository.lockAllActiveByIdInAndUserId(any(), any()) }
+                verify(exactly = 0) { deckRepository.decreaseCardCount(any(), any()) }
+                verify(exactly = 0) { eventPublisher.publishEvent(any()) }
+            }
+
             it("일부는 살아있고 일부는 이미 삭제된 경우, 산 카드만 삭제하고 응답 카운트는 요청 중 존재하는 전체 수(정책 B)다") {
                 val userId = 1L
                 val noteType = newNoteType(id = 1L)
@@ -617,10 +683,10 @@ class CardServiceUnitTest :
                     CardOwnership(id = 301L, userId = userId, deletedAt = fixedNow), // 이미 삭제됨
                 )
                 every {
-                    cardRepository.findAllByIdInAndUserIdAndDeletedAtIsNullWithNoteAndTemplate(listOf(300L), userId)
+                    cardRepository.lockAllActiveByIdInAndUserId(listOf(300L), userId)
                 } returns listOf(aliveCard)
                 every {
-                    cardRepository.findSurvivorNoteIdsByNoteIdInExcludingCards(setOf(200L), listOf(300L))
+                    cardRepository.lockSurvivingCardsByNoteIdInExcludingCards(setOf(200L), listOf(300L))
                 } returns emptyList()
 
                 val result = cardService.deleteCard(userId, clientTimezone, DeleteCardDto(cardIds = setOf(300L, 301L)))
@@ -654,7 +720,7 @@ class CardServiceUnitTest :
                 }
                 verify(exactly = 0) { eventPublisher.publishEvent(any()) }
                 verify(exactly = 0) {
-                    cardRepository.findAllByIdInAndUserIdAndDeletedAtIsNullWithNoteAndTemplate(any(), any())
+                    cardRepository.lockAllActiveByIdInAndUserId(any(), any())
                 }
             }
 
@@ -693,10 +759,10 @@ class CardServiceUnitTest :
                     CardOwnership(id = 301L, userId = 2L, deletedAt = fixedNow), // 타인의 이미 삭제된 카드
                 )
                 every {
-                    cardRepository.findAllByIdInAndUserIdAndDeletedAtIsNullWithNoteAndTemplate(listOf(300L), userId)
+                    cardRepository.lockAllActiveByIdInAndUserId(listOf(300L), userId)
                 } returns listOf(myAliveCard)
                 every {
-                    cardRepository.findSurvivorNoteIdsByNoteIdInExcludingCards(setOf(200L), listOf(300L))
+                    cardRepository.lockSurvivingCardsByNoteIdInExcludingCards(setOf(200L), listOf(300L))
                 } returns emptyList()
 
                 val result = cardService.deleteCard(userId, clientTimezone, DeleteCardDto(cardIds = setOf(300L, 301L)))
@@ -719,12 +785,12 @@ class CardServiceUnitTest :
                     CardOwnership(id = 301L, userId = userId, deletedAt = null),
                 )
                 every {
-                    cardRepository.findAllByIdInAndUserIdAndDeletedAtIsNullWithNoteAndTemplate(listOf(300L, 301L), userId)
+                    cardRepository.lockAllActiveByIdInAndUserId(listOf(300L, 301L), userId)
                 } returns listOf(card1, card2)
                 // 노트 201(sharedNote)만 survivor 로 반환 → 노트 200(orphanNote)만 고아
                 every {
-                    cardRepository.findSurvivorNoteIdsByNoteIdInExcludingCards(setOf(200L, 201L), listOf(300L, 301L))
-                } returns listOf(201L)
+                    cardRepository.lockSurvivingCardsByNoteIdInExcludingCards(setOf(200L, 201L), listOf(300L, 301L))
+                } returns listOf(newCard(id = 302L, template = tpl, note = sharedNote, deck = deck, userId = userId))
 
                 cardService.deleteCard(userId, clientTimezone, DeleteCardDto(cardIds = setOf(300L, 301L)))
 

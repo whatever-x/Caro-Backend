@@ -13,6 +13,7 @@ import com.whatever.caro.card.internal.card.dto.update.UpdateCardDto
 import com.whatever.caro.card.internal.card.dto.update.UpdateCardResponseDto
 import com.whatever.caro.card.internal.card.exception.CardForbiddenException
 import com.whatever.caro.card.internal.card.exception.CardInvalidFieldsException
+import com.whatever.caro.card.internal.card.exception.CardLimitExceededException
 import com.whatever.caro.card.internal.card.exception.CardNotFoundException
 import com.whatever.caro.card.internal.deck.DeckRepository
 import com.whatever.caro.card.internal.deck.exception.DeckForbiddenException
@@ -71,14 +72,13 @@ class CardService(
         userId: Long,
         dto: CreateCardsDto,
     ): CreateCardsResponseDto {
-        val deck = deckRepository.findByIdAndDeletedAtIsNull(dto.deckId)
+        val deck = deckRepository.lockByIdAndDeletedAtIsNull(dto.deckId)
             ?: throw DeckNotFoundException("deckId=${dto.deckId} 덱을 찾을 수 없습니다")
 
         if (deck.userId != userId) {
             throw DeckForbiddenException("deckId=${dto.deckId} 에 대한 접근 권한이 없습니다")
         }
 
-        // 여러개중에 하나라도 터지면, 실패시키는게 맞을까 ???
         val noteTypeIds = dto.items.map { it.noteTypeId }.toSet()
         val foundNoteTypeIds = noteTypeRepository.findAllByIdIn(noteTypeIds).map { it.id }.toSet()
         val missingNoteTypeIds = noteTypeIds - foundNoteTypeIds
@@ -99,6 +99,13 @@ class CardService(
                 }
             }
         }
+
+        val newCardCount = dto.items.sumOf { templatesByNoteType.getValue(it.noteTypeId).size.toLong() }
+        if (newCardCount > MAX_CARDS_PER_REQUEST) {
+            throw CardLimitExceededException()
+        }
+
+        deck.cardCount += newCardCount.toInt()
 
         val notes = noteRepository.saveAll(
             dto.items.map { Note(userId = userId, fields = it.fields) },
@@ -122,10 +129,6 @@ class CardService(
             )
         }
 
-        deckRepository.increaseCardCount(
-            deckId = deck.id,
-            amount = createdCards.size,
-        )
         eventPublisher.publishEvent(
             CardsCreatedEvent(cardIds = createdCards.map { it.cardId }, deckId = deck.id, userId = userId),
         )
@@ -218,65 +221,77 @@ class CardService(
         timezone: ZoneId,
         dto: DeleteCardDto,
     ): DeleteCardResponseDto {
-        // 받은 카드들 중에서 내게 아닌 카드가 섞여있는지 체크. 한개라도 있다면 카드 삭제 수행 하지 않음
-        val cards = cardRepository.findAllByIds(dto.cardIds)
-        val (aliveCards, _) = cards.partition { it.deletedAt == null }
-
-        val anotherUserCard = aliveCards.find { it.userId != userId }
+        val requestedCards = cardRepository.findAllByIds(dto.cardIds)
+        val activeCards = requestedCards.filter { it.deletedAt == null }
+        val anotherUserCard = activeCards.find { it.userId != userId }
         if (anotherUserCard != null) {
             throw CardForbiddenException("cardId=${anotherUserCard.id} 에 대한 접근 권한이 없습니다")
         }
 
-        // 응답 count 는 요청 중 "내 카드"만 센다 (남의 삭제된 카드는 존재 여부 노출 방지 위해 제외)
-        val myCards = cards.filter { it.userId == userId }
-
-        // 삭제 대상(살아있는 내 카드) — 없으면 삭제/이벤트 없이 count 만 반환
-        val aliveCardIds = aliveCards.map { it.id }
-        if (aliveCardIds.isEmpty()) {
-            return DeleteCardResponseDto(deletedCardsCount = myCards.size)
+        val ownedCardCount = requestedCards.count { it.userId == userId }
+        val response = DeleteCardResponseDto(deletedCardsCount = ownedCardCount)
+        val activeCardIds = activeCards.map { it.id }
+        if (activeCardIds.isEmpty()) {
+            return response
         }
 
-        val cardsToDelete = cardRepository.findAllByIdInAndUserIdAndDeletedAtIsNullWithNoteAndTemplate(
-            ids = aliveCardIds,
+        val deckIds = cardRepository.findDeckIdsByCardIdIn(activeCardIds).sorted()
+        val lockedDeckIds = deckRepository.lockAllByIdIn(deckIds).map { it.id }.toSet()
+        val missingDeckId = deckIds.firstOrNull { it !in lockedDeckIds }
+        if (missingDeckId != null) {
+            throw DeckNotFoundException("deckId=$missingDeckId 덱을 찾을 수 없습니다")
+        }
+
+        // Locking reads see committed deletions even if the transaction already has an older snapshot.
+        val cardsToDelete = cardRepository.lockAllActiveByIdInAndUserId(
+            ids = activeCardIds,
             userId = userId,
         )
+        if (cardsToDelete.isEmpty()) {
+            return response
+        }
 
         val referencedNoteIds = cardsToDelete.map { it.note.id }.toSet()
-        val survivorNoteIds = cardRepository.findSurvivorNoteIdsByNoteIdInExcludingCards(
+        val deletingCardIds = cardsToDelete.map { it.id }
+        val survivingCards = cardRepository.lockSurvivingCardsByNoteIdInExcludingCards(
             referencedNoteIds = referencedNoteIds,
-            deletingCardIds = cardsToDelete.map { it.id },
-        ).toSet()
-        val orphanNoteIds = referencedNoteIds - survivorNoteIds
+            deletingCardIds = deletingCardIds,
+        )
+        val survivingNoteIds = survivingCards.map { it.note.id }.toSet()
+        val orphanNoteIds = referencedNoteIds - survivingNoteIds
 
-        val now = Instant.now(clock)
-        // 카드 soft delete (덱 카드 수 감소는 아래 덱별 처리에서 수행)
-        cardsToDelete.forEach { card -> card.softDelete(now) }
-        // 노트가 더이상 참조하는 카드가 없다면 노트도 삭제
-        cardsToDelete.filter { it.note.id in orphanNoteIds }
-            .forEach { card -> card.note.softDelete(now) }
-
-        // TODO 배치삭제로 수정 필요
-        // 덱 별로 삭제 이벤트 발행
-        cardsToDelete.groupBy { it.deck.id }
-            .forEach { (deckId, deckCards) ->
-                deckRepository.decreaseCardCount(deckId, deckCards.size)
-                eventPublisher.publishEvent(
-                    CardsDeletedEvent(
-                        deckId = deckId,
-                        deletedCount = deckCards.size,
-                        userId = userId,
-                        deletedCardIds = deckCards.map { it.id }.toSet(),
-                        deletedAt = now,
-                        clientTimezone = timezone,
-                    ),
-                )
+        val deletedAt = Instant.now(clock)
+        for (card in cardsToDelete) {
+            card.softDelete(deletedAt)
+            if (card.note.id in orphanNoteIds) {
+                card.note.softDelete(deletedAt)
             }
+        }
 
-        return DeleteCardResponseDto(deletedCardsCount = myCards.size)
+        val cardsByDeck = cardsToDelete.groupBy { it.deck.id }
+        for ((deckId, deckCards) in cardsByDeck) {
+            deckRepository.decreaseCardCount(deckId, deckCards.size)
+            eventPublisher.publishEvent(
+                CardsDeletedEvent(
+                    deckId = deckId,
+                    deletedCount = deckCards.size,
+                    userId = userId,
+                    deletedCardIds = deckCards.map { it.id }.toSet(),
+                    deletedAt = deletedAt,
+                    clientTimezone = timezone,
+                ),
+            )
+        }
+
+        return response
     }
 
     private fun projectFields(
         template: CardTemplate,
         noteFields: Map<String, String>,
     ): Map<String, String> = template.requiredFields.associateWith { key -> noteFields[key].orEmpty() }
+
+    companion object {
+        private const val MAX_CARDS_PER_REQUEST = 200
+    }
 }
