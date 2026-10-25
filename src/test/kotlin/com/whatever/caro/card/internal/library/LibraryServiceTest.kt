@@ -1,6 +1,7 @@
 package com.whatever.caro.card.internal.library
 
 import com.whatever.caro.CaroModuleTest
+import com.whatever.caro.card.api.library.LibraryCatalogApi
 import com.whatever.caro.card.internal.card.CardService
 import com.whatever.caro.card.internal.card.dto.create.CreateCardItemDto
 import com.whatever.caro.card.internal.card.dto.create.CreateCardsDto
@@ -28,6 +29,7 @@ import java.util.concurrent.TimeUnit
 @ActiveProfiles("library-service-test")
 class LibraryServiceTest(
     service: LibraryService,
+    catalog: LibraryCatalogApi,
     sources: LibraryDeckRepository,
     content: LibraryCardRepository,
     receipts: LibraryCopyReceiptRepository,
@@ -70,6 +72,7 @@ class LibraryServiceTest(
         service.list() shouldBe emptyList()
         fixture(published = false)
         val deck = fixture()
+        catalog.publishedDeckIds() shouldBe setOf(deck.id)
         service.list().map { it.libraryDeckId } shouldContainExactly listOf(deck.id)
         service.detail(deck.id).cards.map { it.front } shouldContainExactly listOf("apply", "schedule")
     }

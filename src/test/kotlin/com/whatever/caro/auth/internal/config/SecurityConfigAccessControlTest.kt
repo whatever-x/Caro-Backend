@@ -48,6 +48,7 @@ private val API_POLICY: Map<String, Access> =
             "/users/nicknames/check" to Access.HasAnyRole(setOf(SUSPENDED, ACTIVE)),
             "/auth/logout" to Access.HasAnyRole(setOf(SUSPENDED, ACTIVE)),
             "/decks" to Access.HasAnyRole(setOf(ACTIVE)),
+            "/home/banners?platform=ANDROID&appVersion=1.0.0" to Access.HasAnyRole(setOf(ACTIVE)),
         )
 
 private sealed interface Requester {
