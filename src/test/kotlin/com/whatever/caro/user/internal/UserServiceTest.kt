@@ -20,6 +20,7 @@ import io.kotest.matchers.shouldNotBe
 import org.springframework.data.repository.findByIdOrNull
 import java.time.Instant
 import java.time.LocalDate
+import java.time.ZoneOffset
 import java.util.UUID
 
 @CaroModuleTest(extraIncludes = ["common"])
@@ -140,7 +141,7 @@ class UserServiceTest(
 
         it("신규 가입에서 미성년 여부를 저장한다") {
             val user = createSuspendedUser()
-            userService.completeRegistration(user.id, "MinorNick", true, LocalDate.now().minusYears(5))
+            userService.completeRegistration(user.id, "MinorNick", true, LocalDate.now(ZoneOffset.UTC).minusYears(5))
             userRepository.findByIdOrNull(user.id)!!.isAdult shouldBe false
         }
 
@@ -152,6 +153,15 @@ class UserServiceTest(
             val saved = userRepository.findByIdOrNull(user.id)!!
             saved.status shouldBe UserStatus.SUSPENDED
             saved.isAdult.shouldBeNull()
+        }
+
+        it("탈퇴한 가입 미완료 사용자의 성인 여부를 다시 저장하지 않는다") {
+            val user = createSuspendedUser()
+            userService.deleteMe(user.id)
+            shouldThrow<UserNotFoundException> {
+                userService.completeRegistration(user.id, "DeletedNick", true, LocalDate.of(1990, 1, 1))
+            }
+            userRepository.findByIdOrNull(user.id)!!.isAdult.shouldBeNull()
         }
 
         it("구버전 가입은 연령 미확인 상태로 남는다") {

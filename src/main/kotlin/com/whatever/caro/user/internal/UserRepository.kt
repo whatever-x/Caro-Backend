@@ -10,7 +10,7 @@ import org.springframework.data.jpa.repository.Query
 interface UserRepository : JpaRepository<User, Long> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select u from User u where u.id = :userId")
-    fun findForRegistration(
+    fun findByIdForUpdate(
         userId: Long,
     ): User?
 

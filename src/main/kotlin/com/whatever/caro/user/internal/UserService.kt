@@ -114,8 +114,10 @@ class UserService(
     ): UserInfo {
         require(isTermsAgreed) { "약관 동의가 필요합니다" }
 
-        val user = userRepository.findForRegistration(userId)
+        val user = userRepository.findByIdForUpdate(userId)
             ?: throw UserNotFoundException("사용자를 찾을 수 없습니다: $userId")
+
+        if (user.isDeleted) throw UserNotFoundException("사용자를 찾을 수 없습니다: $userId")
 
         val adult = birthDate?.let {
             val today = clock.instant().atZone(timezone).toLocalDate()
@@ -135,8 +137,9 @@ class UserService(
         userId: Long,
         nickname: String,
     ): UserInfo {
-        val user = userRepository.findByIdOrNull(userId)
+        val user = userRepository.findByIdForUpdate(userId)
             ?: throw UserNotFoundException("사용자를 찾을 수 없습니다: $userId")
+        if (user.isDeleted) throw UserNotFoundException("사용자를 찾을 수 없습니다: $userId")
 
         user.updateNickname(
             nickname = nickname,
@@ -149,7 +152,7 @@ class UserService(
     override fun deleteMe(
         userId: Long,
     ) {
-        val user = userRepository.findByIdOrNull(userId) ?: throw UserNotFoundException("사용자를 찾을 수 없습니다: $userId")
+        val user = userRepository.findByIdForUpdate(userId) ?: throw UserNotFoundException("사용자를 찾을 수 없습니다: $userId")
         user.deleteUserInfo(clock = clock)
     }
 
@@ -170,9 +173,8 @@ class UserService(
     override fun isNicknameAvailable(
         nickname: String,
     ): Boolean {
-        val isValid = NicknameValidator.isValid(nickname)
-        val isExists = userRepository.existsByNicknameAndDeletedAtIsNull(nickname)
-        return isValid && !isExists
+        if (!NicknameValidator.isValid(nickname)) return false
+        return !userRepository.existsByNicknameAndDeletedAtIsNull(nickname)
     }
 }
 
