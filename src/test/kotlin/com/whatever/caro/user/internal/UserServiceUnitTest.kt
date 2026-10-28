@@ -8,7 +8,10 @@ import io.kotest.core.spec.style.DescribeSpec
 import io.kotest.matchers.shouldBe
 import io.mockk.every
 import io.mockk.mockk
+import org.hibernate.exception.ConstraintViolationException
 import org.springframework.dao.DataIntegrityViolationException
+import org.springframework.transaction.PlatformTransactionManager
+import java.sql.SQLException
 import java.time.Clock
 
 class UserServiceUnitTest :
@@ -17,7 +20,7 @@ class UserServiceUnitTest :
         val mockEmailHasher = mockk<EmailHasher>(relaxed = true)
         val mockUserRepo = mockk<UserRepository>(relaxed = true)
         val mockSocialRepo = mockk<SocialAccountRepository>(relaxed = true)
-        val userApi: UserApi = UserService(clock = Clock.systemUTC(), emailHasher = mockEmailHasher, userRepository = mockUserRepo, socialAccountRepository = mockSocialRepo)
+        val userApi: UserApi = UserService(clock = Clock.systemUTC(), emailHasher = mockEmailHasher, userRepository = mockUserRepo, socialAccountRepository = mockSocialRepo, transactionManager = mockk<PlatformTransactionManager>(relaxed = true))
 
         fun createUserWithId(
             id: Long,
@@ -39,7 +42,7 @@ class UserServiceUnitTest :
                     providerUserId = "google-123",
                 )
 
-                every { mockUserRepo.save(any()) } throws DataIntegrityViolationException("race condition으로 인한 중복")
+                every { mockUserRepo.save(any()) } throws DataIntegrityViolationException("provider conflict", ConstraintViolationException("duplicate", SQLException("duplicate", "23000", 1062), "uk_provider_user"))
                 every {
                     mockSocialRepo.findByProviderAndProviderUserId(
                         provider = existingSocialAccount.provider,
@@ -60,7 +63,7 @@ class UserServiceUnitTest :
             it("fallback 후, 조회되는 유저가 없다면 예외를 re-throw한다") {
                 val provider = SocialProvider.GOOGLE
                 val providerUserId = "google-123"
-                every { mockUserRepo.save(any()) } throws DataIntegrityViolationException("모종의 이유로 저장 실패")
+                every { mockUserRepo.save(any()) } throws DataIntegrityViolationException("provider conflict", ConstraintViolationException("duplicate", SQLException("duplicate", "23000", 1062), "uk_provider_user"))
                 every {
                     mockSocialRepo.findByProviderAndProviderUserId(
                         provider = provider,

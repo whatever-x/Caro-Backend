@@ -6,8 +6,10 @@ import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.DescribeSpec
 import io.kotest.matchers.shouldBe
 import io.mockk.every
+import io.mockk.justRun
 import io.mockk.mockk
 import io.mockk.verify
+import org.springframework.transaction.PlatformTransactionManager
 import java.time.Clock
 import java.time.Instant
 import java.time.LocalDate
@@ -17,13 +19,14 @@ import java.time.ZoneOffset
 class RegistrationAgeUnitTest :
     DescribeSpec({
         val repository = mockk<UserRepository>()
+        justRun { repository.flush() }
         val clock = Clock.fixed(Instant.parse("2026-10-28T12:00:00Z"), ZoneOffset.UTC)
-        val service = UserService(clock, mockk<EmailHasher>(), repository, mockk<SocialAccountRepository>())
+        val service = UserService(clock, mockk<EmailHasher>(), repository, mockk<SocialAccountRepository>(), mockk<PlatformTransactionManager>(relaxed = true))
 
         describe("닉네임 사전 검증") {
             it("유효하지 않은 닉네임은 DB를 조회하지 않는다") {
                 val nicknameRepository = mockk<UserRepository>()
-                val nicknameService = UserService(clock, mockk<EmailHasher>(), nicknameRepository, mockk<SocialAccountRepository>())
+                val nicknameService = UserService(clock, mockk<EmailHasher>(), nicknameRepository, mockk<SocialAccountRepository>(), mockk<PlatformTransactionManager>(relaxed = true))
                 nicknameService.isNicknameAvailable("invalid nickname") shouldBe false
                 verify(exactly = 0) { nicknameRepository.existsByNicknameAndDeletedAtIsNull(any()) }
             }
@@ -43,7 +46,7 @@ class RegistrationAgeUnitTest :
                 every { repository.findByIdForUpdate(4L) } returns user
                 every { repository.existsByNicknameAndDeletedAtIsNull("birthday") } returns false
                 val seoulMidnight = Clock.fixed(Instant.parse("2026-10-27T15:30:00Z"), ZoneOffset.UTC)
-                val birthdayService = UserService(seoulMidnight, mockk<EmailHasher>(), repository, mockk<SocialAccountRepository>())
+                val birthdayService = UserService(seoulMidnight, mockk<EmailHasher>(), repository, mockk<SocialAccountRepository>(), mockk<PlatformTransactionManager>(relaxed = true))
                 birthdayService.completeRegistration(4L, "birthday", true, LocalDate.of(2008, 10, 28), ZoneId.of("Asia/Seoul"))
                 user.isAdult shouldBe true
             }
