@@ -128,7 +128,7 @@ fun findUserIdsWithStudyToday(
 
 | ID | 질문 | 선택지·영향 | 권장 | 근거/재개 조건 |
 |---|---|---|---|---|
-| D1 | "복습할 카드"의 정의 | (a) 엄격 REVIEW only (`existsTodayReviewCardByUser`) (b) 오늘 출제 대상 NEW+REVIEW(= !휴식, 카드 보유 시) | **(b)** | 알림이 "오늘의 학습"으로 연결되고 오늘의 학습은 NEW+REVIEW. 단 기능명이 "복습"이라 (a) 여지. Planning 확정 필요 |
+| D1 | ~~"복습할 카드"의 정의~~ **결정됨(2026-10-29, 담당자)**: (b) 오늘 출제 대상 NEW+REVIEW(= !휴식, 카드 보유 시) | — | **(b) 확정** | 알림이 "오늘의 학습"으로 연결되고 오늘의 학습은 NEW+REVIEW. → 판정은 study `isRestDay`의 역 = `findUserIdsWithStudyToday` 사용 |
 | D2 | 발송 시각 granularity | (a) 시(hour)만, cron 매시 (b) 분까지, cron 매분/15분 | **(a) v1** | 스트릭 리마인더와 동일, 구현·부하 단순. 분 단위는 후속 |
 | D3 | 타임존 처리 | 기기 tz(DeviceToken.timezone) 버케팅 재사용 | **기기 tz** | learning.md "기준 시간대=기기 시간대" + 기존 streak 패턴. 설정에 tz 저장 안 함 |
 | D4 | 야간 발송 동의 | 개인정보 처리방침상 야간 광고성 발송 별도 동의 | 발송 허용 시간대 가드 또는 동의 절차 | ads-and-notifications.md 명시. Step4 기획 반영 |
@@ -141,4 +141,4 @@ fun findUserIdsWithStudyToday(
 - 실행한 것: origin BE/FE clone·코드 정독, 모듈 경계·기존 스케줄러·판정 쿼리 확인. **제품 코드·마이그레이션·테스트는 아직 실행 안 함(Step4).**
 - 미실행: 실제 구현, `make check`, staging 발송.
 - 작업 위치: Caro-Backend `feat/review-reminder`(로컬, 미push), Caro-Mobile `feat/review-reminder`(로컬, 미push).
-- 상태: **진행 중** — D1~D7 중 D1·D4가 구현을 바꾸는 필수 결정. 해소 전까지 설계 완료 아님.
+- 상태: **설계 정리 완료, 정책 반영 대기.** D1 결정됨(2026-10-29, (b)). 남은 D4(야간 발송 동의)는 Planning 정책 결정으로 Step4 기획 실행에서 반영한다(설계 구조는 바뀌지 않음 — 발송 허용 시간대 가드로 수용). D2/D5/D6/D7은 권장안 확정.
