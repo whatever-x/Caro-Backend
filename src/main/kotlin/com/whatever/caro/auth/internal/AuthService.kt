@@ -81,11 +81,15 @@ class AuthService(
         authUser: AuthUser,
         request: CompleteRegistrationRequest,
         deviceId: String,
+        birthDate: java.time.LocalDate? = null,
+        timezone: java.time.ZoneId = java.time.ZoneOffset.UTC,
     ): TokenResponse {
         val userInfo = userApi.completeRegistration(
             userId = authUser.userId,
             nickname = request.nickname,
             isTermsAgreed = request.isTermsAgreed,
+            birthDate = birthDate,
+            timezone = timezone,
         )
 
         tokenBlacklistRepository.add(

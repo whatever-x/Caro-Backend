@@ -1,11 +1,19 @@
 package com.whatever.caro.user.internal
 
+import jakarta.persistence.LockModeType
 import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository
+import org.springframework.data.jpa.repository.Lock
 import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
 
 interface UserRepository : JpaRepository<User, Long> {
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select u from User u where u.id = :userId")
+    fun findForRegistration(
+        userId: Long,
+    ): User?
+
     fun existsByNicknameAndDeletedAtIsNull(
         nickname: String,
     ): Boolean

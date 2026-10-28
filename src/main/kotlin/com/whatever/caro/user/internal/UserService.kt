@@ -3,6 +3,7 @@ package com.whatever.caro.user.internal
 import com.whatever.caro.user.SocialProvider
 import com.whatever.caro.user.UserApi
 import com.whatever.caro.user.UserInfo
+import com.whatever.caro.user.exception.InvalidBirthDateException
 import com.whatever.caro.user.exception.UserNotFoundException
 import com.whatever.caro.user.internal.encrypt.EmailHasher
 import io.github.oshai.kotlinlogging.KotlinLogging
@@ -12,6 +13,8 @@ import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Clock
+import java.time.LocalDate
+import java.time.ZoneId
 import java.util.UUID
 
 private val logger = KotlinLogging.logger {}
@@ -44,6 +47,7 @@ class UserService(
             nickname = user.nickname,
             email = user.encryptedPrimaryEmail,
             socialProvider = socialAccount.provider,
+            isAdult = user.isAdult,
         )
     }
 
@@ -105,16 +109,24 @@ class UserService(
         userId: Long,
         nickname: String,
         isTermsAgreed: Boolean,
+        birthDate: LocalDate?,
+        timezone: ZoneId,
     ): UserInfo {
         require(isTermsAgreed) { "약관 동의가 필요합니다" }
 
-        val user = userRepository.findByIdOrNull(userId)
+        val user = userRepository.findForRegistration(userId)
             ?: throw UserNotFoundException("사용자를 찾을 수 없습니다: $userId")
 
+        val adult = birthDate?.let {
+            val today = clock.instant().atZone(timezone).toLocalDate()
+            if (it.year < 1 || it.isAfter(today)) throw InvalidBirthDateException("유효하지 않은 생년월일입니다")
+            !it.plusYears(18).isAfter(today)
+        }
         user.completeRegistration(
             nickname = nickname,
             isNicknameDuplicated = { nickname -> !isNicknameAvailable(nickname) },
         )
+        user.isAdult = adult
         return user.toInfo()
     }
 

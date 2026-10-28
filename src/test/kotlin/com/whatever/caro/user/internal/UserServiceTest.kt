@@ -4,6 +4,7 @@ import com.whatever.caro.CaroModuleTest
 import com.whatever.caro.user.SocialProvider
 import com.whatever.caro.user.UserStatus
 import com.whatever.caro.user.exception.AlreadyCompletedException
+import com.whatever.caro.user.exception.InvalidBirthDateException
 import com.whatever.caro.user.exception.NicknameDuplicatedException
 import com.whatever.caro.user.exception.UserNotFoundException
 import com.whatever.caro.user.internal.encrypt.EmailHasher
@@ -18,6 +19,7 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import org.springframework.data.repository.findByIdOrNull
 import java.time.Instant
+import java.time.LocalDate
 import java.util.UUID
 
 @CaroModuleTest(extraIncludes = ["common"])
@@ -130,6 +132,33 @@ class UserServiceTest(
     }
 
     describe("completeRegistration") {
+        it("신규 가입에서 성인 여부를 저장한다") {
+            val user = createSuspendedUser()
+            userService.completeRegistration(user.id, "AdultNick", true, LocalDate.of(1990, 1, 1))
+            userRepository.findByIdOrNull(user.id)!!.isAdult shouldBe true
+        }
+
+        it("신규 가입에서 미성년 여부를 저장한다") {
+            val user = createSuspendedUser()
+            userService.completeRegistration(user.id, "MinorNick", true, LocalDate.now().minusYears(5))
+            userRepository.findByIdOrNull(user.id)!!.isAdult shouldBe false
+        }
+
+        it("미래 생년월일이면 가입 상태를 바꾸지 않는다") {
+            val user = createSuspendedUser()
+            shouldThrow<InvalidBirthDateException> {
+                userService.completeRegistration(user.id, "FutureNick", true, LocalDate.of(2999, 1, 1))
+            }
+            val saved = userRepository.findByIdOrNull(user.id)!!
+            saved.status shouldBe UserStatus.SUSPENDED
+            saved.isAdult.shouldBeNull()
+        }
+
+        it("구버전 가입은 연령 미확인 상태로 남는다") {
+            val user = createSuspendedUser()
+            userService.completeRegistration(user.id, "LegacyNick", true)
+            userRepository.findByIdOrNull(user.id)!!.isAdult.shouldBeNull()
+        }
         it("정상적으로 등록을 완료한다") {
             val user = createSuspendedUser()
             user.status shouldBe UserStatus.SUSPENDED
@@ -464,6 +493,14 @@ class UserServiceTest(
     }
 
     describe("deleteMe") {
+        it("탈퇴 시 성인 여부를 삭제한다") {
+            val user = createActiveUser()
+            user.isAdult = true
+            userRepository.save(user)
+            userService.deleteMe(user.id)
+            userRepository.findByIdOrNull(user.id)!!.isAdult.shouldBeNull()
+        }
+
         it("soft delete 처리되어 deletedAt이 설정된다") {
             val user = createActiveUser()
 
