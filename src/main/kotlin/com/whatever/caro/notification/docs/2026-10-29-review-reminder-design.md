@@ -131,7 +131,7 @@ fun findUserIdsWithStudyToday(
 | D1 | ~~"복습할 카드"의 정의~~ **결정됨(2026-10-29, 담당자)**: (b) 오늘 출제 대상 NEW+REVIEW(= !휴식, 카드 보유 시) | — | **(b) 확정** | 알림이 "오늘의 학습"으로 연결되고 오늘의 학습은 NEW+REVIEW. → 판정은 study `isRestDay`의 역 = `findUserIdsWithStudyToday` 사용 |
 | D2 | 발송 시각 granularity | (a) 시(hour)만, cron 매시 (b) 분까지, cron 매분/15분 | **(a) v1** | 스트릭 리마인더와 동일, 구현·부하 단순. 분 단위는 후속 |
 | D3 | 타임존 처리 | 기기 tz(DeviceToken.timezone) 버케팅 재사용 | **기기 tz** | learning.md "기준 시간대=기기 시간대" + 기존 streak 패턴. 설정에 tz 저장 안 함 |
-| D4 | 야간 발송 동의 | 개인정보 처리방침상 야간 광고성 발송 별도 동의 | 발송 허용 시간대 가드 또는 동의 절차 | ads-and-notifications.md 명시. Step4 기획 반영 |
+| D4 | ~~야간 발송 동의~~ **결정됨(2026-11-01, 담당자)**: 복습 알림을 **서비스성(비광고성) 알림으로 분류** | — | 야간 가드·별도 동의 **없음** | 유저가 직접 켜고 시각까지 설정한 학습 리마인더 → 영리목적 광고성 아님. 정보통신망법 야간(21~08시) 동의 요건 미적용. 현재 on/off + OS 권한으로 충분. **BE 추가 코드 없음**(현 스케줄러가 설정 시각 그대로 발송). 법무/기획 최종 확인 권장. Planning `ads-and-notifications.md` 갱신은 Step4 기획 실행 |
 | D5 | 중복 발송 방지 | last-sent-date 가드 둘지 | 넣는 쪽 권장(스케줄러 재기동/중복 실행 대비) | 운영 안전성 |
 | D6 | 딥링크 대상 | (a) Home(오늘 학습할 덱 목록) (b) 특정 덱 LearningEntry | **(a) Home** | 알림은 계정 단위, 오늘의 학습은 여러 덱. FE 문서 D-FE1과 연결 |
 | D7 | 기기 tz/locale 획득 경로 확인 | 등록 시 헤더(Client-Timezone/Accept-Language)로 채우는지 origin 컨트롤러 재확인 | — | `RegisterDeviceTokenRequest`는 token+platform뿐이나 엔티티는 tz/locale 필수 → 헤더 경로 추정, 확인 필요 |
