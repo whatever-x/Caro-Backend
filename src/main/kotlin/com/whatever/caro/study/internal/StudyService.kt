@@ -22,6 +22,7 @@ import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
+import java.time.LocalDate
 import java.time.ZoneId
 
 @Service
@@ -45,6 +46,27 @@ class StudyService(
         cardLearningStateRepository.hardDeleteAllByUserId(userId)
         studyDayRepository.hardDeleteAllByUserId(userId)
         streakStateRepository.hardDeleteAllByUserId(userId)
+    }
+
+    @Transactional(readOnly = true)
+    override fun findUserIdsWithStudyToday(
+        userIds: Collection<Long>,
+        now: Instant,
+        timezone: ZoneId,
+        dayCutoffHour: Int,
+    ): Set<Long> {
+        if (userIds.isEmpty()) {
+            return emptySet()
+        }
+        // dayCutoff를 반영한 "오늘"의 다음 세션 시작일(오늘 학습일의 배타적 상한) = 오늘 + 1일.
+        val nextSessionStart: LocalDate = now.atZone(timezone)
+            .minusHours(dayCutoffHour.toLong())
+            .toLocalDate()
+            .plusDays(1)
+        return cardLearningStateRepository.findUserIdsWithStudyToday(
+            userIds = userIds,
+            nextSessionStart = nextSessionStart,
+        ).toSet()
     }
 
     @Transactional

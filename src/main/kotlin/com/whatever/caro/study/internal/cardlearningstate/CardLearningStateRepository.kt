@@ -178,6 +178,27 @@ interface CardLearningStateRepository :
         nextReviewDate: LocalDate,
     ): Boolean
 
+    /**
+     * 입력한 유저 중 오늘 학습(출제) 대상 카드가 있는 유저의 id를 반환한다.
+     * 대상 = NEW 카드 또는 오늘까지 예정된 REVIEW 카드(nextReviewDate < nextSessionStart).
+     * 복습 알림의 "복습할 카드 있음" 조건을 유저 집합에 대해 한 번에 판정한다(N+1 회피).
+     */
+    @Query(
+        """
+        select distinct cls.userId from CardLearningState cls
+        where cls.userId in :userIds
+            and cls.deletedAt is null
+            and (
+                cls.status = CardLearningStatus.NEW
+                or (cls.status = CardLearningStatus.REVIEW and cls.nextReviewDate < :nextSessionStart)
+            )
+    """,
+    )
+    fun findUserIdsWithStudyToday(
+        userIds: Collection<Long>,
+        nextSessionStart: LocalDate,
+    ): List<Long>
+
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("delete from CardLearningState cls where cls.userId = :userId")
     fun hardDeleteAllByUserId(

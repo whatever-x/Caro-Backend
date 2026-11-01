@@ -645,4 +645,98 @@ class CardLearningStateRepositoryTest(
             result shouldBe false
         }
     }
+
+    describe("findUserIdsWithStudyToday") {
+        it("NEW 카드가 있는 user를 포함한다") {
+            createCls(cardId = 1L, userId = 1L, status = CardLearningStatus.NEW)
+
+            val result = cardLearningStateRepository.findUserIdsWithStudyToday(
+                userIds = listOf(1L),
+                nextSessionStart = nextSessionStart,
+            )
+
+            result shouldContainExactlyInAnyOrder listOf(1L)
+        }
+
+        it("오늘까지 예정된 REVIEW 카드가 있는 user를 포함한다") {
+            createCls(
+                cardId = 1L,
+                userId = 1L,
+                status = CardLearningStatus.REVIEW,
+                nextReviewDate = nextSessionStart.minusDays(1), // 오늘
+            )
+
+            val result = cardLearningStateRepository.findUserIdsWithStudyToday(
+                userIds = listOf(1L),
+                nextSessionStart = nextSessionStart,
+            )
+
+            result shouldContainExactlyInAnyOrder listOf(1L)
+        }
+
+        it("오늘 학습 범위 밖의 REVIEW(nextReviewDate >= nextSessionStart)만 있으면 제외한다") {
+            createCls(
+                cardId = 1L,
+                userId = 1L,
+                status = CardLearningStatus.REVIEW,
+                nextReviewDate = nextSessionStart,
+            )
+
+            val result = cardLearningStateRepository.findUserIdsWithStudyToday(
+                userIds = listOf(1L),
+                nextSessionStart = nextSessionStart,
+            )
+
+            result shouldBe emptyList()
+        }
+
+        it("soft delete된 카드만 있는 user는 제외한다") {
+            val deleted = createCls(cardId = 1L, userId = 1L, status = CardLearningStatus.NEW)
+            deleted.softDelete(deletedAt = deletedAt)
+            cardLearningStateRepository.save(deleted)
+
+            val result = cardLearningStateRepository.findUserIdsWithStudyToday(
+                userIds = listOf(1L),
+                nextSessionStart = nextSessionStart,
+            )
+
+            result shouldBe emptyList()
+        }
+
+        it("SUSPENDED 카드만 있는 user는 제외한다") {
+            createCls(cardId = 1L, userId = 1L, status = CardLearningStatus.SUSPENDED)
+
+            val result = cardLearningStateRepository.findUserIdsWithStudyToday(
+                userIds = listOf(1L),
+                nextSessionStart = nextSessionStart,
+            )
+
+            result shouldBe emptyList()
+        }
+
+        it("입력 userIds 중 오늘 학습 대상이 있는 user만 반환한다") {
+            createCls(cardId = 1L, userId = 1L, status = CardLearningStatus.NEW)
+            createCls(cardId = 2L, userId = 2L, status = CardLearningStatus.REVIEW, nextReviewDate = nextSessionStart)
+            createCls(cardId = 3L, userId = 3L, status = CardLearningStatus.REVIEW, nextReviewDate = nextSessionStart.minusDays(1))
+
+            val result = cardLearningStateRepository.findUserIdsWithStudyToday(
+                userIds = listOf(1L, 2L, 3L),
+                nextSessionStart = nextSessionStart,
+            )
+
+            result shouldContainExactlyInAnyOrder listOf(1L, 3L)
+        }
+
+        it("한 user가 여러 대상 카드를 가져도 user id는 중복 없이 한 번만 반환한다") {
+            createCls(cardId = 1L, userId = 1L, status = CardLearningStatus.NEW)
+            createCls(cardId = 2L, userId = 1L, status = CardLearningStatus.REVIEW, nextReviewDate = nextSessionStart.minusDays(1))
+
+            val result = cardLearningStateRepository.findUserIdsWithStudyToday(
+                userIds = listOf(1L),
+                nextSessionStart = nextSessionStart,
+            )
+
+            result shouldContainExactlyInAnyOrder listOf(1L)
+        }
+    }
 })
