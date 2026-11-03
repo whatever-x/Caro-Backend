@@ -9,6 +9,5 @@ class LibraryCatalogApiImpl(
     private val repository: LibraryDeckRepository,
 ) : LibraryCatalogApi {
     @Transactional(readOnly = true)
-    override fun publishedDeckIds(): Set<Long> =
-        repository.findByPublishedTrueOrderBySortOrderAscIdAsc().map { it.id }.toSet()
+    override fun publishedDeckIds(): Set<Long> = repository.findPublishedIds().toSet()
 }

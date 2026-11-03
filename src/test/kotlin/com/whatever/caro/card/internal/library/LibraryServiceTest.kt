@@ -70,7 +70,9 @@ class LibraryServiceTest(
 
     it("게시된 덱만 정렬하고 빈 목록과 카드 순서를 반환한다") {
         service.list() shouldBe emptyList()
+        catalog.publishedDeckIds() shouldBe emptySet()
         fixture(published = false)
+        catalog.publishedDeckIds() shouldBe emptySet()
         val deck = fixture()
         catalog.publishedDeckIds() shouldBe setOf(deck.id)
         service.list().map { it.libraryDeckId } shouldContainExactly listOf(deck.id)
