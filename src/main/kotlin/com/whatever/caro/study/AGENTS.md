@@ -24,6 +24,8 @@
   바꾸려면 코드 상수와 CHECK를 바꾸는 새 `V<n>` SQL을 같은 변경에 넣는다. clamp를 바꾸지 않으면 600000을 넘는 값은 새 상한 안이어도 600000으로 저장되고, EF 컬럼은 `DECIMAL(3,2)`라 9.99를 넘기려면 컬럼 타입도 바꾼다.
 - `Rating`에 값을 더하면 `SchedulingStates`의 `again`·`fair`·`easy` 필드와 `pick`, `RatingCounts`와 `toRatingCounts`, `review_logs`의 `chk_log_rating`(새 `V<n>` SQL로 교체)을 한 변경에서 같이 고친다.
   `pick`은 `when`에 else가 없어 enum만 늘리면 컴파일이 실패하고, `toRatingCounts`는 새 값을 세지 않아도 컴파일되며, CHECK를 바꾸지 않으면 INSERT가 CHECK 위반으로 실패한다.
+  학습 리포트도 평가를 세 값으로 나눠 센다. `StudyReportRepository`의 `countReviews`·`countReviewsByDate`·`findSessions`의 `sum(case when rl.rating = ...)`, `ReportRows`의 `easy`·`fair`·`again`, `StudyReportRatingCountsDto`와 `StudyReportService.ratingCounts`, bff의 `ReportBucket`·`ReportBuckets.build`·`ReportRatingsResponse`를 함께 고친다.
+  JPQL 문자열이라 새 값을 세지 않아도 컴파일되고, 그러면 분포의 합이 `count(rl.id)`보다 작아진다. `StudyReportServiceTest`의 "모든 평가 종류가 분포에 집계된다"는 `when`에 else가 없어 `Rating`에 값을 더하면 컴파일이 실패한다.
 - 휴식일 기록(`StreakService.recordRest`)은 `study_days` upsert의 영향 행 수로 신규 여부를 판정한다(삽입 1, 이미 있음 2). 두 upsert의 update 절이 항상 `updated_at = NOW(6)`를 쓰므로 중복은 2이고, 코드의 0 분기는 실행되지 않는다. `recordStudied`는 1과 2 모두 streak을 다시 계산한다.
   update 절을 값이 바뀌지 않는 형태로 바꾸면 local `DB_URL`의 기본 JDBC 설정(`useAffectedRows=false`)에서 중복이 1로 반환돼 중복 요청마다 streak을 한 번 더 계산하고, 이를 검사하는 테스트는 없다. 배포 환경 `DB_URL`의 이 옵션은 Infisical에 있어 코드로 확인할 수 없다.
   `upsertStudied`의 `streak_type = 'DAILY_STUDY'`를 빼면 휴식일 행이 학습일로 바뀌지 않아 streak이 오르지 않는다(`StreakServiceTest`의 "휴식일로 기록되었을 때 학습 기록이 들어온다면 학습일로 수정되고 streak에 반영된다").

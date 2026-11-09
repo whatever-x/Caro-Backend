@@ -95,6 +95,30 @@ class StudyReportServiceTest(
             ),
         )
 
+    describe("평가 종류") {
+        it("모든 평가 종류가 분포에 집계된다") {
+            val s = session(day1)
+            Rating.entries.forEachIndexed { i, rating -> log(s, cardId = 100L + i, rating = rating) }
+            val max = studyReportService.getMaxReviewId(USER_ID)
+
+            val counts = studyReportService.getCounts(USER_ID, null, ALL_TIME, max).ratings
+            val daily = studyReportService.getDailyCounts(USER_ID, null, StudyReportPeriod(day1, day1), max).single().ratings
+            val session = studyReportService.getSessions(USER_ID, null, ALL_TIME, null, max, 20).single().counts.ratings
+
+            listOf(counts, daily, session).forEach { ratings ->
+                Rating.entries.forEach { rating ->
+                    // else가 없어 Rating에 값이 추가되면 이 테스트가 컴파일되지 않는다
+                    val counted = when (rating) {
+                        Rating.EASY -> ratings.easy
+                        Rating.FAIR -> ratings.fair
+                        Rating.AGAIN -> ratings.again
+                    }
+                    counted shouldBe 1
+                }
+            }
+        }
+    }
+
     describe("getCounts") {
         it("평가 횟수, 고유 카드 수, 학습일 수를 구분하고 평가별 합계가 평가 횟수와 같다") {
             val s1 = session(day1)
