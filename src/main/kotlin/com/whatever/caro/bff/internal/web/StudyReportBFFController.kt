@@ -48,7 +48,8 @@ import java.time.LocalDate
 import java.time.ZoneId
 
 private const val PERIOD_DESCRIPTION = """
-        startDate와 endDate는 둘 다 보내거나 둘 다 생략한다. 생략하면 전체 기간이다.
+        startDate와 endDate는 둘 다 보내거나 둘 다 생략한다. 생략하면 전체 기간(첫 학습일부터 Client-Timezone 기준 오늘까지)이다.
+        시간대를 옮겨 학습일이 오늘보다 늦은 기록은 그날이 될 때까지 전체 기간에도 나오지 않는다.
         두 날짜를 포함하며, 한쪽만 보내거나 시작일이 종료일보다 늦거나 종료일이 Client-Timezone 기준 오늘보다 늦으면 400(R001)이다.
         날짜는 학습한 날(세션의 학습일) 기준이다. 일일 학습에 저장된 평가만 집계하고 벼락치기는 포함하지 않는다.
 """

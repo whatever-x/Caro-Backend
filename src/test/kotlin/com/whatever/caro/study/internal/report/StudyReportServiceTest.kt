@@ -104,7 +104,7 @@ class StudyReportServiceTest(
             log(s2, cardId = 10L, rating = Rating.FAIR)
             val max = studyReportService.getMaxReviewId(USER_ID)
 
-            val counts = studyReportService.getCounts(USER_ID, deckId = null, period = null, maxReviewId = max)
+            val counts = studyReportService.getCounts(USER_ID, deckId = null, period = ALL_TIME, maxReviewId = max)
 
             counts.reviewCount shouldBe 3
             counts.uniqueCardCount shouldBe 2
@@ -117,8 +117,8 @@ class StudyReportServiceTest(
             log(session(day1, deckId = OTHER_DECK_ID), cardId = 20L, rating = Rating.EASY)
             val max = studyReportService.getMaxReviewId(USER_ID)
 
-            studyReportService.getCounts(USER_ID, null, null, max).studyDayCount shouldBe 1
-            studyReportService.getCounts(USER_ID, DECK_ID, null, max).reviewCount shouldBe 1
+            studyReportService.getCounts(USER_ID, null, ALL_TIME, max).studyDayCount shouldBe 1
+            studyReportService.getCounts(USER_ID, DECK_ID, ALL_TIME, max).reviewCount shouldBe 1
         }
 
         it("벼락치기 세션과 다른 사용자의 로그는 집계하지 않는다") {
@@ -127,7 +127,7 @@ class StudyReportServiceTest(
             log(session(day1, userId = OTHER_USER_ID), cardId = 30L, rating = Rating.EASY)
             val max = maxOf(studyReportService.getMaxReviewId(USER_ID), studyReportService.getMaxReviewId(OTHER_USER_ID))
 
-            studyReportService.getCounts(USER_ID, null, null, max).reviewCount shouldBe 1
+            studyReportService.getCounts(USER_ID, null, ALL_TIME, max).reviewCount shouldBe 1
         }
 
         it("완료하지 않은 세션의 저장된 평가도 포함한다") {
@@ -135,7 +135,7 @@ class StudyReportServiceTest(
             log(session(day2, status = StudySessionStatus.ACTIVE), cardId = 11L, rating = Rating.FAIR)
             val max = studyReportService.getMaxReviewId(USER_ID)
 
-            studyReportService.getCounts(USER_ID, null, null, max).reviewCount shouldBe 2
+            studyReportService.getCounts(USER_ID, null, ALL_TIME, max).reviewCount shouldBe 2
         }
 
         it("기간은 시작일과 종료일을 포함한다") {
@@ -154,11 +154,11 @@ class StudyReportServiceTest(
             val max = studyReportService.getMaxReviewId(USER_ID)
             log(s1, cardId = 11L, rating = Rating.EASY)
 
-            studyReportService.getCounts(USER_ID, null, null, max).reviewCount shouldBe 1
+            studyReportService.getCounts(USER_ID, null, ALL_TIME, max).reviewCount shouldBe 1
         }
 
         it("기록이 없으면 모두 0이다") {
-            val counts = studyReportService.getCounts(USER_ID, null, null, studyReportService.getMaxReviewId(USER_ID))
+            val counts = studyReportService.getCounts(USER_ID, null, ALL_TIME, studyReportService.getMaxReviewId(USER_ID))
 
             counts.reviewCount shouldBe 0
             counts.ratings shouldBe StudyReportRatingCountsDto(0, 0, 0)
@@ -187,9 +187,17 @@ class StudyReportServiceTest(
             log(session(day1, deckId = 98L, studyType = StudyType.FULL_DECK), cardId = 30L, rating = Rating.EASY)
             val max = studyReportService.getMaxReviewId(USER_ID)
 
-            studyReportService.getFirstStudyDate(USER_ID, null, max) shouldBe day2
-            studyReportService.getFirstStudyDate(USER_ID, OTHER_DECK_ID, max) shouldBe day3
-            studyReportService.getFirstStudyDate(OTHER_USER_ID, null, max).shouldBeNull()
+            studyReportService.getFirstStudyDate(USER_ID, null, max, until = day3) shouldBe day2
+            studyReportService.getFirstStudyDate(USER_ID, OTHER_DECK_ID, max, until = day3) shouldBe day3
+            studyReportService.getFirstStudyDate(OTHER_USER_ID, null, max, until = day3).shouldBeNull()
+        }
+
+        it("until보다 늦은 학습일은 첫 학습일로 보지 않는다") {
+            // 시간대를 서쪽으로 옮겨 학습일(day3)이 요청의 오늘(day2)보다 늦은 경우
+            log(session(day3), cardId = 10L, rating = Rating.EASY)
+            val max = studyReportService.getMaxReviewId(USER_ID)
+
+            studyReportService.getFirstStudyDate(USER_ID, null, max, until = day2).shouldBeNull()
         }
     }
 
@@ -216,13 +224,13 @@ class StudyReportServiceTest(
             log(s2b, 20L, Rating.EASY)
             val max = studyReportService.getMaxReviewId(USER_ID)
 
-            val first = studyReportService.getSessions(USER_ID, null, null, after = null, maxReviewId = max, limit = 2)
+            val first = studyReportService.getSessions(USER_ID, null, ALL_TIME, after = null, maxReviewId = max, limit = 2)
             first.map { it.sessionId } shouldContainExactly listOf(s2b.id, s2a.id).sortedDescending()
             val last = first.last()
             val second = studyReportService.getSessions(
                 USER_ID,
                 null,
-                null,
+                ALL_TIME,
                 after = StudyReportSessionKey(last.studyDate, last.sessionId),
                 maxReviewId = max,
                 limit = 2,
@@ -248,6 +256,24 @@ class StudyReportServiceTest(
         }
     }
 
+    describe("전체 기간(시작일 없음)") {
+        it("종료일보다 늦은 학습일은 합계와 목록에 나오지 않는다") {
+            log(session(day1), cardId = 10L, rating = Rating.EASY)
+            log(session(day3), cardId = 11L, rating = Rating.FAIR)
+            val max = studyReportService.getMaxReviewId(USER_ID)
+            val untilDay2 = StudyReportPeriod(startDate = null, endDate = day2)
+
+            studyReportService.getCounts(USER_ID, null, untilDay2, max).reviewCount shouldBe 1
+            studyReportService.getDailyCounts(USER_ID, null, untilDay2, max).map { it.studyDate } shouldContainExactly
+                listOf(day1)
+            studyReportService.getSessions(USER_ID, null, untilDay2, null, max, 20).map { it.studyDate } shouldContainExactly
+                listOf(day1)
+            studyReportService.getCards(USER_ID, DECK_ID, untilDay2, null, null, max, 20).map { it.cardId } shouldContainExactly
+                listOf(10L)
+            studyReportService.getCardReviews(USER_ID, DECK_ID, 11L, untilDay2, null, max, 20).shouldBeEmpty()
+        }
+    }
+
     describe("getCards") {
         it("기간 안의 마지막 평가와 평가 횟수를 마지막 평가가 최신인 순서로 반환한다") {
             val s1 = session(day1)
@@ -257,7 +283,7 @@ class StudyReportServiceTest(
             log(s2, 10L, Rating.FAIR)
             val max = studyReportService.getMaxReviewId(USER_ID)
 
-            val cards = studyReportService.getCards(USER_ID, DECK_ID, null, null, null, max, 20)
+            val cards = studyReportService.getCards(USER_ID, DECK_ID, ALL_TIME, null, null, max, 20)
 
             cards.map { Triple(it.cardId, it.lastRating, it.reviewCount) } shouldContainExactly listOf(
                 Triple(10L, Rating.FAIR, 2L),
@@ -274,7 +300,7 @@ class StudyReportServiceTest(
             log(s2, 11L, Rating.EASY)
             val max = studyReportService.getMaxReviewId(USER_ID)
 
-            studyReportService.getCards(USER_ID, DECK_ID, null, Rating.EASY, null, max, 20)
+            studyReportService.getCards(USER_ID, DECK_ID, ALL_TIME, Rating.EASY, null, max, 20)
                 .map { it.cardId } shouldContainExactly listOf(11L)
             studyReportService.getCards(USER_ID, DECK_ID, StudyReportPeriod(day1, day1), Rating.EASY, null, max, 20)
                 .map { it.cardId to it.reviewCount } shouldContainExactly listOf(10L to 1L)
@@ -287,8 +313,8 @@ class StudyReportServiceTest(
             log(s1, 12L, Rating.EASY)
             val max = studyReportService.getMaxReviewId(USER_ID)
 
-            val first = studyReportService.getCards(USER_ID, DECK_ID, null, null, null, max, 2)
-            val second = studyReportService.getCards(USER_ID, DECK_ID, null, null, first.last().lastReviewId, max, 2)
+            val first = studyReportService.getCards(USER_ID, DECK_ID, ALL_TIME, null, null, max, 2)
+            val second = studyReportService.getCards(USER_ID, DECK_ID, ALL_TIME, null, first.last().lastReviewId, max, 2)
 
             first.map { it.cardId } shouldContainExactly listOf(12L, 11L)
             second.map { it.cardId } shouldContainExactly listOf(10L)
@@ -299,7 +325,7 @@ class StudyReportServiceTest(
             log(session(day1, userId = OTHER_USER_ID), 10L, Rating.EASY)
             val max = studyReportService.getMaxReviewId(OTHER_USER_ID)
 
-            studyReportService.getCards(USER_ID, DECK_ID, null, null, null, max, 20).shouldBeEmpty()
+            studyReportService.getCards(USER_ID, DECK_ID, ALL_TIME, null, null, max, 20).shouldBeEmpty()
         }
     }
 
@@ -312,8 +338,8 @@ class StudyReportServiceTest(
             val l2 = log(s2, 10L, Rating.AGAIN)
             val max = studyReportService.getMaxReviewId(USER_ID)
 
-            val first = studyReportService.getCardReviews(USER_ID, DECK_ID, 10L, null, null, max, 1)
-            val second = studyReportService.getCardReviews(USER_ID, DECK_ID, 10L, null, first.last().reviewId, max, 1)
+            val first = studyReportService.getCardReviews(USER_ID, DECK_ID, 10L, ALL_TIME, null, max, 1)
+            val second = studyReportService.getCardReviews(USER_ID, DECK_ID, 10L, ALL_TIME, first.last().reviewId, max, 1)
 
             first.map { it.reviewId } shouldContainExactly listOf(l2.id)
             second.map { it.reviewId } shouldContainExactly listOf(l1.id)
@@ -337,5 +363,8 @@ class StudyReportServiceTest(
         private const val OTHER_USER_ID = 2L
         private const val DECK_ID = 1L
         private const val OTHER_DECK_ID = 2L
+
+        // 테스트 학습일(2026-10-15~17)을 모두 포함하는 전체 기간
+        private val ALL_TIME = StudyReportPeriod(startDate = null, endDate = LocalDate.parse("2026-12-31"))
     }
 }

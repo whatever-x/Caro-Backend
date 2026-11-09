@@ -37,11 +37,11 @@ class StudyReportBFFService(
         val scope = resolveScope(userId, deckId)
         val maxReviewId = studyReportApi.getMaxReviewId(userId)
 
+        // 합계와 차트가 같은 기간을 보도록 "전체"도 오늘까지로 자른다
         val selected = studyReportApi.getCounts(userId, deckId, period, maxReviewId)
 
-        val rangeStart = period?.startDate
-            ?: studyReportApi.getFirstStudyDate(userId, deckId, maxReviewId)?.let { minOf(it, today) }
-        val rangeEnd = period?.endDate ?: today
+        val rangeStart = chartStart(userId, deckId, period, maxReviewId)
+        val rangeEnd = period.endDate
         if (rangeStart == null) {
             return ReportSummaryView(
                 scope = scope,
@@ -110,7 +110,7 @@ class StudyReportBFFService(
     ): ReportPageView<ReportSessionItem> {
         val period = resolvePeriod(now.atZone(timezone).toLocalDate(), startDate, endDate)
         val scope = resolveScope(userId, deckId)
-        val filter = ReportCursor.filterOf(deckId, period?.startDate, period?.endDate)
+        val filter = ReportCursor.filterOf(deckId, startDate, endDate)
         val decoded = cursor?.let { ReportCursor.decode(it, ReportCursor.Kind.SESSIONS, filter, keyCount = 2) }
         val maxReviewId = decoded?.maxReviewId ?: studyReportApi.getMaxReviewId(userId)
         val after = decoded?.let {
@@ -165,7 +165,7 @@ class StudyReportBFFService(
     ): ReportPageView<ReportCardItem> {
         val period = resolvePeriod(now.atZone(timezone).toLocalDate(), startDate, endDate)
         resolveScope(userId, deckId)
-        val filter = ReportCursor.filterOf(deckId, period?.startDate, period?.endDate, lastRating)
+        val filter = ReportCursor.filterOf(deckId, startDate, endDate, lastRating)
         val decoded = cursor?.let { ReportCursor.decode(it, ReportCursor.Kind.CARDS, filter, keyCount = 1) }
         val maxReviewId = decoded?.maxReviewId ?: studyReportApi.getMaxReviewId(userId)
         val afterReviewId = decoded?.let {
@@ -211,7 +211,7 @@ class StudyReportBFFService(
         val today = now.atZone(timezone).toLocalDate()
         val period = resolvePeriod(today, startDate, endDate)
         resolveScope(userId, deckId)
-        val filter = ReportCursor.filterOf(deckId, cardId, period?.startDate, period?.endDate)
+        val filter = ReportCursor.filterOf(deckId, cardId, startDate, endDate)
         val decoded = cursor?.let { ReportCursor.decode(it, ReportCursor.Kind.REVIEWS, filter, keyCount = 1) }
         val maxReviewId = decoded?.maxReviewId ?: studyReportApi.getMaxReviewId(userId)
         val afterReviewId = decoded?.let {
@@ -219,7 +219,8 @@ class StudyReportBFFService(
         }
 
         // 이 덱에서 평가한 적이 없는 카드는 다른 사용자의 카드와 구분하지 않고 404로 응답한다
-        if (studyReportApi.getCardReviews(userId, deckId, cardId, null, null, maxReviewId, 1).isEmpty()) {
+        val allTime = StudyReportPeriod(startDate = null, endDate = today)
+        if (studyReportApi.getCardReviews(userId, deckId, cardId, allTime, null, maxReviewId, 1).isEmpty()) {
             throw ReportTargetNotFoundException("cardId=$cardId has no review in deckId=$deckId")
         }
 
@@ -245,9 +246,8 @@ class StudyReportBFFService(
         } else {
             null
         }
-        val rangeStart = period?.startDate
-            ?: studyReportApi.getFirstStudyDate(userId, deckId, maxReviewId)?.let { minOf(it, today) }
-        val rangeEnd = period?.endDate ?: today
+        val rangeStart = chartStart(userId, deckId, period, maxReviewId)
+        val rangeEnd = period.endDate
         return ReportCardReviewsView(
             card = cardLabels(userId, listOf(cardId)).getValue(cardId),
             range = ReportRange(
@@ -260,14 +260,15 @@ class StudyReportBFFService(
     }
 
     /**
-     * 기간을 정한다. 두 날짜를 모두 생략하면 전체 기간(null)이다.
+     * 기간을 정한다. 두 날짜를 모두 생략하면 전체 기간이며, 전체도 [today]까지다.
+     * 시간대를 옮겨 학습일이 요청의 오늘보다 늦은 기록은 그날이 될 때까지 모든 화면에서 빠진다.
      */
     private fun resolvePeriod(
         today: LocalDate,
         startDate: LocalDate?,
         endDate: LocalDate?,
-    ): StudyReportPeriod? {
-        if (startDate == null && endDate == null) return null
+    ): StudyReportPeriod {
+        if (startDate == null && endDate == null) return StudyReportPeriod(startDate = null, endDate = today)
         if (startDate == null || endDate == null) {
             throw InvalidReportPeriodException("startDate and endDate must be given together")
         }
@@ -275,6 +276,18 @@ class StudyReportBFFService(
         if (endDate.isAfter(today)) throw InvalidReportPeriodException("endDate($endDate) is after today($today)")
         return StudyReportPeriod(startDate, endDate)
     }
+
+    /**
+     * 차트 범위의 시작일. 전체 기간이면 종료일 이하의 첫 학습일이고, 그런 기록이 없으면 null이다.
+     */
+    private fun chartStart(
+        userId: Long,
+        deckId: Long?,
+        period: StudyReportPeriod,
+        maxReviewId: Long,
+    ): LocalDate? =
+        period.startDate
+            ?: studyReportApi.getFirstStudyDate(userId, deckId, maxReviewId, until = period.endDate)
 
     /**
      * 지금 가진 본인 덱만 조회할 수 있다. 소유권과 존재 검사는 card의 [DeckApi.getDeck]이 한다.

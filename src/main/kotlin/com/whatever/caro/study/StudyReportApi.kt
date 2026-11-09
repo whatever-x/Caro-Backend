@@ -19,18 +19,19 @@ interface StudyReportApi {
     ): Long
 
     /**
-     * 평가 로그가 있는 첫 학습일. 기록이 없으면 null
+     * [until] 이하인 학습일 중 평가 로그가 있는 첫 학습일. 기록이 없으면 null
      */
     fun getFirstStudyDate(
         userId: Long,
         deckId: Long?,
         maxReviewId: Long,
+        until: LocalDate,
     ): LocalDate?
 
     fun getCounts(
         userId: Long,
         deckId: Long?,
-        period: StudyReportPeriod?,
+        period: StudyReportPeriod,
         maxReviewId: Long,
     ): StudyReportCountsDto
 
@@ -45,7 +46,7 @@ interface StudyReportApi {
     ): List<StudyReportDailyCountDto>
 
     /**
-     * 기간 안에 휴식일로 기록된 날짜
+     * 기간 안에 휴식일로 기록된 날짜. [StudyReportPeriod.startDate]가 있어야 한다.
      */
     fun getRestDates(
         userId: Long,
@@ -58,7 +59,7 @@ interface StudyReportApi {
     fun getSessions(
         userId: Long,
         deckId: Long?,
-        period: StudyReportPeriod?,
+        period: StudyReportPeriod,
         after: StudyReportSessionKey?,
         maxReviewId: Long,
         limit: Int,
@@ -71,7 +72,7 @@ interface StudyReportApi {
     fun getCards(
         userId: Long,
         deckId: Long,
-        period: StudyReportPeriod?,
+        period: StudyReportPeriod,
         lastRating: Rating?,
         afterReviewId: Long?,
         maxReviewId: Long,
@@ -85,7 +86,7 @@ interface StudyReportApi {
         userId: Long,
         deckId: Long,
         cardId: Long,
-        period: StudyReportPeriod?,
+        period: StudyReportPeriod,
         afterReviewId: Long?,
         maxReviewId: Long,
         limit: Int,
@@ -93,14 +94,17 @@ interface StudyReportApi {
 }
 
 /**
- * 시작일과 종료일을 모두 포함하는 학습일 범위
+ * 시작일과 종료일을 모두 포함하는 학습일 범위. 시작일이 null이면 종료일 이하의 모든 학습일이다.
+ * 종료일을 항상 두어 "전체" 기간도 요청의 오늘까지로 자른다.
  */
 data class StudyReportPeriod(
-    val startDate: LocalDate,
+    val startDate: LocalDate?,
     val endDate: LocalDate,
 ) {
     init {
-        require(!startDate.isAfter(endDate)) { "startDate($startDate) must not be after endDate($endDate)" }
+        require(startDate == null || !startDate.isAfter(endDate)) {
+            "startDate($startDate) must not be after endDate($endDate)"
+        }
     }
 }
 

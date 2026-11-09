@@ -10,7 +10,7 @@ import java.time.LocalDate
 /**
  * 리포트 집계 쿼리. 모든 쿼리는 같은 조건을 쓴다.
  * - 로그와 세션 모두 사용자 본인 것만, 일일 학습(DAILY) 세션만, 기준 시점([maxReviewId]) 이하의 로그만 읽는다.
- * - deckId, 기간이 null이면 해당 조건을 적용하지 않는다.
+ * - deckId, 시작일이 null이면 해당 조건을 적용하지 않는다. 종료일은 항상 적용한다.
  * 카드·덱의 삭제 여부는 조건에 넣지 않는다. 삭제 후에도 이력과 통계를 유지한다.
  */
 interface StudyReportRepository : Repository<ReviewLog, Long> {
@@ -26,12 +26,14 @@ interface StudyReportRepository : Repository<ReviewLog, Long> {
             and ss.studyType = com.whatever.caro.study.StudyType.DAILY
             and rl.id <= :maxReviewId
             and (:deckId is null or ss.deckId = :deckId)
+            and ss.sessionDate <= :until
         """,
     )
     fun findFirstStudyDate(
         userId: Long,
         deckId: Long?,
         maxReviewId: Long,
+        until: LocalDate,
     ): LocalDate?
 
     @Query(
@@ -50,14 +52,14 @@ interface StudyReportRepository : Repository<ReviewLog, Long> {
             and rl.id <= :maxReviewId
             and (:deckId is null or ss.deckId = :deckId)
             and (:startDate is null or ss.sessionDate >= :startDate)
-            and (:endDate is null or ss.sessionDate <= :endDate)
+            and ss.sessionDate <= :endDate
         """,
     )
     fun countReviews(
         userId: Long,
         deckId: Long?,
         startDate: LocalDate?,
-        endDate: LocalDate?,
+        endDate: LocalDate,
         maxReviewId: Long,
     ): ReportCountsRow
 
@@ -75,7 +77,7 @@ interface StudyReportRepository : Repository<ReviewLog, Long> {
             and ss.studyType = com.whatever.caro.study.StudyType.DAILY
             and rl.id <= :maxReviewId
             and (:deckId is null or ss.deckId = :deckId)
-            and ss.sessionDate >= :startDate
+            and (:startDate is null or ss.sessionDate >= :startDate)
             and ss.sessionDate <= :endDate
         group by ss.sessionDate
         order by ss.sessionDate asc
@@ -84,7 +86,7 @@ interface StudyReportRepository : Repository<ReviewLog, Long> {
     fun countReviewsByDate(
         userId: Long,
         deckId: Long?,
-        startDate: LocalDate,
+        startDate: LocalDate?,
         endDate: LocalDate,
         maxReviewId: Long,
     ): List<ReportDailyRow>
@@ -109,7 +111,7 @@ interface StudyReportRepository : Repository<ReviewLog, Long> {
             and rl.id <= :maxReviewId
             and (:deckId is null or ss.deckId = :deckId)
             and (:startDate is null or ss.sessionDate >= :startDate)
-            and (:endDate is null or ss.sessionDate <= :endDate)
+            and ss.sessionDate <= :endDate
             and (
                 :afterDate is null
                 or ss.sessionDate < :afterDate
@@ -123,7 +125,7 @@ interface StudyReportRepository : Repository<ReviewLog, Long> {
         userId: Long,
         deckId: Long?,
         startDate: LocalDate?,
-        endDate: LocalDate?,
+        endDate: LocalDate,
         afterDate: LocalDate?,
         afterSessionId: Long?,
         maxReviewId: Long,
@@ -151,7 +153,7 @@ interface StudyReportRepository : Repository<ReviewLog, Long> {
                     and s2.deckId = :deckId
                     and r2.id <= :maxReviewId
                     and (:startDate is null or s2.sessionDate >= :startDate)
-                    and (:endDate is null or s2.sessionDate <= :endDate)
+                    and s2.sessionDate <= :endDate
             )
             and (:lastRating is null or rl.rating = :lastRating)
             and (:afterReviewId is null or rl.id < :afterReviewId)
@@ -162,7 +164,7 @@ interface StudyReportRepository : Repository<ReviewLog, Long> {
         userId: Long,
         deckId: Long,
         startDate: LocalDate?,
-        endDate: LocalDate?,
+        endDate: LocalDate,
         lastRating: Rating?,
         afterReviewId: Long?,
         maxReviewId: Long,
@@ -179,7 +181,7 @@ interface StudyReportRepository : Repository<ReviewLog, Long> {
             and rl.cardId in :cardIds
             and rl.id <= :maxReviewId
             and (:startDate is null or ss.sessionDate >= :startDate)
-            and (:endDate is null or ss.sessionDate <= :endDate)
+            and ss.sessionDate <= :endDate
         group by rl.cardId
         """,
     )
@@ -188,7 +190,7 @@ interface StudyReportRepository : Repository<ReviewLog, Long> {
         deckId: Long,
         cardIds: Collection<Long>,
         startDate: LocalDate?,
-        endDate: LocalDate?,
+        endDate: LocalDate,
         maxReviewId: Long,
     ): List<ReportCardCountRow>
 
@@ -204,7 +206,7 @@ interface StudyReportRepository : Repository<ReviewLog, Long> {
             and rl.cardId = :cardId
             and rl.id <= :maxReviewId
             and (:startDate is null or ss.sessionDate >= :startDate)
-            and (:endDate is null or ss.sessionDate <= :endDate)
+            and ss.sessionDate <= :endDate
             and (:afterReviewId is null or rl.id < :afterReviewId)
         order by rl.id desc
         """,
@@ -214,7 +216,7 @@ interface StudyReportRepository : Repository<ReviewLog, Long> {
         deckId: Long,
         cardId: Long,
         startDate: LocalDate?,
-        endDate: LocalDate?,
+        endDate: LocalDate,
         afterReviewId: Long?,
         maxReviewId: Long,
         pageable: Pageable,

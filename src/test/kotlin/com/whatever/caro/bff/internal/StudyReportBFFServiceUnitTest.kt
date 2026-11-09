@@ -47,6 +47,7 @@ class StudyReportBFFServiceUnitTest :
         val today = LocalDate.parse("2026-10-21")
         val weekStart = LocalDate.parse("2026-10-15")
         val max = 500L
+        val allTime = StudyReportPeriod(null, today)
 
         fun counts(
             review: Long,
@@ -119,8 +120,8 @@ class StudyReportBFFServiceUnitTest :
             }
 
             it("전체 기간은 첫 학습일부터 오늘까지이며 기록이 없으면 시작일이 null이다") {
-                every { studyReportApi.getCounts(userId, null, null, max) } returns counts(0)
-                every { studyReportApi.getFirstStudyDate(userId, null, max) } returns null
+                every { studyReportApi.getCounts(userId, null, allTime, max) } returns counts(0)
+                every { studyReportApi.getFirstStudyDate(userId, null, max, today) } returns null
 
                 val summary = service.getSummary(now, kst, userId, null, null, null)
 
@@ -128,10 +129,38 @@ class StudyReportBFFServiceUnitTest :
                 summary.buckets.shouldBeEmpty()
             }
 
+            it("전체 기간의 합계와 차트는 같은 기간(첫 학습일 ~ 오늘)을 집계해 막대 합이 합계와 같다") {
+                every { studyReportApi.getCounts(userId, null, allTime, max) } returns counts(5)
+                every { studyReportApi.getFirstStudyDate(userId, null, max, today) } returns weekStart
+                every { studyReportApi.getDailyCounts(userId, null, StudyReportPeriod(weekStart, today), max) } returns
+                    listOf(daily(weekStart, 2), daily(today, 3))
+                every { studyReportApi.getRestDates(userId, StudyReportPeriod(weekStart, today)) } returns emptySet()
+
+                val summary = service.getSummary(now, kst, userId, null, null, null)
+
+                summary.range shouldBe ReportRange(weekStart, today, ReportBucketUnit.DAY)
+                summary.buckets.sumOf { it.reviewCount } shouldBe summary.selected.reviewCount
+            }
+
+            it("시간대를 옮겨 오늘 이하의 학습 기록이 없으면 예외 없이 빈 요약을 준다") {
+                // 서울에서 11-07에 처음 학습하고 LA(오늘 11-06)에서 연 경우. 오늘 이하에서 첫 학습일을 찾으므로 null이다
+                val laNow = Instant.parse("2026-11-06T16:30:00Z")
+                val la = ZoneId.of("America/Los_Angeles")
+                val laToday = LocalDate.parse("2026-11-06")
+                every { studyReportApi.getCounts(userId, null, StudyReportPeriod(null, laToday), max) } returns counts(0)
+                every { studyReportApi.getFirstStudyDate(userId, null, max, laToday) } returns null
+
+                val summary = service.getSummary(laNow, la, userId, null, null, null)
+
+                summary.range shouldBe ReportRange(null, laToday, ReportBucketUnit.DAY)
+                summary.selected.reviewCount shouldBe 0
+                summary.buckets.shouldBeEmpty()
+            }
+
             it("전체 기간이 길면 월 단위 구간으로 나눈다") {
                 val first = LocalDate.parse("2026-01-10")
-                every { studyReportApi.getCounts(userId, 1L, null, max) } returns counts(9)
-                every { studyReportApi.getFirstStudyDate(userId, 1L, max) } returns first
+                every { studyReportApi.getCounts(userId, 1L, allTime, max) } returns counts(9)
+                every { studyReportApi.getFirstStudyDate(userId, 1L, max, today) } returns first
                 every { studyReportApi.getDailyCounts(userId, 1L, StudyReportPeriod(first, today), max) } returns
                     listOf(daily(first, 4), daily(LocalDate.parse("2026-10-01"), 5))
 
@@ -189,7 +218,7 @@ class StudyReportBFFServiceUnitTest :
             }
 
             it("다른 목록의 커서는 거절한다") {
-                every { studyReportApi.getSessions(userId, null, null, null, max, 2) } returns listOf(
+                every { studyReportApi.getSessions(userId, null, allTime, null, max, 2) } returns listOf(
                     session(1L, 1L),
                     session(2L, 1L),
                 )
@@ -201,7 +230,7 @@ class StudyReportBFFServiceUnitTest :
 
         describe("getSessions") {
             it("덱 이름을 붙이고 삭제된 덱은 이름 없이 표시한다") {
-                every { studyReportApi.getSessions(userId, null, null, null, max, 21) } returns
+                every { studyReportApi.getSessions(userId, null, allTime, null, max, 21) } returns
                     listOf(session(10L, 1L), session(9L, 9L))
 
                 val page = service.getSessions(now, kst, userId, null, null, null, null, 20)
@@ -214,7 +243,7 @@ class StudyReportBFFServiceUnitTest :
             }
 
             it("덱을 고르면 덱 목록을 다시 읽지 않고 그 덱의 이름을 붙인다") {
-                every { studyReportApi.getSessions(userId, 1L, null, null, max, 21) } returns listOf(session(10L, 1L))
+                every { studyReportApi.getSessions(userId, 1L, allTime, null, max, 21) } returns listOf(session(10L, 1L))
 
                 val page = service.getSessions(now, kst, userId, 1L, null, null, null, 20)
 
@@ -224,20 +253,20 @@ class StudyReportBFFServiceUnitTest :
             }
 
             it("다음 페이지는 첫 페이지의 기준 시점과 마지막 위치로 이어서 읽는다") {
-                every { studyReportApi.getSessions(userId, null, null, null, max, 2) } returns
+                every { studyReportApi.getSessions(userId, null, allTime, null, max, 2) } returns
                     listOf(session(10L, 1L), session(9L, 1L))
                 val cursor = service.getSessions(now, kst, userId, null, null, null, null, 1).nextCursor.shouldNotBeNull()
 
                 every { studyReportApi.getMaxReviewId(userId) } returns max + 100
                 val after = StudyReportSessionKey(LocalDate.parse("2026-10-10"), 10L)
-                every { studyReportApi.getSessions(userId, null, null, after, max, 2) } returns listOf(session(9L, 1L))
+                every { studyReportApi.getSessions(userId, null, allTime, after, max, 2) } returns listOf(session(9L, 1L))
 
                 service.getSessions(now, kst, userId, null, null, null, cursor, 1).items.map { it.sessionId } shouldContainExactly
                     listOf(9L)
             }
 
             it("조건이 바뀌면 이전 커서를 거절한다") {
-                every { studyReportApi.getSessions(userId, null, null, null, max, 2) } returns
+                every { studyReportApi.getSessions(userId, null, allTime, null, max, 2) } returns
                     listOf(session(10L, 1L), session(9L, 1L))
                 val cursor = service.getSessions(now, kst, userId, null, null, null, null, 1).nextCursor
 
@@ -255,7 +284,7 @@ class StudyReportBFFServiceUnitTest :
 
         describe("getCards") {
             it("지금 카드 내용을 붙이고 삭제된 카드는 본문 없이 표시한다") {
-                every { studyReportApi.getCards(userId, 1L, null, null, null, max, 21) } returns
+                every { studyReportApi.getCards(userId, 1L, allTime, null, null, max, 21) } returns
                     listOf(card(100L, 3L), card(101L, 2L))
                 every { cardApi.getCardsByIds(userId, listOf(100L, 101L)) } returns
                     mapOf(100L to CardContentDto(100L, mapOf("front" to "apple", "back" to "사과")))
@@ -280,7 +309,7 @@ class StudyReportBFFServiceUnitTest :
 
         describe("getCardReviews") {
             it("이 덱에서 평가한 적 없는 카드면 404 예외를 던진다") {
-                every { studyReportApi.getCardReviews(userId, 1L, 100L, null, null, max, 1) } returns emptyList()
+                every { studyReportApi.getCardReviews(userId, 1L, 100L, allTime, null, max, 1) } returns emptyList()
 
                 shouldThrow<ReportTargetNotFoundException> {
                     service.getCardReviews(now, kst, userId, 1L, 100L, null, null, null, 20)
@@ -289,9 +318,9 @@ class StudyReportBFFServiceUnitTest :
 
             it("카드 내용과 이력을 최신순으로 준다") {
                 val review = review(300L)
-                every { studyReportApi.getCardReviews(userId, 1L, 100L, null, null, max, 1) } returns listOf(review)
-                every { studyReportApi.getCardReviews(userId, 1L, 100L, null, null, max, 21) } returns listOf(review)
-                every { studyReportApi.getFirstStudyDate(userId, 1L, max) } returns weekStart
+                every { studyReportApi.getCardReviews(userId, 1L, 100L, allTime, null, max, 1) } returns listOf(review)
+                every { studyReportApi.getCardReviews(userId, 1L, 100L, allTime, null, max, 21) } returns listOf(review)
+                every { studyReportApi.getFirstStudyDate(userId, 1L, max, today) } returns weekStart
                 every { cardApi.getCardsByIds(userId, listOf(100L)) } returns
                     mapOf(100L to CardContentDto(100L, mapOf("front" to "apple", "back" to "사과")))
 

@@ -31,19 +31,20 @@ class StudyReportService(
         userId: Long,
         deckId: Long?,
         maxReviewId: Long,
-    ): LocalDate? = studyReportRepository.findFirstStudyDate(userId, deckId, maxReviewId)
+        until: LocalDate,
+    ): LocalDate? = studyReportRepository.findFirstStudyDate(userId, deckId, maxReviewId, until)
 
     override fun getCounts(
         userId: Long,
         deckId: Long?,
-        period: StudyReportPeriod?,
+        period: StudyReportPeriod,
         maxReviewId: Long,
     ): StudyReportCountsDto {
         val row = studyReportRepository.countReviews(
             userId = userId,
             deckId = deckId,
-            startDate = period?.startDate,
-            endDate = period?.endDate,
+            startDate = period.startDate,
+            endDate = period.endDate,
             maxReviewId = maxReviewId,
         )
         return StudyReportCountsDto(
@@ -81,14 +82,14 @@ class StudyReportService(
         studyDayRepository.findAllByUserIdAndStreakTypeAndStudyDateBetween(
             userId = userId,
             streakType = StreakType.REST_DAY,
-            fromDate = period.startDate,
+            fromDate = requireNotNull(period.startDate) { "rest dates need startDate" },
             toDate = period.endDate,
         ).map { it.studyDate }.toSet()
 
     override fun getSessions(
         userId: Long,
         deckId: Long?,
-        period: StudyReportPeriod?,
+        period: StudyReportPeriod,
         after: StudyReportSessionKey?,
         maxReviewId: Long,
         limit: Int,
@@ -96,8 +97,8 @@ class StudyReportService(
         studyReportRepository.findSessions(
             userId = userId,
             deckId = deckId,
-            startDate = period?.startDate,
-            endDate = period?.endDate,
+            startDate = period.startDate,
+            endDate = period.endDate,
             afterDate = after?.studyDate,
             afterSessionId = after?.sessionId,
             maxReviewId = maxReviewId,
@@ -121,7 +122,7 @@ class StudyReportService(
     override fun getCards(
         userId: Long,
         deckId: Long,
-        period: StudyReportPeriod?,
+        period: StudyReportPeriod,
         lastRating: Rating?,
         afterReviewId: Long?,
         maxReviewId: Long,
@@ -130,8 +131,8 @@ class StudyReportService(
         val lastReviews = studyReportRepository.findCardLastReviews(
             userId = userId,
             deckId = deckId,
-            startDate = period?.startDate,
-            endDate = period?.endDate,
+            startDate = period.startDate,
+            endDate = period.endDate,
             lastRating = lastRating,
             afterReviewId = afterReviewId,
             maxReviewId = maxReviewId,
@@ -142,8 +143,8 @@ class StudyReportService(
             userId = userId,
             deckId = deckId,
             cardIds = lastReviews.map { it.cardId },
-            startDate = period?.startDate,
-            endDate = period?.endDate,
+            startDate = period.startDate,
+            endDate = period.endDate,
             maxReviewId = maxReviewId,
         ).associate { it.cardId to it.reviewCount }
 
@@ -163,7 +164,7 @@ class StudyReportService(
         userId: Long,
         deckId: Long,
         cardId: Long,
-        period: StudyReportPeriod?,
+        period: StudyReportPeriod,
         afterReviewId: Long?,
         maxReviewId: Long,
         limit: Int,
@@ -172,8 +173,8 @@ class StudyReportService(
             userId = userId,
             deckId = deckId,
             cardId = cardId,
-            startDate = period?.startDate,
-            endDate = period?.endDate,
+            startDate = period.startDate,
+            endDate = period.endDate,
             afterReviewId = afterReviewId,
             maxReviewId = maxReviewId,
             pageable = PageRequest.of(0, limit),
