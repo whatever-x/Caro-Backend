@@ -109,7 +109,7 @@ class StudyReportBFFService(
         limit: Int,
     ): ReportPageView<ReportSessionItem> {
         val period = resolvePeriod(now.atZone(timezone).toLocalDate(), startDate, endDate)
-        if (deckId != null) resolveScope(userId, deckId)
+        val scope = resolveScope(userId, deckId)
         val filter = ReportCursor.filterOf(deckId, period?.startDate, period?.endDate)
         val decoded = cursor?.let { ReportCursor.decode(it, ReportCursor.Kind.SESSIONS, filter, keyCount = 2) }
         val maxReviewId = decoded?.maxReviewId ?: studyReportApi.getMaxReviewId(userId)
@@ -123,7 +123,9 @@ class StudyReportBFFService(
         }
 
         val rows = studyReportApi.getSessions(userId, deckId, period, after, maxReviewId, limit + 1)
-        val activeDeckNames = deckApi.getDecks(userId).associate { it.id to it.name }
+        // deckId를 주면 모든 행이 그 덱이라 scope의 이름으로 충분하다. 전체 목록일 때만 덱 이름을 모두 읽는다
+        val activeDeckNames = scope.deckId?.let { mapOf(it to scope.deckName!!) }
+            ?: deckApi.getDecks(userId).associate { it.id to it.name }
         val items = rows.take(limit).map {
             ReportSessionItem(
                 sessionId = it.sessionId,

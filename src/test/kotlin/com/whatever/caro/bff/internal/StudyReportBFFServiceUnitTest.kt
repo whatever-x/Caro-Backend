@@ -213,6 +213,16 @@ class StudyReportBFFServiceUnitTest :
                 page.nextCursor.shouldBeNull()
             }
 
+            it("덱을 고르면 덱 목록을 다시 읽지 않고 그 덱의 이름을 붙인다") {
+                every { studyReportApi.getSessions(userId, 1L, null, null, max, 21) } returns listOf(session(10L, 1L))
+
+                val page = service.getSessions(now, kst, userId, 1L, null, null, null, 20)
+
+                page.items.single().let { it.deckName to it.deckDeleted } shouldBe ("영어 단어" to false)
+                verify(exactly = 1) { deckApi.getDeck(userId, 1L) }
+                verify(exactly = 0) { deckApi.getDecks(any()) }
+            }
+
             it("다음 페이지는 첫 페이지의 기준 시점과 마지막 위치로 이어서 읽는다") {
                 every { studyReportApi.getSessions(userId, null, null, null, max, 2) } returns
                     listOf(session(10L, 1L), session(9L, 1L))
