@@ -21,17 +21,6 @@ interface StudyReportRepository : Repository<ReviewLog, Long> {
 
     @Query(
         """
-        select distinct ss.deckId from ReviewLog rl join rl.studySession ss
-        where rl.userId = :userId and ss.userId = :userId
-            and ss.studyType = com.whatever.caro.study.StudyType.DAILY
-        """,
-    )
-    fun findHistoryDeckIds(
-        userId: Long,
-    ): List<Long>
-
-    @Query(
-        """
         select min(ss.sessionDate) from ReviewLog rl join rl.studySession ss
         where rl.userId = :userId and ss.userId = :userId
             and ss.studyType = com.whatever.caro.study.StudyType.DAILY

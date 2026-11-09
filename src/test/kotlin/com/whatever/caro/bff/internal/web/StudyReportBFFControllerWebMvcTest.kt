@@ -12,6 +12,8 @@ import com.whatever.caro.bff.internal.ReportScope
 import com.whatever.caro.bff.internal.ReportSummaryView
 import com.whatever.caro.bff.internal.ReportTargetNotFoundException
 import com.whatever.caro.bff.internal.StudyReportBFFService
+import com.whatever.caro.card.internal.deck.exception.DeckForbiddenException
+import com.whatever.caro.card.internal.deck.exception.DeckNotFoundException
 import com.whatever.caro.common.web.idempotency.IdempotencyProperties
 import com.whatever.caro.common.web.idempotency.IdempotencyRepository
 import com.whatever.caro.study.Rating
@@ -167,16 +169,46 @@ class StudyReportBFFControllerWebMvcTest : DescribeSpec() {
                 }
             }
 
-            it("접근할 수 없는 덱은 404(R003)이고 한국어와 영어 문구가 다르다") {
+            it("삭제됐거나 없는 덱은 404(D001)이다") {
                 given(studyReportBFFService.getSummary(fixedNow, kst, 1L, 77L, null, null))
-                    .willThrow(ReportTargetNotFoundException("no deck"))
+                    .willThrow(DeckNotFoundException("no deck"))
+
+                mockMvc.get("/study-reports/summary") {
+                    header(API_VERSION_HEADER, API_VERSION)
+                    header(CLIENT_TIMEZONE_HEADER, "Asia/Seoul")
+                    param("deckId", "77")
+                }.andExpect {
+                    status { isNotFound() }
+                    jsonPath("$.error.code") { value("D001") }
+                }
+            }
+
+            it("다른 사용자의 덱은 403(D002)이다") {
+                given(studyReportBFFService.getSummary(fixedNow, kst, 1L, 88L, null, null))
+                    .willThrow(DeckForbiddenException("not owner"))
+
+                mockMvc.get("/study-reports/summary") {
+                    header(API_VERSION_HEADER, API_VERSION)
+                    header(CLIENT_TIMEZONE_HEADER, "Asia/Seoul")
+                    param("deckId", "88")
+                }.andExpect {
+                    status { isForbidden() }
+                    jsonPath("$.error.code") { value("D002") }
+                }
+            }
+        }
+
+        describe("GET /study-reports/cards/{cardId}/reviews") {
+            it("이 덱에서 평가한 적 없는 카드는 404(R003)이고 한국어와 영어 문구가 다르다") {
+                given(studyReportBFFService.getCardReviews(fixedNow, kst, 1L, 1L, 100L, null, null, null, 20))
+                    .willThrow(ReportTargetNotFoundException("no review"))
 
                 val messages = listOf("ko", "en").map { lang ->
-                    mockMvc.get("/study-reports/summary") {
+                    mockMvc.get("/study-reports/cards/100/reviews") {
                         header(API_VERSION_HEADER, API_VERSION)
                         header(CLIENT_TIMEZONE_HEADER, "Asia/Seoul")
                         header("Accept-Language", lang)
-                        param("deckId", "77")
+                        param("deckId", "1")
                     }.andExpect {
                         status { isNotFound() }
                         jsonPath("$.error.code") { value("R003") }

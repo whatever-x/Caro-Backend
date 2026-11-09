@@ -65,7 +65,7 @@ class StudyReportBFFController(
         description = """
         선택한 덱(생략하면 전체)과 기간의 평가 횟수, 학습한 카드 수, 학습일 수, 평가 분포와 차트 구간을 조회한다.
         차트 구간은 31일 이하 DAY, 180일 이하 WEEK, 그보다 길면 MONTH다.
-        지금 가진 덱이 아니고 본인 기록도 없는 deckId는 404(R003)다.
+        deckId는 지금 가진 본인 덱만 쓸 수 있다. 삭제됐거나 없는 덱은 404(D001), 다른 사용자의 덱은 403(D002)이다.
         $PERIOD_DESCRIPTION
         """,
     )
@@ -93,7 +93,7 @@ class StudyReportBFFController(
         summary = "학습 리포트 덱 목록 조회",
         description = """
         조회 조건에서 고를 덱을 deckId 내림차순으로 조회한다.
-        지금 가진 덱과, 삭제했지만 본인 평가 기록이 남은 덱(name null, deleted true)을 함께 준다.
+        지금 가진 덱만 준다. 삭제한 덱의 기록은 deckId 없는 "전체" 수치에만 남는다.
         목록 맨 위의 "전체"는 응답에 없으며 클라이언트가 넣는다.
         """,
     )
@@ -117,6 +117,8 @@ class StudyReportBFFController(
         평가가 있는 일일 학습 세션을 (학습일, 세션 ID) 내림차순으로 조회한다. 중단한 세션도 저장된 평가가 있으면 포함한다.
         nextCursor는 첫 페이지와 같은 조건에서만 쓸 수 있고, 다른 조건이면 400(R002)이다.
         첫 페이지 이후에 저장된 평가는 같은 목록의 다음 페이지에 나오지 않는다.
+        deckId를 생략하면 삭제한 덱의 세션도 deckName null, deckDeleted true로 포함한다.
+        deckId는 지금 가진 본인 덱만 쓸 수 있다. 삭제됐거나 없는 덱은 404(D001), 다른 사용자의 덱은 403(D002)이다.
         $PERIOD_DESCRIPTION
         """,
     )
@@ -148,7 +150,8 @@ class StudyReportBFFController(
         description = """
         덱에서 기간 안에 평가한 카드를 마지막 평가가 최신인 순서로 조회한다.
         lastRating은 기간 안의 마지막 평가에 적용한다.
-        카드 본문은 지금 내용이다. 카드나 덱이 삭제됐으면 deleted true이고 front, back은 null이다.
+        카드 본문은 지금 내용이다. 카드가 삭제됐으면 deleted true이고 front, back은 null이다.
+        deckId는 지금 가진 본인 덱만 쓸 수 있다. 삭제됐거나 없는 덱은 404(D001), 다른 사용자의 덱은 403(D002)이다.
         $PERIOD_DESCRIPTION
         """,
     )
@@ -181,6 +184,7 @@ class StudyReportBFFController(
         summary = "카드 평가 이력 조회",
         description = """
         덱에서 카드 하나의 평가 이력을 최신순으로 조회한다.
+        deckId는 지금 가진 본인 덱만 쓸 수 있다. 삭제됐거나 없는 덱은 404(D001), 다른 사용자의 덱은 403(D002)이다.
         이 덱에서 본인이 평가한 적 없는 카드는 404(R003)다.
         $PERIOD_DESCRIPTION
         """,

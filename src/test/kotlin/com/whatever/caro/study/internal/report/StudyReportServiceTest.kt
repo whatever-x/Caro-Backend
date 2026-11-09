@@ -179,15 +179,14 @@ class StudyReportServiceTest(
         }
     }
 
-    describe("getHistoryDeckIds / getFirstStudyDate") {
-        it("일일 학습 평가가 있는 덱과 첫 학습일을 반환한다") {
+    describe("getFirstStudyDate") {
+        it("일일 학습 평가가 있는 첫 학습일을 반환한다") {
             log(session(day2, deckId = DECK_ID), cardId = 10L, rating = Rating.EASY)
             log(session(day3, deckId = OTHER_DECK_ID), cardId = 20L, rating = Rating.EASY)
             session(day1, deckId = 99L) // 평가 없는 세션
             log(session(day1, deckId = 98L, studyType = StudyType.FULL_DECK), cardId = 30L, rating = Rating.EASY)
             val max = studyReportService.getMaxReviewId(USER_ID)
 
-            studyReportService.getHistoryDeckIds(USER_ID) shouldBe setOf(DECK_ID, OTHER_DECK_ID)
             studyReportService.getFirstStudyDate(USER_ID, null, max) shouldBe day2
             studyReportService.getFirstStudyDate(USER_ID, OTHER_DECK_ID, max) shouldBe day3
             studyReportService.getFirstStudyDate(OTHER_USER_ID, null, max).shouldBeNull()

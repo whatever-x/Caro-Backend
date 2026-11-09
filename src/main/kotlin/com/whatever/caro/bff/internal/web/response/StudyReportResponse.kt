@@ -21,8 +21,9 @@ data class StudyReportSummaryResponse(
 data class ReportScopeResponse(
     @field:Schema(description = "전체 선택이면 null", nullable = true)
     val deckId: Long?,
-    @field:Schema(description = "전체 선택이거나 삭제된 덱이면 null", nullable = true)
+    @field:Schema(description = "전체 선택이면 null", nullable = true)
     val deckName: String?,
+    @field:Schema(description = "항상 false. 삭제된 덱은 deckId로 조회할 수 없다")
     val deleted: Boolean,
 )
 
@@ -61,8 +62,9 @@ data class ReportPageResponse<T>(
 
 data class ReportDeckOptionResponse(
     val deckId: Long,
-    @field:Schema(description = "삭제된 덱이면 null", nullable = true)
+    @field:Schema(description = "지금 가진 덱만 반환하므로 null이 아니다", nullable = true)
     val name: String?,
+    @field:Schema(description = "항상 false. 삭제된 덱은 목록에 없다")
     val deleted: Boolean,
 )
 
@@ -80,7 +82,7 @@ data class ReportSessionResponse(
 
 data class ReportCardResponse(
     val cardId: Long,
-    @field:Schema(description = "카드나 카드가 속한 덱이 삭제됐으면 true이고 front, back은 null")
+    @field:Schema(description = "카드가 삭제됐으면 true이고 front, back은 null")
     val deleted: Boolean,
     @field:Schema(nullable = true)
     val front: String?,

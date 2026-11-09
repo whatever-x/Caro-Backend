@@ -4,6 +4,8 @@ import com.whatever.caro.card.api.card.CardApi
 import com.whatever.caro.card.api.card.CardContentDto
 import com.whatever.caro.card.api.deck.DeckApi
 import com.whatever.caro.card.api.deck.DeckInfoResponse
+import com.whatever.caro.card.internal.deck.exception.DeckForbiddenException
+import com.whatever.caro.card.internal.deck.exception.DeckNotFoundException
 import com.whatever.caro.study.Rating
 import com.whatever.caro.study.ReviewType
 import com.whatever.caro.study.StudyReportApi
@@ -69,7 +71,7 @@ class StudyReportBFFServiceUnitTest :
         beforeTest {
             every { studyReportApi.getMaxReviewId(userId) } returns max
             every { deckApi.getDecks(userId) } returns listOf(deck(1L, "영어 단어"))
-            every { studyReportApi.getHistoryDeckIds(userId) } returns setOf(1L, 9L)
+            every { deckApi.getDeck(userId, 1L) } returns deck(1L, "영어 단어")
         }
 
         afterTest { clearMocks(studyReportApi, deckApi, cardApi) }
@@ -107,17 +109,13 @@ class StudyReportBFFServiceUnitTest :
                 verify(exactly = 0) { studyReportApi.getRestDates(any(), any()) }
             }
 
-            it("삭제된 덱은 이름 없이 deleted로 조회한다") {
-                every { studyReportApi.getCounts(userId, 9L, any(), max) } returns counts(1)
-                every { studyReportApi.getDailyCounts(userId, 9L, any(), max) } returns emptyList()
+            it("삭제됐거나 다른 사용자의 덱이면 DeckApi의 예외를 그대로 던지고 집계하지 않는다") {
+                every { deckApi.getDeck(userId, 9L) } throws DeckNotFoundException("deleted")
 
-                service.getSummary(now, kst, userId, 9L, weekStart, today).scope shouldBe ReportScope(9L, null, true)
-            }
-
-            it("가진 덱도 아니고 기록도 없는 덱이면 404 예외를 던진다") {
-                shouldThrow<ReportTargetNotFoundException> {
-                    service.getSummary(now, kst, userId, 77L, weekStart, today)
+                shouldThrow<DeckNotFoundException> {
+                    service.getSummary(now, kst, userId, 9L, weekStart, today)
                 }
+                verify(exactly = 0) { studyReportApi.getCounts(any(), any(), any(), any()) }
             }
 
             it("전체 기간은 첫 학습일부터 오늘까지이며 기록이 없으면 시작일이 null이다") {
@@ -174,9 +172,8 @@ class StudyReportBFFServiceUnitTest :
         }
 
         describe("getDeckOptions") {
-            it("가진 덱만 deckId 내림차순으로 나눠 주고 기록이 남은 삭제 덱은 뺀다") {
+            it("가진 덱만 deckId 내림차순으로 나눠 준다") {
                 every { deckApi.getDecks(userId) } returns listOf(deck(1L), deck(3L), deck(5L))
-                every { studyReportApi.getHistoryDeckIds(userId) } returns setOf(1L, 4L)
 
                 val first = service.getDeckOptions(userId, cursor = null, limit = 2)
                 val second = service.getDeckOptions(userId, cursor = first.nextCursor, limit = 2)
@@ -261,14 +258,13 @@ class StudyReportBFFServiceUnitTest :
                 )
             }
 
-            it("삭제된 덱의 카드는 카드가 남아 있어도 본문을 읽지 않고 숨긴다") {
-                every { studyReportApi.getCards(userId, 9L, null, Rating.EASY, null, max, 21) } returns
-                    listOf(card(200L, 1L))
+            it("삭제됐거나 다른 사용자의 덱이면 DeckApi의 예외를 그대로 던진다") {
+                every { deckApi.getDeck(userId, 9L) } throws DeckForbiddenException("not owner")
 
-                val page = service.getCards(now, kst, userId, 9L, null, null, Rating.EASY, null, 20)
-
-                page.items.single().card shouldBe ReportCardLabel(200L, true, null, null)
-                verify(exactly = 0) { cardApi.getCardsByIds(any(), any()) }
+                shouldThrow<DeckForbiddenException> {
+                    service.getCards(now, kst, userId, 9L, null, null, Rating.EASY, null, 20)
+                }
+                verify(exactly = 0) { studyReportApi.getCards(any(), any(), any(), any(), any(), any(), any()) }
             }
         }
 

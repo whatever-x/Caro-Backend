@@ -16,7 +16,7 @@ import java.time.ZoneId
  *
  * 평가 집계는 study에서, 덱 이름과 카드 본문은 card에서 읽어 합친다.
  * 카드·덱을 삭제해도 평가 이력과 통계는 그대로 두고, 삭제된 덱 이름과 카드 본문만 숨긴다.
- * 덱만 삭제하면 그 덱의 카드는 card 모듈에서 활성으로 남으므로, 덱이 삭제됐으면 카드 본문도 숨긴다.
+ * deckId로는 지금 가진 덱만 조회할 수 있다. 삭제된 덱의 기록은 deckId 없는 "전체" 수치와 학습 기록 목록에만 남는다.
  */
 @Service
 class StudyReportBFFService(
@@ -162,7 +162,7 @@ class StudyReportBFFService(
         limit: Int,
     ): ReportPageView<ReportCardItem> {
         val period = resolvePeriod(now.atZone(timezone).toLocalDate(), startDate, endDate)
-        val scope = resolveScope(userId, deckId)
+        resolveScope(userId, deckId)
         val filter = ReportCursor.filterOf(deckId, period?.startDate, period?.endDate, lastRating)
         val decoded = cursor?.let { ReportCursor.decode(it, ReportCursor.Kind.CARDS, filter, keyCount = 1) }
         val maxReviewId = decoded?.maxReviewId ?: studyReportApi.getMaxReviewId(userId)
@@ -172,7 +172,7 @@ class StudyReportBFFService(
 
         val rows = studyReportApi.getCards(userId, deckId, period, lastRating, afterReviewId, maxReviewId, limit + 1)
         val page = rows.take(limit)
-        val labels = cardLabels(userId, page.map { it.cardId }, deckDeleted = scope.deleted)
+        val labels = cardLabels(userId, page.map { it.cardId })
         val items = page.map {
             ReportCardItem(
                 card = labels.getValue(it.cardId),
@@ -208,7 +208,7 @@ class StudyReportBFFService(
     ): ReportCardReviewsView {
         val today = now.atZone(timezone).toLocalDate()
         val period = resolvePeriod(today, startDate, endDate)
-        val scope = resolveScope(userId, deckId)
+        resolveScope(userId, deckId)
         val filter = ReportCursor.filterOf(deckId, cardId, period?.startDate, period?.endDate)
         val decoded = cursor?.let { ReportCursor.decode(it, ReportCursor.Kind.REVIEWS, filter, keyCount = 1) }
         val maxReviewId = decoded?.maxReviewId ?: studyReportApi.getMaxReviewId(userId)
@@ -247,7 +247,7 @@ class StudyReportBFFService(
             ?: studyReportApi.getFirstStudyDate(userId, deckId, maxReviewId)?.let { minOf(it, today) }
         val rangeEnd = period?.endDate ?: today
         return ReportCardReviewsView(
-            card = cardLabels(userId, listOf(cardId), deckDeleted = scope.deleted).getValue(cardId),
+            card = cardLabels(userId, listOf(cardId)).getValue(cardId),
             range = ReportRange(
                 startDate = rangeStart,
                 endDate = rangeEnd,
@@ -275,28 +275,23 @@ class StudyReportBFFService(
     }
 
     /**
-     * 지금 가진 덱이거나 본인의 평가 기록이 남은 덱만 조회할 수 있다.
+     * 지금 가진 본인 덱만 조회할 수 있다. 소유권과 존재 검사는 card의 [DeckApi.getDeck]이 한다.
+     * 삭제됐거나 없는 덱은 DeckNotFoundException(404), 다른 사용자의 덱은 DeckForbiddenException(403)이다.
      */
     private fun resolveScope(
         userId: Long,
         deckId: Long?,
     ): ReportScope {
         if (deckId == null) return ReportScope(deckId = null, deckName = null, deleted = false)
-        deckApi.getDecks(userId).firstOrNull { it.id == deckId }?.let {
-            return ReportScope(deckId = it.id, deckName = it.name, deleted = false)
-        }
-        if (deckId in studyReportApi.getHistoryDeckIds(userId)) {
-            return ReportScope(deckId = deckId, deckName = null, deleted = true)
-        }
-        throw ReportTargetNotFoundException("deckId=$deckId is not accessible")
+        val deck = deckApi.getDeck(userId, deckId)
+        return ReportScope(deckId = deck.id, deckName = deck.name, deleted = false)
     }
 
     private fun cardLabels(
         userId: Long,
         cardIds: List<Long>,
-        deckDeleted: Boolean,
     ): Map<Long, ReportCardLabel> {
-        val contents = if (deckDeleted || cardIds.isEmpty()) emptyMap() else cardApi.getCardsByIds(userId, cardIds)
+        val contents = if (cardIds.isEmpty()) emptyMap() else cardApi.getCardsByIds(userId, cardIds)
         return cardIds.associateWith { id ->
             val fields = contents[id]?.fields
             ReportCardLabel(

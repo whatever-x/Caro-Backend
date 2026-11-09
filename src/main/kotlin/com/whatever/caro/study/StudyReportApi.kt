@@ -19,13 +19,6 @@ interface StudyReportApi {
     ): Long
 
     /**
-     * 평가 로그가 있는 덱 id 집합(삭제된 덱 포함)
-     */
-    fun getHistoryDeckIds(
-        userId: Long,
-    ): Set<Long>
-
-    /**
      * 평가 로그가 있는 첫 학습일. 기록이 없으면 null
      */
     fun getFirstStudyDate(

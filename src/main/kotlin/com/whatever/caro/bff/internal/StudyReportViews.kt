@@ -11,7 +11,7 @@ import java.time.ZoneId
 enum class ReportBucketUnit { DAY, WEEK, MONTH }
 
 /**
- * 조회한 덱. 전체 선택은 deckId·deckName이 null이고, 삭제된 덱은 이름 없이 deleted=true다.
+ * 조회한 덱. 전체 선택은 deckId·deckName이 null이다. 삭제된 덱은 조회할 수 없어 deleted는 항상 false다.
  */
 data class ReportScope(
     val deckId: Long?,
@@ -68,7 +68,7 @@ data class ReportSessionItem(
 )
 
 /**
- * 카드의 지금 내용. 삭제된 카드와 삭제된 덱의 카드는 본문 없이 deleted=true다.
+ * 카드의 지금 내용. 삭제된 카드는 본문 없이 deleted=true다.
  */
 data class ReportCardLabel(
     val cardId: Long,

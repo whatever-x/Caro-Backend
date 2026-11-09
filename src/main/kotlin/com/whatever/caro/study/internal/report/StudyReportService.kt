@@ -27,10 +27,6 @@ class StudyReportService(
         userId: Long,
     ): Long = studyReportRepository.findMaxReviewId(userId)
 
-    override fun getHistoryDeckIds(
-        userId: Long,
-    ): Set<Long> = studyReportRepository.findHistoryDeckIds(userId).toSet()
-
     override fun getFirstStudyDate(
         userId: Long,
         deckId: Long?,
