@@ -2,6 +2,7 @@ package com.whatever.caro.card.internal.card
 
 import com.whatever.caro.card.api.card.CardApi
 import com.whatever.caro.card.api.card.CardContentDto
+import com.whatever.caro.card.api.event.CardChunkCreatedEvent
 import com.whatever.caro.card.api.event.CardsCreatedEvent
 import com.whatever.caro.card.api.event.CardsDeletedEvent
 import com.whatever.caro.card.internal.card.dto.create.CreateCardsDto
@@ -15,10 +16,12 @@ import com.whatever.caro.card.internal.card.exception.CardForbiddenException
 import com.whatever.caro.card.internal.card.exception.CardInvalidFieldsException
 import com.whatever.caro.card.internal.card.exception.CardLimitExceededException
 import com.whatever.caro.card.internal.card.exception.CardNotFoundException
+import com.whatever.caro.card.internal.deck.Deck
 import com.whatever.caro.card.internal.deck.DeckRepository
 import com.whatever.caro.card.internal.deck.exception.DeckForbiddenException
 import com.whatever.caro.card.internal.deck.exception.DeckNotFoundException
 import com.whatever.caro.card.internal.note.Note
+import com.whatever.caro.card.internal.note.NoteInsertRow
 import com.whatever.caro.card.internal.note.NoteRepository
 import com.whatever.caro.card.internal.notetype.CardTemplate
 import com.whatever.caro.card.internal.notetype.CardTemplateRepository
@@ -72,33 +75,9 @@ class CardService(
         userId: Long,
         dto: CreateCardsDto,
     ): CreateCardsResponseDto {
-        val deck = deckRepository.lockByIdAndDeletedAtIsNull(dto.deckId)
-            ?: throw DeckNotFoundException("deckId=${dto.deckId} 덱을 찾을 수 없습니다")
-
-        if (deck.userId != userId) {
-            throw DeckForbiddenException("deckId=${dto.deckId} 에 대한 접근 권한이 없습니다")
-        }
-
-        val noteTypeIds = dto.items.map { it.noteTypeId }.toSet()
-        val foundNoteTypeIds = noteTypeRepository.findAllByIdIn(noteTypeIds).map { it.id }.toSet()
-        val missingNoteTypeIds = noteTypeIds - foundNoteTypeIds
-        if (missingNoteTypeIds.isNotEmpty()) {
-            throw NoteTypeNotFoundException("noteTypeId=$missingNoteTypeIds 노트 타입을 찾을 수 없습니다")
-        }
-
-        val templatesByNoteType = cardTemplateRepository.findAllByNoteTypeIdIn(foundNoteTypeIds)
-            .groupBy { it.noteType.id }
-
-        dto.items.forEach { item ->
-            val cardTemplates = templatesByNoteType[item.noteTypeId]
-                ?: throw NoteTypeNoTemplatesException("noteTypeId=${item.noteTypeId} 에 카드 템플릿이 없습니다")
-            cardTemplates.forEach { template ->
-                val missing = template.requiredFields - item.fields.keys
-                if (missing.isNotEmpty()) {
-                    throw CardInvalidFieldsException("필수 필드가 누락되었습니다: $missing")
-                }
-            }
-        }
+        val target = validateCreation(userId = userId, dto = dto)
+        val deck = target.deck
+        val templatesByNoteType = target.templatesByNoteType
 
         val newCardCount = dto.items.sumOf { templatesByNoteType.getValue(it.noteTypeId).size.toLong() }
         if (newCardCount > MAX_CARDS_PER_REQUEST) {
@@ -134,6 +113,73 @@ class CardService(
         )
 
         return CreateCardsResponseDto(items = createdCards)
+    }
+
+    @Transactional(timeout = CARD_CHUNK_TRANSACTION_TIMEOUT_SECONDS)
+    fun createCardChunk(
+        userId: Long,
+        dto: CreateCardsDto,
+    ): CreateCardsResponseDto {
+        val target = validateCreation(userId = userId, dto = dto)
+        val now = Instant.now(clock)
+        val templatesPerItem = dto.items.map { target.templatesByNoteType.getValue(it.noteTypeId) }
+
+        val noteIds = noteRepository.insertAll(
+            rows = dto.items.map { NoteInsertRow(userId = userId, fields = it.fields) },
+            now = now,
+        )
+        val cardRows = templatesPerItem.zip(noteIds).flatMap { (templates, noteId) ->
+            templates.map { template ->
+                CardInsertRow(cardTemplateId = template.id, noteId = noteId, deckId = target.deck.id, userId = userId)
+            }
+        }
+        val cardFields = dto.items.zip(templatesPerItem).flatMap { (item, templates) ->
+            templates.map { template -> projectFields(template, item.fields) }
+        }
+        val createdCards = cardRepository.insertAll(rows = cardRows, now = now)
+            .zip(cardFields) { cardId, fields -> CardResponseDto(cardId = cardId, fields = fields) }
+
+        target.deck.cardCount += createdCards.size
+        eventPublisher.publishEvent(
+            CardChunkCreatedEvent(cardIds = createdCards.map { it.cardId }, deckId = target.deck.id, userId = userId),
+        )
+
+        return CreateCardsResponseDto(items = createdCards)
+    }
+
+    private fun validateCreation(
+        userId: Long,
+        dto: CreateCardsDto,
+    ): CardCreationTarget {
+        val deck = deckRepository.lockByIdAndDeletedAtIsNull(dto.deckId)
+            ?: throw DeckNotFoundException("deckId=${dto.deckId} 덱을 찾을 수 없습니다")
+
+        if (deck.userId != userId) {
+            throw DeckForbiddenException("deckId=${dto.deckId} 에 대한 접근 권한이 없습니다")
+        }
+
+        val noteTypeIds = dto.items.map { it.noteTypeId }.toSet()
+        val foundNoteTypeIds = noteTypeRepository.findAllByIdIn(noteTypeIds).map { it.id }.toSet()
+        val missingNoteTypeIds = noteTypeIds - foundNoteTypeIds
+        if (missingNoteTypeIds.isNotEmpty()) {
+            throw NoteTypeNotFoundException("noteTypeId=$missingNoteTypeIds 노트 타입을 찾을 수 없습니다")
+        }
+
+        val templatesByNoteType = cardTemplateRepository.findAllByNoteTypeIdIn(foundNoteTypeIds)
+            .groupBy { it.noteType.id }
+
+        dto.items.forEach { item ->
+            val cardTemplates = templatesByNoteType[item.noteTypeId]
+                ?: throw NoteTypeNoTemplatesException("noteTypeId=${item.noteTypeId} 에 카드 템플릿이 없습니다")
+            cardTemplates.forEach { template ->
+                val missing = template.requiredFields - item.fields.keys
+                if (missing.isNotEmpty()) {
+                    throw CardInvalidFieldsException("필수 필드가 누락되었습니다: $missing")
+                }
+            }
+        }
+
+        return CardCreationTarget(deck = deck, templatesByNoteType = templatesByNoteType)
     }
 
     @Transactional(readOnly = true)
@@ -291,7 +337,15 @@ class CardService(
         noteFields: Map<String, String>,
     ): Map<String, String> = template.requiredFields.associateWith { key -> noteFields[key].orEmpty() }
 
+    private class CardCreationTarget(
+        val deck: Deck,
+        val templatesByNoteType: Map<Long, List<CardTemplate>>,
+    )
+
     companion object {
-        private const val MAX_CARDS_PER_REQUEST = 200
+        const val MAX_CARDS_PER_REQUEST = 200
+
+        // 처리 마커 TTL보다 짧아야 TTL 만료 뒤 같은 키 재시도와 이 트랜잭션이 함께 커밋되지 않는다.
+        private const val CARD_CHUNK_TRANSACTION_TIMEOUT_SECONDS = 20
     }
 }

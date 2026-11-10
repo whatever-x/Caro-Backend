@@ -98,7 +98,7 @@ class GlobalExceptionHandler(
         e: HttpMessageNotReadableException,
         locale: Locale,
     ): ResponseEntity<ApiResponse<Nothing>> {
-        logger.warn { "Unreadable request body: ${e.message}" }
+        logger.warn { "Unreadable request body" }
         return ResponseEntity
             .badRequest()
             .body(

@@ -55,6 +55,7 @@ class CardControllerUnitTest :
                     items = listOf(CardResponseDto(cardId = 100L, fields = mapOf("front" to "apple"))),
                 )
 
+                @Suppress("DEPRECATION")
                 val response = controller.createCards(deckId, request)
 
                 response.statusCode shouldBe HttpStatus.OK
@@ -68,7 +69,7 @@ class CardControllerUnitTest :
                             deckId = deckId,
                             items = listOf(
                                 CreateCardItemDto(
-                                    noteTypeId = CardType.BASIC.noteTypeId,
+                                    noteTypeId = 1L,
                                     fields = mapOf("front" to "apple", "back" to "사과"),
                                 ),
                             ),

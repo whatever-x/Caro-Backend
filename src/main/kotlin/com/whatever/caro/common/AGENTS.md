@@ -32,3 +32,4 @@
   단언 방식은 `src/test/kotlin/com/whatever/caro/AGENTS.md`의 예외 응답 항목을 따른다.
   `common.*`에는 `GlobalExceptionHandler`를 검사하는 테스트가 없고, 에러 응답 케이스는 `CardControllerWebMvcTest`·`DeckControllerWebMvcTest`·`DeckBFFControllerWebMvcTest`에만 있다.
   메시지 키 해석이나 `Accept-Language` 처리를 바꾸면 문구 검증 케이스도 추가한다. 이를 검사하는 테스트가 없어 메시지 키나 로케일 처리가 틀려도 테스트가 통과한다.
+- Spring Data 레포지토리 조각의 Impl에는 `@Transactional`을 클래스 수준에 둔다. 메서드 수준에만 두면 `kotlin("plugin.spring")`이 Impl을 open으로 만들지 않아 final 클래스의 트랜잭션 proxy를 만들지 못하고 컨텍스트 기동이 실패한다.

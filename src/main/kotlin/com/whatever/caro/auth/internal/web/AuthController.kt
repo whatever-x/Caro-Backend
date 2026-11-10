@@ -3,6 +3,7 @@ package com.whatever.caro.auth.internal.web
 import com.whatever.caro.auth.SecurityUtil
 import com.whatever.caro.auth.internal.AuthService
 import com.whatever.caro.auth.internal.web.request.CompleteRegistrationRequest
+import com.whatever.caro.auth.internal.web.request.CompleteRegistrationV11Request
 import com.whatever.caro.auth.internal.web.request.RefreshTokenRequest
 import com.whatever.caro.auth.internal.web.request.SocialLoginRequest
 import com.whatever.caro.auth.internal.web.response.SocialLoginResponse
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
+import java.time.ZoneId
 
 @Tag(name = "Auth", description = "인증 / 세션 관리")
 @RestController
@@ -54,6 +56,20 @@ class AuthController(
     ): ResponseEntity<ApiResponse<TokenResponse>> {
         val authUser = SecurityUtil.currentUser()
         val response = authService.completeRegistration(authUser, request, deviceId)
+        return ResponseEntity.ok(ApiResponse.ok(response))
+    }
+
+    @Operation(summary = "회원가입 완료", description = "닉네임과 생년월일 입력 후 토큰을 발급한다.")
+    @PostMapping("/complete-registration", version = "1.1")
+    fun completeRegistrationV11(
+        @Parameter(name = "Device-Id", description = "디바이스 식별자", required = true)
+        @RequestHeader(name = "Device-Id", required = true) deviceId: String,
+        @RequestHeader(name = "Client-Timezone", required = true) timezone: ZoneId,
+        @Valid @RequestBody request: CompleteRegistrationV11Request,
+    ): ResponseEntity<ApiResponse<TokenResponse>> {
+        val authUser = SecurityUtil.currentUser()
+        val original = CompleteRegistrationRequest(request.nickname, request.isTermsAgreed)
+        val response = authService.completeRegistration(authUser, original, deviceId, request.birthDate, timezone)
         return ResponseEntity.ok(ApiResponse.ok(response))
     }
 
