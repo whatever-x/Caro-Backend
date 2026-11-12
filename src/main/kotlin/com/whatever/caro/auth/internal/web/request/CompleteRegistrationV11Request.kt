@@ -8,11 +8,11 @@ import jakarta.validation.constraints.Size
 import java.time.LocalDate
 
 data class CompleteRegistrationV11Request(
-    @field:NotBlank(message = "닉네임은 필수입니다")
-    @field:Size(max = 50, message = "닉네임은 50자 이하여야 합니다")
+    @field:NotBlank(message = "{validation.nickname.required}")
+    @field:Size(max = 50, message = "{validation.nickname.max_size}")
     val nickname: String,
     @get:JsonProperty("isTermsAgreed")
-    @field:AssertTrue(message = "약관에 동의해야 합니다")
+    @field:AssertTrue(message = "{validation.terms.required}")
     @get:Schema(description = "약관 동의 여부", requiredMode = Schema.RequiredMode.REQUIRED)
     val isTermsAgreed: Boolean,
     @field:Schema(description = "생년월일. 성인 여부 판정에만 사용하며 저장하지 않는다", requiredMode = Schema.RequiredMode.REQUIRED)

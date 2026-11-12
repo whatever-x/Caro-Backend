@@ -8,6 +8,8 @@ import com.whatever.caro.card.internal.deck.service.DeckService
 import com.whatever.caro.common.web.idempotency.IdempotencyProperties
 import com.whatever.caro.common.web.idempotency.IdempotencyRepository
 import io.kotest.core.spec.style.DescribeSpec
+import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.security.autoconfigure.SecurityAutoConfiguration
 import org.springframework.boot.security.autoconfigure.UserDetailsServiceAutoConfiguration
@@ -21,6 +23,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.patch
 import org.springframework.test.web.servlet.post
+import tools.jackson.databind.json.JsonMapper
 
 @WebMvcTest(
     controllers = [DeckController::class],
@@ -66,6 +69,39 @@ class DeckControllerWebMvcTest : DescribeSpec() {
 
         afterEach {
             SecurityContextHolder.clearContext()
+        }
+
+        describe("POST /decks - 검증 메시지 언어") {
+            it("필드 오류도 요청 언어를 따르며 미지원 언어와 헤더 생략은 영어를 사용한다") {
+                val mapper = JsonMapper.builder().build()
+                val messages = listOf("en-US", "ko-KR", "ja-JP", null).map { language ->
+                    val response = mockMvc.post("/decks") {
+                        header(API_VERSION_HEADER, API_VERSION)
+                        language?.let { header("Accept-Language", it) }
+                        contentType = MediaType.APPLICATION_JSON
+                        content = """{"name":"","description":""}"""
+                    }.andExpect {
+                        status { isBadRequest() }
+                        jsonPath("$.error.code") { value(INVALID_INPUT_CODE) }
+                    }.andReturn().response
+                    val error = mapper.readTree(response.contentAsByteArray).path("error")
+                    val fieldErrors = error.path("fieldErrors")
+                    val texts = listOf(error.path("message").asString()) +
+                        fieldErrors.values().map { it.path("message").asString() }.sorted()
+                    texts.size shouldBe 3
+                    texts.forEach {
+                        it.isBlank() shouldBe false
+                        it.contains("{") shouldBe false
+                    }
+                    texts
+                }
+                messages[0].zip(messages[1]).forEach { (en, ko) ->
+                    en shouldNotBe ko
+                    Regex("[가-힣]").containsMatchIn(en) shouldBe false
+                }
+                messages[2] shouldBe messages[0]
+                messages[3] shouldBe messages[0]
+            }
         }
 
         describe("POST /decks - @Valid 검증") {

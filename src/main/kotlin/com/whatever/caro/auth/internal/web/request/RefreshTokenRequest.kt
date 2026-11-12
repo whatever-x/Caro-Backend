@@ -3,9 +3,9 @@ package com.whatever.caro.auth.internal.web.request
 import jakarta.validation.constraints.NotBlank
 
 data class RefreshTokenRequest(
-    @field:NotBlank(message = "Refresh Token은 필수입니다")
+    @field:NotBlank(message = "{validation.refresh_token.required}")
     val refreshToken: String,
 
-    @field:NotBlank(message = "Access Token은 필수입니다")
+    @field:NotBlank(message = "{validation.access_token.required}")
     val accessToken: String,
 )

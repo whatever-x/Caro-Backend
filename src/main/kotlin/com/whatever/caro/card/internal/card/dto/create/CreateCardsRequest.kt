@@ -8,8 +8,8 @@ import jakarta.validation.constraints.Size
 
 data class CreateCardsRequest(
     @field:Valid
-    @field:NotEmpty(message = "생성할 카드가 비어있을 수 없습니다")
-    @field:Size(max = CardService.MAX_CARDS_PER_REQUEST, message = "한 번에 생성할 수 있는 항목은 최대 {max}개입니다")
+    @field:NotEmpty(message = "{validation.card.items.required}")
+    @field:Size(max = CardService.MAX_CARDS_PER_REQUEST, message = "{validation.card.items.max_size}")
     @Schema(description = "생성할 카드 묶음 목록", required = true)
     val items: List<CreateCardItem>,
 )
@@ -18,7 +18,7 @@ data class CreateCardItem(
     @Schema(description = "카드 타입 (기본값: BASIC)", defaultValue = "BASIC")
     val cardType: CardType = CardType.BASIC,
 
-    @field:NotEmpty(message = "필드는 비어있을 수 없습니다")
+    @field:NotEmpty(message = "{validation.card.fields.required}")
     @Schema(description = "카드 필드 (e.g. {\"front\": \"apple\", \"back\": \"사과\"})", required = true)
     val fields: Map<String, String>,
 )

@@ -6,6 +6,6 @@ import jakarta.validation.constraints.NotBlank
 data class SocialLoginRequest(
     val provider: SocialProvider,
 
-    @field:NotBlank(message = "ID Token은 필수입니다")
+    @field:NotBlank(message = "{validation.id_token.required}")
     val idToken: String,
 )

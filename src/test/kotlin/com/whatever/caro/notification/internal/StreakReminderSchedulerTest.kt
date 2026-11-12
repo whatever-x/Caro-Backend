@@ -176,7 +176,7 @@ class StreakReminderSchedulerTest :
                 val message = scheduler.reminderMessage(atRisk(1L, 12, isRestDay = true), Locale.JAPANESE)
 
                 message.title shouldBe "🔥 12-day streak!"
-                message.body shouldBe "No cards due today. Open the app to keep your streak going."
+                message.body shouldBe "No cards to review today. Open Caro to keep your streak going."
             }
         }
     })

@@ -50,7 +50,11 @@ class GlobalExceptionHandler(
         locale: Locale,
     ): ResponseEntity<ApiResponse<Nothing>> {
         val fieldErrors = e.bindingResult.fieldErrors.map { error ->
-            FieldError(field = error.field, message = error.defaultMessage ?: "유효하지 않은 값입니다")
+            FieldError(
+                field = error.field,
+                message =
+                error.defaultMessage ?: messageSource.getMessage("validation.invalid", null, locale),
+            )
         }
         val message = resolveMessage(CommonErrorCode.INVALID_INPUT, null, locale)
         logger.warn { "Validation failed: ${fieldErrors.map { "${it.field}: ${it.message}" }}" }
@@ -74,7 +78,11 @@ class GlobalExceptionHandler(
             when (result) {
                 // @Valid로 중첩된 객체의 오류는 원래 필드명을 그대로 사용
                 is ParameterErrors -> result.fieldErrors.map { error ->
-                    FieldError(field = error.field, message = error.defaultMessage ?: "유효하지 않은 값입니다")
+                    FieldError(
+                        field = error.field,
+                        message =
+                        error.defaultMessage ?: messageSource.getMessage("validation.invalid", null, locale),
+                    )
                 }
 
                 // 파라미터(@PathVariable 등)의 오류는 파라미터명을 필드명으로 사용

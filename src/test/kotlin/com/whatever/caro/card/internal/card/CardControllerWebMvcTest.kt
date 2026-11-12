@@ -14,6 +14,8 @@ import com.whatever.caro.common.web.filter.RequestResponseCachingFilter
 import com.whatever.caro.common.web.idempotency.IdempotencyProperties
 import com.whatever.caro.common.web.idempotency.IdempotencyRepository
 import io.kotest.core.spec.style.DescribeSpec
+import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
 import org.hamcrest.Matchers.equalTo
 import org.mockito.ArgumentMatchers.any
 import org.mockito.ArgumentMatchers.anyString
@@ -39,6 +41,7 @@ import org.springframework.test.web.servlet.post
 import org.springframework.test.web.servlet.setup.DefaultMockMvcBuilder
 import org.springframework.test.web.servlet.setup.MockMvcBuilders
 import org.springframework.web.context.WebApplicationContext
+import tools.jackson.databind.json.JsonMapper
 import java.time.Duration
 import java.util.UUID
 
@@ -132,6 +135,34 @@ class CardControllerWebMvcTest : DescribeSpec() {
 
         afterEach {
             SecurityContextHolder.clearContext()
+        }
+
+        describe("카드 개수 검증 메시지 언어") {
+            it("두 API 버전 모두 요청 언어와 개수 상한을 검증 메시지에 반영한다") {
+                val mapper = JsonMapper.builder().build()
+                for ((version, limit) in listOf(API_VERSION to CREATE_MAX_ITEMS, API_VERSION_1_1 to CHUNK_MAX_ITEMS)) {
+                    val messages = listOf("en-US", "ko-KR").map { language ->
+                        val response = idempotentMockMvc().post("/decks/1/cards") {
+                            header(API_VERSION_HEADER, version)
+                            header(IDEMPOTENCY_KEY_HEADER, UUID.randomUUID().toString())
+                            header("Accept-Language", language)
+                            contentType = MediaType.APPLICATION_JSON
+                            content = itemsJson(limit + 1)
+                        }.andExpect {
+                            status { isBadRequest() }
+                            jsonPath("$.error.code") { value(INVALID_INPUT_CODE) }
+                        }.andReturn().response
+                        mapper.readTree(response.contentAsByteArray).path("error").path("fieldErrors")
+                            .path(0).path("message").asString().also {
+                                it.contains(limit.toString()) shouldBe true
+                                it.contains("{") shouldBe false
+                            }
+                    }
+                    messages[0] shouldNotBe messages[1]
+                    Regex("[가-힣]").containsMatchIn(messages[0]) shouldBe false
+                }
+                verifyNoInteractions(cardService)
+            }
         }
 
         describe("POST /decks/{deckId}/cards - @Valid 검증") {

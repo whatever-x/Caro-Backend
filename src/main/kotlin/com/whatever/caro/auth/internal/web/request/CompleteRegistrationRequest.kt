@@ -6,11 +6,11 @@ import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.Size
 
 data class CompleteRegistrationRequest(
-    @field:NotBlank(message = "닉네임은 필수입니다")
-    @field:Size(max = 50, message = "닉네임은 50자 이하여야 합니다")
+    @field:NotBlank(message = "{validation.nickname.required}")
+    @field:Size(max = 50, message = "{validation.nickname.max_size}")
     val nickname: String,
 
     @get:JsonProperty("isTermsAgreed")
-    @field:AssertTrue(message = "약관에 동의해야 합니다")
+    @field:AssertTrue(message = "{validation.terms.required}")
     val isTermsAgreed: Boolean,
 )

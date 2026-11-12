@@ -10,6 +10,8 @@ import com.whatever.caro.user.SocialProvider
 import com.whatever.caro.user.internal.MyInfo
 import com.whatever.caro.user.internal.UserService
 import io.kotest.core.spec.style.DescribeSpec
+import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
 import org.mockito.BDDMockito.given
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.security.autoconfigure.SecurityAutoConfiguration
@@ -23,7 +25,9 @@ import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.get
+import org.springframework.test.web.servlet.patch
 import org.springframework.test.web.servlet.put
+import tools.jackson.databind.json.JsonMapper
 
 @WebMvcTest(
     controllers = [UserController::class],
@@ -54,6 +58,31 @@ class UserAgeControllerWebMvcTest : DescribeSpec() {
             )
         }
         afterEach { SecurityContextHolder.clearContext() }
+
+        describe("PATCH /users/me/nickname 검증 메시지") {
+            it("닉네임 길이 오류를 요청 언어로 반환하고 최소 및 최대 길이를 치환한다") {
+                val mapper = JsonMapper.builder().build()
+                val messages = listOf("en-US", "ko-KR").map { language ->
+                    val response = mockMvc.patch("/users/me/nickname") {
+                        header("API-Version", "1.0")
+                        header("Accept-Language", language)
+                        contentType = MediaType.APPLICATION_JSON
+                        content = """{"nickname":"${"a".repeat(51)}"}"""
+                    }.andExpect {
+                        status { isBadRequest() }
+                        jsonPath("$.error.code") { value("C001") }
+                    }.andReturn().response
+                    mapper.readTree(response.contentAsByteArray).path("error").path("fieldErrors")
+                        .path(0).path("message").asString().also {
+                            it.contains("1") shouldBe true
+                            it.contains("50") shouldBe true
+                            it.contains("{") shouldBe false
+                        }
+                }
+                messages[0] shouldNotBe messages[1]
+                Regex("[가-힣]").containsMatchIn(messages[0]) shouldBe false
+            }
+        }
 
         describe("GET /users/me/info") {
             listOf(true, false).forEach { adult ->

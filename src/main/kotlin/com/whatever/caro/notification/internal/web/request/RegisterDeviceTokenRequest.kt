@@ -7,8 +7,8 @@ import jakarta.validation.constraints.Size
 
 @Schema(name = "RegisterDeviceTokenRequest", description = "푸시 기기 토큰 등록 요청")
 data class RegisterDeviceTokenRequest(
-    @field:NotBlank(message = "Token is required")
-    @field:Size(max = 512, message = "Token must be at most 512 characters")
+    @field:NotBlank(message = "{validation.device_token.required}")
+    @field:Size(max = 512, message = "{validation.device_token.max_size}")
     @field:Schema(description = "FCM registration token", required = true)
     val token: String,
 
