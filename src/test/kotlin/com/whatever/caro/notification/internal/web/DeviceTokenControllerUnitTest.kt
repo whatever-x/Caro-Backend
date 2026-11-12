@@ -5,10 +5,14 @@ import com.whatever.caro.notification.internal.NotificationService
 import com.whatever.caro.notification.internal.web.request.RegisterDeviceTokenRequest
 import io.kotest.core.spec.style.DescribeSpec
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
 import io.mockk.clearAllMocks
 import io.mockk.mockk
 import io.mockk.verify
+import org.springframework.context.i18n.LocaleContextHolder
+import org.springframework.context.support.ResourceBundleMessageSource
 import org.springframework.http.HttpStatus
+import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean
 import java.time.ZoneId
 import java.util.Locale
 
@@ -18,6 +22,38 @@ class DeviceTokenControllerUnitTest :
         val controller = DeviceTokenController(notificationService = notificationService)
 
         beforeEach { clearAllMocks() }
+
+        describe("기기 토큰 검증 메시지") {
+            it("필수 및 길이 오류를 요청 언어로 표시하고 길이 상한을 치환한다") {
+                val source = ResourceBundleMessageSource().apply {
+                    setBasename("messages")
+                    setDefaultEncoding("UTF-8")
+                    setFallbackToSystemLocale(false)
+                }
+                val validator = LocalValidatorFactoryBean().apply {
+                    setValidationMessageSource(source)
+                    afterPropertiesSet()
+                }
+                try {
+                    for (token in listOf("", "a".repeat(513))) {
+                        val messages = listOf(Locale.ENGLISH, Locale.KOREAN).map { locale ->
+                            LocaleContextHolder.setLocale(locale)
+                            val violations = validator.validate(RegisterDeviceTokenRequest(token, DevicePlatform.ANDROID))
+                            violations.size shouldBe 1
+                            violations.single().message.also {
+                                it.contains("{") shouldBe false
+                                if (token.isNotEmpty()) it.contains("512") shouldBe true
+                            }
+                        }
+                        messages[0] shouldNotBe messages[1]
+                        Regex("[가-힣]").containsMatchIn(messages[0]) shouldBe false
+                    }
+                } finally {
+                    LocaleContextHolder.resetLocaleContext()
+                    validator.close()
+                }
+            }
+        }
 
         describe("registerToken") {
             it("토큰을 등록하고 204를 반환한다") {

@@ -7,6 +7,7 @@ import io.kotest.core.spec.style.DescribeSpec
 import io.kotest.datatest.withData
 import io.kotest.matchers.collections.shouldNotBeIn
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
@@ -14,6 +15,7 @@ import org.springframework.context.annotation.Import
 import org.springframework.http.HttpStatus
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.get
+import tools.jackson.databind.json.JsonMapper
 
 private sealed interface Access {
     data object PermitAll : Access
@@ -115,6 +117,34 @@ class SecurityConfigAccessControlTest(
             }
         }.andReturn()
         return HttpStatus.valueOf(result.response.status)
+    }
+
+    describe("인증 및 인가 오류 메시지 언어") {
+        it("401과 403 응답이 요청 언어를 따르고 미지원 언어와 헤더 생략은 영어를 사용한다") {
+            val mapper = JsonMapper.builder().build()
+            for (authenticated in listOf(false, true)) {
+                val messages = listOf("en-US", "ko-KR", "fr-FR", null).map { language ->
+                    val response = mockMvc.get("/decks") {
+                        language?.let { header("Accept-Language", it) }
+                        if (authenticated) {
+                            val token = jwtTokenProvider.generateAccessToken(userId = 1L, status = SUSPENDED).token
+                            header("Authorization", "Bearer $token")
+                        }
+                    }.andReturn().response
+                    response.status shouldBe if (authenticated) 403 else 401
+                    val error = mapper.readTree(response.contentAsByteArray).path("error")
+                    error.path("code").asString() shouldBe if (authenticated) "A002" else "A001"
+                    error.path("message").asString().also {
+                        it.isBlank() shouldBe false
+                        it.contains("{") shouldBe false
+                    }
+                }
+                messages[0] shouldNotBe messages[1]
+                Regex("[가-힣]").containsMatchIn(messages[0]) shouldBe false
+                messages[2] shouldBe messages[0]
+                messages[3] shouldBe messages[0]
+            }
+        }
     }
 
     describe("API 접근 제어 확인") {

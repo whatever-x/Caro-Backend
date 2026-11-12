@@ -8,9 +8,11 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
+import org.springframework.context.MessageSource
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Component
 import org.springframework.web.filter.OncePerRequestFilter
+import org.springframework.web.servlet.LocaleResolver
 import tools.jackson.databind.json.JsonMapper
 
 private val customLogger = KotlinLogging.logger {}
@@ -18,6 +20,8 @@ private val customLogger = KotlinLogging.logger {}
 @Component
 class JwtExceptionFilter(
     private val jsonMapper: JsonMapper,
+    private val messageSource: MessageSource,
+    private val localeResolver: LocaleResolver,
 ) : OncePerRequestFilter() {
     override fun doFilterInternal(
         request: HttpServletRequest,
@@ -30,20 +34,28 @@ class JwtExceptionFilter(
             customLogger.warn {
                 "Auth Exception: code=${e.errorCode.code}, message=${e.message}, uri=${request.requestURI}"
             }
-            writeErrorResponse(response, e.errorCode)
+            writeErrorResponse(request, response, e.errorCode, e.args)
         } catch (e: Exception) {
             customLogger.error { "Unexpected filter exception: ${e.message}, uri=${request.requestURI}" }
-            writeErrorResponse(response, CommonErrorCode.INTERNAL_ERROR)
+            writeErrorResponse(request, response, CommonErrorCode.INTERNAL_ERROR)
         }
     }
 
     private fun writeErrorResponse(
+        request: HttpServletRequest,
         response: HttpServletResponse,
         errorCode: ErrorCodeSpec,
+        args: Array<Any>? = null,
     ) {
         response.status = errorCode.status.value()
         response.contentType = MediaType.APPLICATION_JSON_VALUE
         response.characterEncoding = "UTF-8"
-        jsonMapper.writeValue(response.writer, ApiResponse.fail(errorCode))
+        val message = messageSource.getMessage(
+            errorCode.messageKey,
+            args,
+            errorCode.message,
+            localeResolver.resolveLocale(request),
+        )
+        jsonMapper.writeValue(response.writer, ApiResponse.fail(errorCode, message))
     }
 }
