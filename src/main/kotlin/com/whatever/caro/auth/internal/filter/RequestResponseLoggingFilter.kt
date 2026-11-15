@@ -1,5 +1,6 @@
 package com.whatever.caro.auth.internal.filter
 
+import com.whatever.caro.auth.internal.config.PublicEndpoints
 import io.github.oshai.kotlinlogging.KotlinLogging
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
@@ -79,6 +80,6 @@ class RequestResponseLoggingFilter : OncePerRequestFilter() {
         private val MASKING_TARGET_HEADERS = setOf("authorization", "cookie", "set-cookie")
         private val MASKED_STRING = "***"
         private val CRLF_TAB_REGEX = Regex("[\\r\\n\\t]")
-        private val SKIP_LOGGING_PATTERNS = listOf("/actuator/**")
+        private val SKIP_LOGGING_PATTERNS = PublicEndpoints.MONITORING
     }
 }

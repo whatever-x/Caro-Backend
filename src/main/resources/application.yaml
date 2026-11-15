@@ -91,6 +91,17 @@ management:
   endpoint:
     health:
       show-details: always
+      probes:
+        enabled: true
+        add-additional-paths: true
+      # include를 빼면 db, redis를 포함한 모든 indicator가 probe 그룹 멤버가 된다.
+      group:
+        liveness:
+          include: livenessState
+          show-details: never
+        readiness:
+          include: readinessState
+          show-details: never
   otlp:
     metrics:
       export:

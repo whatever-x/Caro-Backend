@@ -6,9 +6,11 @@ import com.whatever.caro.user.UserStatus
 import io.kotest.core.spec.style.DescribeSpec
 import io.kotest.datatest.withData
 import io.kotest.matchers.collections.shouldNotBeIn
+import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.health.actuate.endpoint.HealthEndpointGroups
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.context.annotation.Import
@@ -101,6 +103,7 @@ private val TEST_CASES: List<Case> = API_POLICY.flatMap { (path, access) ->
 class SecurityConfigAccessControlTest(
     @Autowired private val mockMvc: MockMvc,
     @Autowired private val jwtTokenProvider: JwtTokenProvider,
+    @Autowired private val healthEndpointGroups: HealthEndpointGroups,
 ) : DescribeSpec({
 
     fun sendRequest(
@@ -143,6 +146,25 @@ class SecurityConfigAccessControlTest(
                 Regex("[가-힣]").containsMatchIn(messages[0]) shouldBe false
                 messages[2] shouldBe messages[0]
                 messages[3] shouldBe messages[0]
+            }
+        }
+    }
+
+    describe("상태 확인 경로") {
+        it("토큰 없이 /livez와 /readyz가 200과 status만 담은 본문을 반환한다") {
+            val mapper = JsonMapper.builder().build()
+            listOf("/livez", "/readyz").forEach { path ->
+                val response = mockMvc.get(path).andReturn().response
+                response.status shouldBe HttpStatus.OK.value()
+                mapper.readValue(response.contentAsByteArray, Map::class.java).keys shouldBe setOf("status")
+            }
+        }
+
+        it("liveness와 readiness 그룹은 외부 의존(db, redis)을 포함하지 않는다") {
+            listOf("liveness", "readiness").forEach { name ->
+                val group = healthEndpointGroups.get(name).shouldNotBeNull()
+                group.isMember("db") shouldBe false
+                group.isMember("redis") shouldBe false
             }
         }
     }
