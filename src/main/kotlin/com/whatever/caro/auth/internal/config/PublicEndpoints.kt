@@ -10,6 +10,8 @@ object PublicEndpoints {
 
     val MONITORING = listOf(
         "/actuator/**",
+        "/livez",
+        "/readyz",
     )
 
     val AUTH = listOf(

@@ -50,7 +50,7 @@ class JwtAuthenticationFilterTest :
             context("공개 경로는 토큰을 검사하지 않고 통과한다") {
                 withData(
                     expectedPublicAuthPaths +
-                        listOf("/actuator/health", "/swagger", "/swagger-ui/index.html", "/v3/api-docs/version-1", "/v3/api-docs.yaml"),
+                        listOf("/actuator/health", "/livez", "/readyz", "/swagger", "/swagger-ui/index.html", "/v3/api-docs/version-1", "/v3/api-docs.yaml"),
                 ) { uri ->
                     stubInvalidToken()
                     val request = MockHttpServletRequest().apply {
