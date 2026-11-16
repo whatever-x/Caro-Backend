@@ -1,5 +1,6 @@
 package com.whatever.caro.study.internal.streak
 
+import com.whatever.caro.study.StreakType
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
@@ -45,6 +46,21 @@ interface StudyDayRepository : JpaRepository<StudyDay, Long> {
 
     fun findAllByUserIdOrderByStudyDateDesc(
         userId: Long,
+    ): List<StudyDay>
+
+    @Query(
+        """
+        select sd from StudyDay sd
+        where sd.userId = :userId
+            and sd.streakType = :streakType
+            and sd.studyDate between :fromDate and :toDate
+        """,
+    )
+    fun findAllByUserIdAndStreakTypeAndStudyDateBetween(
+        userId: Long,
+        streakType: StreakType,
+        fromDate: LocalDate,
+        toDate: LocalDate,
     ): List<StudyDay>
 
     fun existsByUserIdAndStudyDate(
