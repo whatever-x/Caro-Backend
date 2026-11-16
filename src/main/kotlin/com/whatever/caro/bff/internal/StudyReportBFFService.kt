@@ -89,7 +89,7 @@ class StudyReportBFFService(
             .filter { after == null || it.id < after }
             .sortedByDescending { it.id }
 
-        val items = decks.take(limit).map { ReportDeckOption(deckId = it.id, name = it.name, deleted = false) }
+        val items = decks.take(limit).map { ReportDeckOption(deckId = it.id, name = it.name) }
         val nextCursor = if (decks.size > limit) {
             ReportCursor(ReportCursor.Kind.DECKS, NO_FILTER, 0, listOf(items.last().deckId.toString())).encode()
         } else {
@@ -134,7 +134,6 @@ class StudyReportBFFService(
                 deckDeleted = it.deckId !in activeDeckNames,
                 studyDate = it.studyDate,
                 timezone = it.timezone,
-                status = it.status,
                 counts = it.counts,
             )
         }
@@ -297,9 +296,9 @@ class StudyReportBFFService(
         userId: Long,
         deckId: Long?,
     ): ReportScope {
-        if (deckId == null) return ReportScope(deckId = null, deckName = null, deleted = false)
+        if (deckId == null) return ReportScope(deckId = null, deckName = null)
         val deck = deckApi.getDeck(userId, deckId)
-        return ReportScope(deckId = deck.id, deckName = deck.name, deleted = false)
+        return ReportScope(deckId = deck.id, deckName = deck.name)
     }
 
     private fun cardLabels(

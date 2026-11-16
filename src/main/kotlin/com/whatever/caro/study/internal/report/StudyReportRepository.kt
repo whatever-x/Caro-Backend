@@ -98,7 +98,6 @@ interface StudyReportRepository : Repository<ReviewLog, Long> {
             ss.deckId,
             ss.sessionDate,
             ss.timezone,
-            ss.status,
             count(rl.id),
             count(distinct rl.cardId),
             sum(case when rl.rating = com.whatever.caro.study.Rating.EASY then 1 else 0 end),
@@ -117,7 +116,7 @@ interface StudyReportRepository : Repository<ReviewLog, Long> {
                 or ss.sessionDate < :afterDate
                 or (ss.sessionDate = :afterDate and ss.id < :afterSessionId)
             )
-        group by ss.id, ss.deckId, ss.sessionDate, ss.timezone, ss.status
+        group by ss.id, ss.deckId, ss.sessionDate, ss.timezone
         order by ss.sessionDate desc, ss.id desc
         """,
     )
@@ -134,28 +133,29 @@ interface StudyReportRepository : Repository<ReviewLog, Long> {
 
     /**
      * 카드마다 기간 안의 마지막 평가 로그 한 건을 마지막 평가가 최신인 순서로 읽는다.
+     * 기간 안의 평가 횟수도 함께 센다.
      * [lastRating]은 마지막 평가 행에 적용하므로, 기간 안에 그 평가를 한 번이라도 받은 카드가 아니라 마지막 평가가 그 값인 카드만 남는다.
+     * 카드별 마지막 id는 from 절 서브쿼리에서 덱의 로그를 한 번만 읽어 구한다. 행마다 다시 계산하는 상관 서브쿼리는 덱 로그 수의 제곱만큼 읽는다.
      */
     @Query(
         """
-        select new com.whatever.caro.study.internal.report.ReportCardLastRow(
-            rl.cardId, rl.id, rl.rating, rl.createdAt, ss.sessionDate
+        select new com.whatever.caro.study.internal.report.ReportCardRow(
+            rl.cardId, rl.id, rl.rating, rl.createdAt, ss.sessionDate, g.reviewCount
         )
-        from ReviewLog rl join rl.studySession ss
-        where rl.userId = :userId and ss.userId = :userId
-            and ss.studyType = com.whatever.caro.study.StudyType.DAILY
-            and ss.deckId = :deckId
-            and rl.id = (
-                select max(r2.id) from ReviewLog r2 join r2.studySession s2
-                where r2.cardId = rl.cardId
-                    and r2.userId = :userId and s2.userId = :userId
-                    and s2.studyType = com.whatever.caro.study.StudyType.DAILY
-                    and s2.deckId = :deckId
-                    and r2.id <= :maxReviewId
-                    and (:startDate is null or s2.sessionDate >= :startDate)
-                    and s2.sessionDate <= :endDate
-            )
-            and (:lastRating is null or rl.rating = :lastRating)
+        from (
+            select r2.cardId as cardId, max(r2.id) as lastId, count(r2.id) as reviewCount
+            from ReviewLog r2 join r2.studySession s2
+            where r2.userId = :userId and s2.userId = :userId
+                and s2.studyType = com.whatever.caro.study.StudyType.DAILY
+                and s2.deckId = :deckId
+                and r2.id <= :maxReviewId
+                and (:startDate is null or s2.sessionDate >= :startDate)
+                and s2.sessionDate <= :endDate
+            group by r2.cardId
+        ) g
+        join ReviewLog rl on rl.id = g.lastId
+        join rl.studySession ss
+        where (:lastRating is null or rl.rating = :lastRating)
             and (:afterReviewId is null or rl.id < :afterReviewId)
         order by rl.id desc
         """,
@@ -169,30 +169,7 @@ interface StudyReportRepository : Repository<ReviewLog, Long> {
         afterReviewId: Long?,
         maxReviewId: Long,
         pageable: Pageable,
-    ): List<ReportCardLastRow>
-
-    @Query(
-        """
-        select new com.whatever.caro.study.internal.report.ReportCardCountRow(rl.cardId, count(rl.id))
-        from ReviewLog rl join rl.studySession ss
-        where rl.userId = :userId and ss.userId = :userId
-            and ss.studyType = com.whatever.caro.study.StudyType.DAILY
-            and ss.deckId = :deckId
-            and rl.cardId in :cardIds
-            and rl.id <= :maxReviewId
-            and (:startDate is null or ss.sessionDate >= :startDate)
-            and ss.sessionDate <= :endDate
-        group by rl.cardId
-        """,
-    )
-    fun countReviewsByCard(
-        userId: Long,
-        deckId: Long,
-        cardIds: Collection<Long>,
-        startDate: LocalDate?,
-        endDate: LocalDate,
-        maxReviewId: Long,
-    ): List<ReportCardCountRow>
+    ): List<ReportCardRow>
 
     @Query(
         """

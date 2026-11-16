@@ -2,7 +2,6 @@ package com.whatever.caro.study.internal.report
 
 import com.whatever.caro.study.Rating
 import com.whatever.caro.study.ReviewType
-import com.whatever.caro.study.StudySessionStatus
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -31,7 +30,6 @@ class ReportSessionRow(
     val deckId: Long,
     val studyDate: LocalDate,
     val timezone: ZoneId,
-    val status: StudySessionStatus,
     val reviewCount: Long,
     val uniqueCardCount: Long,
     val easy: Long?,
@@ -39,16 +37,12 @@ class ReportSessionRow(
     val again: Long?,
 )
 
-class ReportCardLastRow(
+class ReportCardRow(
     val cardId: Long,
     val reviewId: Long,
     val rating: Rating,
     val reviewedAt: Instant,
     val studyDate: LocalDate,
-)
-
-class ReportCardCountRow(
-    val cardId: Long,
     val reviewCount: Long,
 )
 

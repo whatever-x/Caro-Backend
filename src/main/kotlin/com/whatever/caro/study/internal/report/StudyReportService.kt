@@ -102,14 +102,13 @@ class StudyReportService(
             afterDate = after?.studyDate,
             afterSessionId = after?.sessionId,
             maxReviewId = maxReviewId,
-            pageable = PageRequest.of(0, limit),
+            pageable = PageRequest.ofSize(limit),
         ).map {
             StudyReportSessionDto(
                 sessionId = it.sessionId,
                 deckId = it.deckId,
                 studyDate = it.studyDate,
                 timezone = it.timezone,
-                status = it.status,
                 counts = StudyReportCountsDto(
                     reviewCount = it.reviewCount,
                     uniqueCardCount = it.uniqueCardCount,
@@ -127,8 +126,8 @@ class StudyReportService(
         afterReviewId: Long?,
         maxReviewId: Long,
         limit: Int,
-    ): List<StudyReportCardDto> {
-        val lastReviews = studyReportRepository.findCardLastReviews(
+    ): List<StudyReportCardDto> =
+        studyReportRepository.findCardLastReviews(
             userId = userId,
             deckId = deckId,
             startDate = period.startDate,
@@ -136,29 +135,17 @@ class StudyReportService(
             lastRating = lastRating,
             afterReviewId = afterReviewId,
             maxReviewId = maxReviewId,
-            pageable = PageRequest.of(0, limit),
-        ).takeIf { it.isNotEmpty() } ?: return emptyList()
-
-        val reviewCountByCardId = studyReportRepository.countReviewsByCard(
-            userId = userId,
-            deckId = deckId,
-            cardIds = lastReviews.map { it.cardId },
-            startDate = period.startDate,
-            endDate = period.endDate,
-            maxReviewId = maxReviewId,
-        ).associate { it.cardId to it.reviewCount }
-
-        return lastReviews.map {
+            pageable = PageRequest.ofSize(limit),
+        ).map {
             StudyReportCardDto(
                 cardId = it.cardId,
-                reviewCount = reviewCountByCardId.getValue(it.cardId),
+                reviewCount = it.reviewCount,
                 lastReviewId = it.reviewId,
                 lastRating = it.rating,
                 lastReviewedAt = it.reviewedAt,
                 lastStudyDate = it.studyDate,
             )
         }
-    }
 
     override fun getCardReviews(
         userId: Long,
@@ -177,7 +164,7 @@ class StudyReportService(
             endDate = period.endDate,
             afterReviewId = afterReviewId,
             maxReviewId = maxReviewId,
-            pageable = PageRequest.of(0, limit),
+            pageable = PageRequest.ofSize(limit),
         ).map {
             StudyReportReviewDto(
                 reviewId = it.reviewId,

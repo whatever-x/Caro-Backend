@@ -17,7 +17,6 @@ import com.whatever.caro.study.StudyReportRatingCountsDto
 import com.whatever.caro.study.StudyReportReviewDto
 import com.whatever.caro.study.StudyReportSessionDto
 import com.whatever.caro.study.StudyReportSessionKey
-import com.whatever.caro.study.StudySessionStatus
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.DescribeSpec
 import io.kotest.matchers.collections.shouldBeEmpty
@@ -88,7 +87,7 @@ class StudyReportBFFServiceUnitTest :
 
                 val summary = service.getSummary(now, kst, userId, null, weekStart, today)
 
-                summary.scope shouldBe ReportScope(null, null, false)
+                summary.scope shouldBe ReportScope(null, null)
                 summary.selected.reviewCount shouldBe 5
                 summary.range shouldBe ReportRange(weekStart, today, ReportBucketUnit.DAY)
                 summary.buckets.size shouldBe 7
@@ -105,7 +104,7 @@ class StudyReportBFFServiceUnitTest :
 
                 val summary = service.getSummary(now, kst, userId, 1L, weekStart, today)
 
-                summary.scope shouldBe ReportScope(1L, "영어 단어", false)
+                summary.scope shouldBe ReportScope(1L, "영어 단어")
                 summary.restDates.shouldBeEmpty()
                 verify(exactly = 0) { studyReportApi.getRestDates(any(), any()) }
             }
@@ -208,11 +207,11 @@ class StudyReportBFFServiceUnitTest :
                 val second = service.getDeckOptions(userId, cursor = first.nextCursor, limit = 2)
 
                 first.items shouldContainExactly listOf(
-                    ReportDeckOption(5L, "덱5", false),
-                    ReportDeckOption(3L, "덱3", false),
+                    ReportDeckOption(5L, "덱5"),
+                    ReportDeckOption(3L, "덱3"),
                 )
                 second.items shouldContainExactly listOf(
-                    ReportDeckOption(1L, "덱1", false),
+                    ReportDeckOption(1L, "덱1"),
                 )
                 second.nextCursor.shouldBeNull()
             }
@@ -341,7 +340,6 @@ class StudyReportBFFServiceUnitTest :
             deckId = deckId,
             studyDate = LocalDate.parse("2026-10-10"),
             timezone = ZoneId.of("Asia/Seoul"),
-            status = StudySessionStatus.COMPLETED,
             counts = StudyReportCountsDto(1, 1, 1, StudyReportRatingCountsDto(1, 0, 0)),
         )
 

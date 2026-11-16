@@ -6,9 +6,11 @@ import com.whatever.caro.auth.internal.filter.JwtExceptionFilter
 import com.whatever.caro.auth.internal.filter.RequestResponseLoggingFilter
 import com.whatever.caro.bff.internal.InvalidReportPeriodException
 import com.whatever.caro.bff.internal.ReportBucketUnit
+import com.whatever.caro.bff.internal.ReportDeckOption
 import com.whatever.caro.bff.internal.ReportPageView
 import com.whatever.caro.bff.internal.ReportRange
 import com.whatever.caro.bff.internal.ReportScope
+import com.whatever.caro.bff.internal.ReportSessionItem
 import com.whatever.caro.bff.internal.ReportSummaryView
 import com.whatever.caro.bff.internal.ReportTargetNotFoundException
 import com.whatever.caro.bff.internal.StudyReportBFFService
@@ -82,7 +84,7 @@ class StudyReportBFFControllerWebMvcTest : DescribeSpec() {
 
         fun summary() =
             ReportSummaryView(
-                scope = ReportScope(null, null, false),
+                scope = ReportScope(null, null),
                 range = ReportRange(start, end, ReportBucketUnit.DAY),
                 selected = counts,
                 buckets = emptyList(),
@@ -119,6 +121,7 @@ class StudyReportBFFControllerWebMvcTest : DescribeSpec() {
                     jsonPath("$.data.selected.ratings.again") { value(24) }
                     jsonPath("$.data.restDates[0]") { value("2026-10-17") }
                     jsonPath("$.data.scope.deckName") { value(null) }
+                    jsonPath("$.data.scope.deleted") { doesNotExist() }
                 }
 
                 verify(studyReportBFFService).getSummary(fixedNow, kst, 1L, null, start, end)
@@ -261,6 +264,31 @@ class StudyReportBFFControllerWebMvcTest : DescribeSpec() {
             }
         }
 
+        describe("GET /study-reports/sessions") {
+            it("세션 항목에 status를 담지 않는다") {
+                val item = ReportSessionItem(
+                    sessionId = 7L,
+                    deckId = 5L,
+                    deckName = "덱5",
+                    deckDeleted = false,
+                    studyDate = LocalDate.parse("2026-10-10"),
+                    timezone = kst,
+                    counts = counts,
+                )
+                given(studyReportBFFService.getSessions(fixedNow, kst, 1L, null, null, null, null, 20))
+                    .willReturn(ReportPageView(listOf(item), null))
+
+                mockMvc.get("/study-reports/sessions") {
+                    header(API_VERSION_HEADER, API_VERSION)
+                    header(CLIENT_TIMEZONE_HEADER, "Asia/Seoul")
+                }.andExpect {
+                    status { isOk() }
+                    jsonPath("$.data.items[0].sessionId") { value(7) }
+                    jsonPath("$.data.items[0].status") { doesNotExist() }
+                }
+            }
+        }
+
         describe("GET /study-reports/decks") {
             it("페이지 크기가 1~100을 벗어나면 400(C001)이다") {
                 listOf("0", "101").forEach { limit ->
@@ -284,6 +312,20 @@ class StudyReportBFFControllerWebMvcTest : DescribeSpec() {
                 }
 
                 verify(studyReportBFFService).getDeckOptions(1L, null, 20)
+            }
+
+            it("덱 항목은 deckId와 name만 담는다") {
+                given(studyReportBFFService.getDeckOptions(1L, null, 20))
+                    .willReturn(ReportPageView(listOf(ReportDeckOption(5L, "덱5")), null))
+
+                mockMvc.get("/study-reports/decks") {
+                    header(API_VERSION_HEADER, API_VERSION)
+                }.andExpect {
+                    status { isOk() }
+                    jsonPath("$.data.items[0].deckId") { value(5) }
+                    jsonPath("$.data.items[0].name") { value("덱5") }
+                    jsonPath("$.data.items[0].deleted") { doesNotExist() }
+                }
             }
         }
     }

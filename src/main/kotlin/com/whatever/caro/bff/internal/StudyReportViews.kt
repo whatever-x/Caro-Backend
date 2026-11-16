@@ -3,7 +3,6 @@ package com.whatever.caro.bff.internal
 import com.whatever.caro.study.Rating
 import com.whatever.caro.study.ReviewType
 import com.whatever.caro.study.StudyReportCountsDto
-import com.whatever.caro.study.StudySessionStatus
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -11,12 +10,11 @@ import java.time.ZoneId
 enum class ReportBucketUnit { DAY, WEEK, MONTH }
 
 /**
- * 조회한 덱. 전체 선택은 deckId·deckName이 null이다. 삭제된 덱은 조회할 수 없어 deleted는 항상 false다.
+ * 조회한 덱. 전체 선택은 deckId·deckName이 null이다.
  */
 data class ReportScope(
     val deckId: Long?,
     val deckName: String?,
-    val deleted: Boolean,
 )
 
 /**
@@ -52,8 +50,7 @@ data class ReportPageView<T>(
 
 data class ReportDeckOption(
     val deckId: Long,
-    val name: String?,
-    val deleted: Boolean,
+    val name: String,
 )
 
 data class ReportSessionItem(
@@ -63,7 +60,6 @@ data class ReportSessionItem(
     val deckDeleted: Boolean,
     val studyDate: LocalDate,
     val timezone: ZoneId,
-    val status: StudySessionStatus,
     val counts: StudyReportCountsDto,
 )
 

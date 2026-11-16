@@ -3,7 +3,6 @@ package com.whatever.caro.bff.internal.web.response
 import com.whatever.caro.bff.internal.ReportBucketUnit
 import com.whatever.caro.study.Rating
 import com.whatever.caro.study.ReviewType
-import com.whatever.caro.study.StudySessionStatus
 import io.swagger.v3.oas.annotations.media.Schema
 import java.time.Instant
 import java.time.LocalDate
@@ -23,8 +22,6 @@ data class ReportScopeResponse(
     val deckId: Long?,
     @field:Schema(description = "전체 선택이면 null", nullable = true)
     val deckName: String?,
-    @field:Schema(description = "항상 false. 삭제된 덱은 deckId로 조회할 수 없다")
-    val deleted: Boolean,
 )
 
 data class ReportRangeResponse(
@@ -62,10 +59,7 @@ data class ReportPageResponse<T>(
 
 data class ReportDeckOptionResponse(
     val deckId: Long,
-    @field:Schema(description = "지금 가진 덱만 반환하므로 null이 아니다", nullable = true)
-    val name: String?,
-    @field:Schema(description = "항상 false. 삭제된 덱은 목록에 없다")
-    val deleted: Boolean,
+    val name: String,
 )
 
 data class ReportSessionResponse(
@@ -76,7 +70,6 @@ data class ReportSessionResponse(
     val deckDeleted: Boolean,
     val studyDate: LocalDate,
     val timezone: String,
-    val status: StudySessionStatus,
     val counts: ReportCountsResponse,
 )
 

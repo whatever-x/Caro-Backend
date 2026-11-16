@@ -137,7 +137,6 @@ data class StudyReportSessionDto(
     val deckId: Long,
     val studyDate: LocalDate,
     val timezone: ZoneId,
-    val status: StudySessionStatus,
     val counts: StudyReportCountsDto,
 )
 

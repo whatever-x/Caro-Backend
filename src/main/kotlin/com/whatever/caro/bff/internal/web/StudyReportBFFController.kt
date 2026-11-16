@@ -225,8 +225,7 @@ private fun ReportSummaryView.toResponse(): StudyReportSummaryResponse =
         restDates = restDates,
     )
 
-private fun ReportScope.toResponse(): ReportScopeResponse =
-    ReportScopeResponse(deckId = deckId, deckName = deckName, deleted = deleted)
+private fun ReportScope.toResponse(): ReportScopeResponse = ReportScopeResponse(deckId = deckId, deckName = deckName)
 
 private fun ReportRange.toResponse(): ReportRangeResponse =
     ReportRangeResponse(startDate = startDate, endDate = endDate, bucketUnit = bucketUnit)
@@ -252,7 +251,7 @@ private fun <T, R> ReportPageView<T>.toResponse(
 ): ReportPageResponse<R> = ReportPageResponse(items = items.map(transform), nextCursor = nextCursor)
 
 private fun ReportDeckOption.toResponse(): ReportDeckOptionResponse =
-    ReportDeckOptionResponse(deckId = deckId, name = name, deleted = deleted)
+    ReportDeckOptionResponse(deckId = deckId, name = name)
 
 private fun ReportSessionItem.toResponse(): ReportSessionResponse =
     ReportSessionResponse(
@@ -262,7 +261,6 @@ private fun ReportSessionItem.toResponse(): ReportSessionResponse =
         deckDeleted = deckDeleted,
         studyDate = studyDate,
         timezone = timezone.id,
-        status = status,
         counts = counts.toResponse(),
     )
 
