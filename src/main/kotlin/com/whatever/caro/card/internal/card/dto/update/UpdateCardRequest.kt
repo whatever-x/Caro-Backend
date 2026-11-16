@@ -4,7 +4,7 @@ import io.swagger.v3.oas.annotations.media.Schema
 import jakarta.validation.constraints.NotEmpty
 
 data class UpdateCardRequest(
-    @field:NotEmpty(message = "필드는 비어있을 수 없습니다")
+    @field:NotEmpty(message = "{validation.card.fields.required}")
     @Schema(description = "수정할 카드 필드", required = true)
     val fields: Map<String, String>,
 )

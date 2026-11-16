@@ -14,6 +14,9 @@
 - 카드 이벤트 리스너는 생성 때 soft delete된 행까지 조회하는 `findAllByUserIdAndCardIdIn`으로 이미 있는 cardId를 제외하고 저장하고, 삭제 때 학습 상태 soft delete와 세션 목표 재계산을 함께 한다.
   `uk_ls_card(card_id)`에는 `deleted_at`이 없어 soft delete된 행에도 적용되므로, 활성 행만 조회하도록 바꾸면 삭제 처리 뒤에 생성 이벤트가 재전달될 때 유니크 위반이 난다(`CardLearningStateEventListenerTest`).
   `recalculateGoals`는 기존 goal을 상한으로 두고 줄이기만 하므로, 그 직후 `completeIfGoalAchieved`를 부르지 않으면 goal을 모두 채운 세션이 ACTIVE로 남는다. 이때 `StudyBFFService`는 빈 큐를 Completed로 응답하지만 덱 목록 진행 상태는 IN_PROGRESS이고, 같은 날 평가 요청이 없으면 `sessionDate`로부터 3일 뒤 `StaleSessionSweeper`가 STOPPED로 바꿀 때까지 ACTIVE로 남는다(`StudyServiceOnCardDeletionTest`).
+- 1.1 카드 묶음의 `CardChunkCreatedEvent`는 `CardChunkLearningStateEventListener`가 받아 `CardLearningStateBulkRepository`의 다중 행 INSERT로 학습 상태를 만든다. 1.0의 `CardsCreatedEvent`는 `CardLearningStateEventListener`가 JPA로 저장한다.
+  학습 상태 생성 규칙(이미 있는 cardId 제외 등)을 바꾸면 두 리스너를 같이 고친다. 한쪽만 고치면 카드를 만든 API 버전에 따라 학습 상태가 다르게 생긴다.
+  `CardLearningState`의 필드나 `card_learning_states`의 컬럼을 더하거나 바꾸면 `CardLearningStateBulkRepositoryImpl`의 컬럼 목록과 바인딩을 같이 고친다(`CardLearningStateBulkRepositoryTest`의 `SELECT *` 비교가 실패로 알린다).
 - 평가한 카드는 `applyScheduling`이 `lastReviewedDate`를 세션일로 기록하고, `findAllNewCard`·`findAllReviewCard`·`countRemainingNewCards`는 `lastReviewedDate`가 null이거나 세션일보다 이전인 카드만 조회하므로 그날 큐에서 제외된다. NEW 카드는 AGAIN이어도 NEW로 남아 이 조건만으로 제외되고, REVIEW 카드는 AGAIN이어도 `nextReviewDate`가 세션일 + 1일 이상이라(`deck_presets`의 `lapse_min_interval`·`review_max_interval` CHECK가 1 이상) `nextReviewDate` 조건에서도 제외된다.
   NEW 카드를 AGAIN으로 평가해도 그날 다시 내지 않는 것은 SRS 명세의 의도다(현재 세션에서만 제외).
   당일 재학습을 넣으려면 위 세 쿼리의 `lastReviewedDate` 조건과 `SchedulingState`의 REVIEW AGAIN `nextReviewDate` 계산을 함께 바꾸고, `lastReviewedDate` 조건 없이 `nextReviewDate`만으로 오늘 평가한 카드를 제외하는 `countTodayReviewCards`(`recalcGoals`·`StudyTargetPoolCalculator`가 사용)도 확인한다(`StudyServiceTest`의 "세션 진입 이후 평가된 카드는 같은 세션에서 다시 나오지 않는다", `StudyServiceOnCardDeletionTest`의 "오늘(sessionDate) 평가된 NEW 카드는 availableNew에서 제외된다").

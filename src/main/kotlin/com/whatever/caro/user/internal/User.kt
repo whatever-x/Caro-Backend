@@ -36,6 +36,9 @@ class User(
 
     @Column(name = "is_terms_agreed", nullable = false)
     var isTermsAgreed: Boolean = false,
+
+    @Column(name = "is_adult")
+    var isAdult: Boolean? = null,
 ) : SoftDeletableEntity() {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -73,6 +76,7 @@ class User(
     ) {
         if (isDeleted) return
         val now = Instant.now(clock)
+        isAdult = null
         softDelete(deletedAt = now)
     }
 }

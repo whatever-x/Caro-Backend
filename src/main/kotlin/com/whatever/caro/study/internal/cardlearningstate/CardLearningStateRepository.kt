@@ -8,7 +8,9 @@ import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
 import java.time.LocalDate
 
-interface CardLearningStateRepository : JpaRepository<CardLearningState, Long> {
+interface CardLearningStateRepository :
+    JpaRepository<CardLearningState, Long>,
+    CardLearningStateBulkRepository {
     fun findAllByUserIdAndCardIdIn(
         userId: Long,
         cardIds: Collection<Long>,

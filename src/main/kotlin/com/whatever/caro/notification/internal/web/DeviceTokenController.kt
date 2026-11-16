@@ -59,7 +59,7 @@ class DeviceTokenController(
     @DeleteMapping(version = "1.0")
     fun unregisterToken(
         @RequestParam
-        @NotBlank(message = "Token is required")
+        @NotBlank(message = "{validation.device_token.required}")
         token: String,
         @AuthenticationPrincipal(expression = "userId")
         userId: Long,

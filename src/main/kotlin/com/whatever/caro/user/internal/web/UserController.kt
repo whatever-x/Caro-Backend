@@ -40,8 +40,8 @@ class UserController(
     @GetMapping("/nicknames/{nickname}/availability", version = "1.0")
     fun checkNicknameAvailability(
         @PathVariable
-        @NotBlank(message = "Nickname is required")
-        @Size(min = 1, max = 50, message = "Nickname must be 1-50 characters")
+        @NotBlank(message = "{validation.nickname.required}")
+        @Size(min = 1, max = 50, message = "{validation.nickname.size}")
         nickname: String,
     ): ResponseEntity<ApiResponse<NicknameCheckResponse>> {
         val available = userApi.isNicknameAvailable(nickname)

@@ -1,0 +1,1429 @@
+{
+  "contentKey": "toeic-work-200",
+  "name": "토익 업무 어휘 200",
+  "description": "업무와 여행 상황의 토익 어휘 200장. TSL 1.2에서 선정하고 한국어 뜻을 작성했습니다. Charles Browne, Brent Culligan. 출처: https://www.newgeneralservicelist.com/toeic-service-list | CC BY-SA 4.0: https://creativecommons.org/licenses/by-sa/4.0/",
+  "contentVersion": "2026-10-14",
+  "noteType": "BASIC",
+  "published": true,
+  "intendedUse": "free_content",
+  "reviewStatus": "editorial_review_pending",
+  "source": {
+    "name": "TOEIC Service List",
+    "version": "1.2",
+    "authors": [
+      "Charles Browne",
+      "Brent Culligan"
+    ],
+    "url": "https://www.newgeneralservicelist.com/toeic-service-list",
+    "downloadUrl": "https://www.newgeneralservicelist.com/s/TSL_12_stats.csv",
+    "retrievedOn": "2026-10-14",
+    "sha256": "2259df25a1077b04067ef0c0e9e4c98b46c91e4d539741dfaceba88651ff486d",
+    "license": "CC BY-SA 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
+  },
+  "changes": "원본에서 일부 단어 선정, 주제별 재배열, 한국어 뜻 직접 작성",
+  "license": "CC BY-SA 4.0",
+  "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+  "cards": [
+    {
+      "position": 0,
+      "category": "채용과 인사",
+      "front": "applicant",
+      "back": "지원자",
+      "sourceRank": 28
+    },
+    {
+      "position": 1,
+      "category": "채용과 인사",
+      "front": "résumé",
+      "back": "이력서",
+      "sourceRank": 26
+    },
+    {
+      "position": 2,
+      "category": "채용과 인사",
+      "front": "occupation",
+      "back": "직업",
+      "sourceRank": 64
+    },
+    {
+      "position": 3,
+      "category": "채용과 인사",
+      "front": "supervisor",
+      "back": "관리자, 상사",
+      "sourceRank": 13
+    },
+    {
+      "position": 4,
+      "category": "채용과 인사",
+      "front": "coworker",
+      "back": "직장 동료",
+      "sourceRank": 85
+    },
+    {
+      "position": 5,
+      "category": "채용과 인사",
+      "front": "recruiter",
+      "back": "채용 담당자",
+      "sourceRank": 533
+    },
+    {
+      "position": 6,
+      "category": "채용과 인사",
+      "front": "recruitment",
+      "back": "채용",
+      "sourceRank": 645
+    },
+    {
+      "position": 7,
+      "category": "채용과 인사",
+      "front": "intern",
+      "back": "인턴",
+      "sourceRank": 307
+    },
+    {
+      "position": 8,
+      "category": "채용과 인사",
+      "front": "internship",
+      "back": "인턴 근무",
+      "sourceRank": 345
+    },
+    {
+      "position": 9,
+      "category": "채용과 인사",
+      "front": "trainee",
+      "back": "훈련생",
+      "sourceRank": 237
+    },
+    {
+      "position": 10,
+      "category": "채용과 인사",
+      "front": "trainer",
+      "back": "훈련 담당자",
+      "sourceRank": 228
+    },
+    {
+      "position": 11,
+      "category": "채용과 인사",
+      "front": "workforce",
+      "back": "전체 직원, 노동 인력",
+      "sourceRank": 561
+    },
+    {
+      "position": 12,
+      "category": "채용과 인사",
+      "front": "payroll",
+      "back": "급여 지급 명부",
+      "sourceRank": 581
+    },
+    {
+      "position": 13,
+      "category": "채용과 인사",
+      "front": "paycheck",
+      "back": "급여, 급여 수표",
+      "sourceRank": 320
+    },
+    {
+      "position": 14,
+      "category": "채용과 인사",
+      "front": "bonus",
+      "back": "상여금",
+      "sourceRank": 195
+    },
+    {
+      "position": 15,
+      "category": "채용과 인사",
+      "front": "overtime",
+      "back": "초과 근무",
+      "sourceRank": 164
+    },
+    {
+      "position": 16,
+      "category": "채용과 인사",
+      "front": "resignation",
+      "back": "사직",
+      "sourceRank": 473
+    },
+    {
+      "position": 17,
+      "category": "채용과 인사",
+      "front": "relocate",
+      "back": "이전하다",
+      "sourceRank": 236
+    },
+    {
+      "position": 18,
+      "category": "채용과 인사",
+      "front": "layoff",
+      "back": "정리 해고",
+      "sourceRank": 1060
+    },
+    {
+      "position": 19,
+      "category": "채용과 인사",
+      "front": "expertise",
+      "back": "전문 지식",
+      "sourceRank": 311
+    },
+    {
+      "position": 20,
+      "category": "회의와 행사",
+      "front": "workshop",
+      "back": "실무 연수, 워크숍",
+      "sourceRank": 16
+    },
+    {
+      "position": 21,
+      "category": "회의와 행사",
+      "front": "seminar",
+      "back": "세미나",
+      "sourceRank": 29
+    },
+    {
+      "position": 22,
+      "category": "회의와 행사",
+      "front": "attendee",
+      "back": "참석자",
+      "sourceRank": 102
+    },
+    {
+      "position": 23,
+      "category": "회의와 행사",
+      "front": "venue",
+      "back": "행사 장소",
+      "sourceRank": 175
+    },
+    {
+      "position": 24,
+      "category": "회의와 행사",
+      "front": "banquet",
+      "back": "연회",
+      "sourceRank": 117
+    },
+    {
+      "position": 25,
+      "category": "회의와 행사",
+      "front": "boardroom",
+      "back": "이사회 회의실",
+      "sourceRank": 437
+    },
+    {
+      "position": 26,
+      "category": "회의와 행사",
+      "front": "presenter",
+      "back": "발표자",
+      "sourceRank": 250
+    },
+    {
+      "position": 27,
+      "category": "회의와 행사",
+      "front": "organizer",
+      "back": "주최자",
+      "sourceRank": 347
+    },
+    {
+      "position": 28,
+      "category": "회의와 행사",
+      "front": "coordinator",
+      "back": "조정 담당자",
+      "sourceRank": 460
+    },
+    {
+      "position": 29,
+      "category": "회의와 행사",
+      "front": "delegate",
+      "back": "대표",
+      "sourceRank": 274
+    },
+    {
+      "position": 30,
+      "category": "회의와 행사",
+      "front": "assignment",
+      "back": "업무, 과제",
+      "sourceRank": 100
+    },
+    {
+      "position": 31,
+      "category": "회의와 행사",
+      "front": "submission",
+      "back": "제출",
+      "sourceRank": 157
+    },
+    {
+      "position": 32,
+      "category": "회의와 행사",
+      "front": "feedback",
+      "back": "의견, 피드백",
+      "sourceRank": 128
+    },
+    {
+      "position": 33,
+      "category": "회의와 행사",
+      "front": "confirmation",
+      "back": "확인",
+      "sourceRank": 309
+    },
+    {
+      "position": 34,
+      "category": "회의와 행사",
+      "front": "newsletter",
+      "back": "소식지",
+      "sourceRank": 178
+    },
+    {
+      "position": 35,
+      "category": "회의와 행사",
+      "front": "bulletin",
+      "back": "공지문",
+      "sourceRank": 158
+    },
+    {
+      "position": 36,
+      "category": "회의와 행사",
+      "front": "upcoming",
+      "back": "다가오는",
+      "sourceRank": 86
+    },
+    {
+      "position": 37,
+      "category": "회의와 행사",
+      "front": "postpone",
+      "back": "연기하다",
+      "sourceRank": 65
+    },
+    {
+      "position": 38,
+      "category": "회의와 행사",
+      "front": "reschedule",
+      "back": "일정을 변경하다",
+      "sourceRank": 77
+    },
+    {
+      "position": 39,
+      "category": "회의와 행사",
+      "front": "finalize",
+      "back": "최종 확정하다",
+      "sourceRank": 390
+    },
+    {
+      "position": 40,
+      "category": "문서와 사무",
+      "front": "memo",
+      "back": "메모",
+      "sourceRank": 6
+    },
+    {
+      "position": 41,
+      "category": "문서와 사무",
+      "front": "memorandum",
+      "back": "업무 연락문",
+      "sourceRank": 259
+    },
+    {
+      "position": 42,
+      "category": "문서와 사무",
+      "front": "paperwork",
+      "back": "서류 작업",
+      "sourceRank": 222
+    },
+    {
+      "position": 43,
+      "category": "문서와 사무",
+      "front": "correspondence",
+      "back": "업무 서신",
+      "sourceRank": 284
+    },
+    {
+      "position": 44,
+      "category": "문서와 사무",
+      "front": "enclose",
+      "back": "동봉하다",
+      "sourceRank": 27
+    },
+    {
+      "position": 45,
+      "category": "문서와 사무",
+      "front": "notify",
+      "back": "통지하다",
+      "sourceRank": 50
+    },
+    {
+      "position": 46,
+      "category": "문서와 사무",
+      "front": "signature",
+      "back": "서명",
+      "sourceRank": 252
+    },
+    {
+      "position": 47,
+      "category": "문서와 사무",
+      "front": "stationery",
+      "back": "문구류",
+      "sourceRank": 205
+    },
+    {
+      "position": 48,
+      "category": "문서와 사무",
+      "front": "folder",
+      "back": "서류철",
+      "sourceRank": 122
+    },
+    {
+      "position": 49,
+      "category": "문서와 사무",
+      "front": "cabinet",
+      "back": "수납장",
+      "sourceRank": 87
+    },
+    {
+      "position": 50,
+      "category": "문서와 사무",
+      "front": "photocopy",
+      "back": "복사본",
+      "sourceRank": 123
+    },
+    {
+      "position": 51,
+      "category": "문서와 사무",
+      "front": "copier",
+      "back": "복사기",
+      "sourceRank": 132
+    },
+    {
+      "position": 52,
+      "category": "문서와 사무",
+      "front": "cartridge",
+      "back": "프린터용 잉크 또는 토너 용기",
+      "sourceRank": 180
+    },
+    {
+      "position": 53,
+      "category": "문서와 사무",
+      "front": "toner",
+      "back": "레이저 프린터용 분말 잉크",
+      "sourceRank": 798
+    },
+    {
+      "position": 54,
+      "category": "문서와 사무",
+      "front": "stapler",
+      "back": "스테이플러",
+      "sourceRank": 792
+    },
+    {
+      "position": 55,
+      "category": "문서와 사무",
+      "front": "spreadsheet",
+      "back": "전자 계산표",
+      "sourceRank": 791
+    },
+    {
+      "position": 56,
+      "category": "문서와 사무",
+      "front": "confidential",
+      "back": "기밀의",
+      "sourceRank": 381
+    },
+    {
+      "position": 57,
+      "category": "문서와 사무",
+      "front": "authorize",
+      "back": "권한을 부여하다, 승인하다",
+      "sourceRank": 213
+    },
+    {
+      "position": 58,
+      "category": "문서와 사무",
+      "front": "proofread",
+      "back": "교정하다",
+      "sourceRank": 532
+    },
+    {
+      "position": 59,
+      "category": "문서와 사무",
+      "front": "documentation",
+      "back": "문서 자료",
+      "sourceRank": 675
+    },
+    {
+      "position": 60,
+      "category": "결제와 회계",
+      "front": "invoice",
+      "back": "청구서",
+      "sourceRank": 19
+    },
+    {
+      "position": 61,
+      "category": "결제와 회계",
+      "front": "receipt",
+      "back": "영수증",
+      "sourceRank": 33
+    },
+    {
+      "position": 62,
+      "category": "결제와 회계",
+      "front": "refund",
+      "back": "환불",
+      "sourceRank": 14
+    },
+    {
+      "position": 63,
+      "category": "결제와 회계",
+      "front": "transaction",
+      "back": "거래",
+      "sourceRank": 238
+    },
+    {
+      "position": 64,
+      "category": "결제와 회계",
+      "front": "accountant",
+      "back": "회계사",
+      "sourceRank": 22
+    },
+    {
+      "position": 65,
+      "category": "결제와 회계",
+      "front": "audit",
+      "back": "회계 감사",
+      "sourceRank": 187
+    },
+    {
+      "position": 66,
+      "category": "결제와 회계",
+      "front": "auditor",
+      "back": "감사 담당자",
+      "sourceRank": 1030
+    },
+    {
+      "position": 67,
+      "category": "결제와 회계",
+      "front": "deduction",
+      "back": "공제",
+      "sourceRank": 363
+    },
+    {
+      "position": 68,
+      "category": "결제와 회계",
+      "front": "deduct",
+      "back": "공제하다",
+      "sourceRank": 518
+    },
+    {
+      "position": 69,
+      "category": "결제와 회계",
+      "front": "reimburse",
+      "back": "비용을 상환하다",
+      "sourceRank": 375
+    },
+    {
+      "position": 70,
+      "category": "결제와 회계",
+      "front": "reimbursement",
+      "back": "비용 상환",
+      "sourceRank": 941
+    },
+    {
+      "position": 71,
+      "category": "결제와 회계",
+      "front": "overdue",
+      "back": "지불 기한이 지난",
+      "sourceRank": 348
+    },
+    {
+      "position": 72,
+      "category": "결제와 회계",
+      "front": "outstanding",
+      "back": "미지급된(대금)",
+      "sourceRank": 167
+    },
+    {
+      "position": 73,
+      "category": "결제와 회계",
+      "front": "payable",
+      "back": "지불해야 하는",
+      "sourceRank": 686
+    },
+    {
+      "position": 74,
+      "category": "결제와 회계",
+      "front": "debit",
+      "back": "차변, 계좌 인출액",
+      "sourceRank": 901
+    },
+    {
+      "position": 75,
+      "category": "결제와 회계",
+      "front": "dividend",
+      "back": "배당금",
+      "sourceRank": 416
+    },
+    {
+      "position": 76,
+      "category": "결제와 회계",
+      "front": "banker",
+      "back": "은행 업무 종사자",
+      "sourceRank": 316
+    },
+    {
+      "position": 77,
+      "category": "결제와 회계",
+      "front": "broker",
+      "back": "중개인",
+      "sourceRank": 379
+    },
+    {
+      "position": 78,
+      "category": "결제와 회계",
+      "front": "voucher",
+      "back": "상품권, 교환권",
+      "sourceRank": 315
+    },
+    {
+      "position": 79,
+      "category": "결제와 회계",
+      "front": "fiscal",
+      "back": "회계의, 재정의",
+      "sourceRank": 980
+    },
+    {
+      "position": 80,
+      "category": "주문과 유통",
+      "front": "client",
+      "back": "고객",
+      "sourceRank": 3
+    },
+    {
+      "position": 81,
+      "category": "주문과 유통",
+      "front": "merchandise",
+      "back": "상품",
+      "sourceRank": 71
+    },
+    {
+      "position": 82,
+      "category": "주문과 유통",
+      "front": "goods",
+      "back": "상품, 물품",
+      "sourceRank": 15
+    },
+    {
+      "position": 83,
+      "category": "주문과 유통",
+      "front": "inventory",
+      "back": "재고",
+      "sourceRank": 60
+    },
+    {
+      "position": 84,
+      "category": "주문과 유통",
+      "front": "warehouse",
+      "back": "창고",
+      "sourceRank": 131
+    },
+    {
+      "position": 85,
+      "category": "주문과 유통",
+      "front": "shipment",
+      "back": "배송 화물",
+      "sourceRank": 38
+    },
+    {
+      "position": 86,
+      "category": "주문과 유통",
+      "front": "freight",
+      "back": "화물",
+      "sourceRank": 716
+    },
+    {
+      "position": 87,
+      "category": "주문과 유통",
+      "front": "cargo",
+      "back": "화물",
+      "sourceRank": 413
+    },
+    {
+      "position": 88,
+      "category": "주문과 유통",
+      "front": "courier",
+      "back": "배송 기사, 택배 업체",
+      "sourceRank": 242
+    },
+    {
+      "position": 89,
+      "category": "주문과 유통",
+      "front": "carrier",
+      "back": "운송 업체",
+      "sourceRank": 254
+    },
+    {
+      "position": 90,
+      "category": "주문과 유통",
+      "front": "vendor",
+      "back": "판매 업체",
+      "sourceRank": 454
+    },
+    {
+      "position": 91,
+      "category": "주문과 유통",
+      "front": "retailer",
+      "back": "소매업자",
+      "sourceRank": 338
+    },
+    {
+      "position": 92,
+      "category": "주문과 유통",
+      "front": "distributor",
+      "back": "유통업체",
+      "sourceRank": 815
+    },
+    {
+      "position": 93,
+      "category": "주문과 유통",
+      "front": "provider",
+      "back": "서비스 제공업체",
+      "sourceRank": 133
+    },
+    {
+      "position": 94,
+      "category": "주문과 유통",
+      "front": "purchaser",
+      "back": "구매자",
+      "sourceRank": 485
+    },
+    {
+      "position": 95,
+      "category": "주문과 유통",
+      "front": "recipient",
+      "back": "수령인",
+      "sourceRank": 137
+    },
+    {
+      "position": 96,
+      "category": "주문과 유통",
+      "front": "container",
+      "back": "화물 용기, 컨테이너",
+      "sourceRank": 154
+    },
+    {
+      "position": 97,
+      "category": "주문과 유통",
+      "front": "parcel",
+      "back": "소포",
+      "sourceRank": 729
+    },
+    {
+      "position": 98,
+      "category": "주문과 유통",
+      "front": "consignment",
+      "back": "탁송 화물",
+      "sourceRank": 1113
+    },
+    {
+      "position": 99,
+      "category": "주문과 유통",
+      "front": "shortage",
+      "back": "부족",
+      "sourceRank": 398
+    },
+    {
+      "position": 100,
+      "category": "계약과 규정",
+      "front": "lease",
+      "back": "임대차 계약",
+      "sourceRank": 48
+    },
+    {
+      "position": 101,
+      "category": "계약과 규정",
+      "front": "tenant",
+      "back": "임차인",
+      "sourceRank": 111
+    },
+    {
+      "position": 102,
+      "category": "계약과 규정",
+      "front": "landlord",
+      "back": "임대인",
+      "sourceRank": 578
+    },
+    {
+      "position": 103,
+      "category": "계약과 규정",
+      "front": "warranty",
+      "back": "보증",
+      "sourceRank": 42
+    },
+    {
+      "position": 104,
+      "category": "계약과 규정",
+      "front": "renew",
+      "back": "갱신하다",
+      "sourceRank": 110
+    },
+    {
+      "position": 105,
+      "category": "계약과 규정",
+      "front": "renewal",
+      "back": "갱신",
+      "sourceRank": 295
+    },
+    {
+      "position": 106,
+      "category": "계약과 규정",
+      "front": "expire",
+      "back": "만료되다",
+      "sourceRank": 121
+    },
+    {
+      "position": 107,
+      "category": "계약과 규정",
+      "front": "expiration",
+      "back": "만료",
+      "sourceRank": 546
+    },
+    {
+      "position": 108,
+      "category": "계약과 규정",
+      "front": "valid",
+      "back": "유효한",
+      "sourceRank": 94
+    },
+    {
+      "position": 109,
+      "category": "계약과 규정",
+      "front": "eligible",
+      "back": "자격이 있는",
+      "sourceRank": 150
+    },
+    {
+      "position": 110,
+      "category": "계약과 규정",
+      "front": "mandatory",
+      "back": "의무적인",
+      "sourceRank": 421
+    },
+    {
+      "position": 111,
+      "category": "계약과 규정",
+      "front": "optional",
+      "back": "선택 가능한",
+      "sourceRank": 319
+    },
+    {
+      "position": 112,
+      "category": "계약과 규정",
+      "front": "comply",
+      "back": "준수하다",
+      "sourceRank": 595
+    },
+    {
+      "position": 113,
+      "category": "계약과 규정",
+      "front": "compliance",
+      "back": "준수",
+      "sourceRank": 1038
+    },
+    {
+      "position": 114,
+      "category": "계약과 규정",
+      "front": "prohibit",
+      "back": "금지하다",
+      "sourceRank": 191
+    },
+    {
+      "position": 115,
+      "category": "계약과 규정",
+      "front": "violation",
+      "back": "위반",
+      "sourceRank": 696
+    },
+    {
+      "position": 116,
+      "category": "계약과 규정",
+      "front": "terminate",
+      "back": "종료하다",
+      "sourceRank": 475
+    },
+    {
+      "position": 117,
+      "category": "계약과 규정",
+      "front": "termination",
+      "back": "종료",
+      "sourceRank": 949
+    },
+    {
+      "position": 118,
+      "category": "계약과 규정",
+      "front": "authorization",
+      "back": "승인",
+      "sourceRank": 661
+    },
+    {
+      "position": 119,
+      "category": "계약과 규정",
+      "front": "consent",
+      "back": "동의",
+      "sourceRank": 669
+    },
+    {
+      "position": 120,
+      "category": "시설과 설비",
+      "front": "renovation",
+      "back": "보수 공사, 새 단장",
+      "sourceRank": 79
+    },
+    {
+      "position": 121,
+      "category": "시설과 설비",
+      "front": "renovate",
+      "back": "보수하다",
+      "sourceRank": 124
+    },
+    {
+      "position": 122,
+      "category": "시설과 설비",
+      "front": "installation",
+      "back": "설치",
+      "sourceRank": 227
+    },
+    {
+      "position": 123,
+      "category": "시설과 설비",
+      "front": "machinery",
+      "back": "기계류",
+      "sourceRank": 249
+    },
+    {
+      "position": 124,
+      "category": "시설과 설비",
+      "front": "appliance",
+      "back": "가전제품",
+      "sourceRank": 88
+    },
+    {
+      "position": 125,
+      "category": "시설과 설비",
+      "front": "mechanic",
+      "back": "정비사",
+      "sourceRank": 140
+    },
+    {
+      "position": 126,
+      "category": "시설과 설비",
+      "front": "technician",
+      "back": "기술자",
+      "sourceRank": 30
+    },
+    {
+      "position": 127,
+      "category": "시설과 설비",
+      "front": "malfunction",
+      "back": "오작동",
+      "sourceRank": 445
+    },
+    {
+      "position": 128,
+      "category": "시설과 설비",
+      "front": "defect",
+      "back": "결함",
+      "sourceRank": 278
+    },
+    {
+      "position": 129,
+      "category": "시설과 설비",
+      "front": "defective",
+      "back": "결함이 있는",
+      "sourceRank": 290
+    },
+    {
+      "position": 130,
+      "category": "시설과 설비",
+      "front": "replacement",
+      "back": "교체품",
+      "sourceRank": 82
+    },
+    {
+      "position": 131,
+      "category": "시설과 설비",
+      "front": "inspection",
+      "back": "검사",
+      "sourceRank": 136
+    },
+    {
+      "position": 132,
+      "category": "시설과 설비",
+      "front": "inspect",
+      "back": "검사하다",
+      "sourceRank": 139
+    },
+    {
+      "position": 133,
+      "category": "시설과 설비",
+      "front": "contractor",
+      "back": "도급업체",
+      "sourceRank": 188
+    },
+    {
+      "position": 134,
+      "category": "시설과 설비",
+      "front": "architect",
+      "back": "건축가",
+      "sourceRank": 148
+    },
+    {
+      "position": 135,
+      "category": "시설과 설비",
+      "front": "electrician",
+      "back": "전기 기사",
+      "sourceRank": 520
+    },
+    {
+      "position": 136,
+      "category": "시설과 설비",
+      "front": "plumber",
+      "back": "배관공",
+      "sourceRank": 359
+    },
+    {
+      "position": 137,
+      "category": "시설과 설비",
+      "front": "outage",
+      "back": "전기 등의 공급 중단",
+      "sourceRank": 1156
+    },
+    {
+      "position": 138,
+      "category": "시설과 설비",
+      "front": "generator",
+      "back": "발전기",
+      "sourceRank": 914
+    },
+    {
+      "position": 139,
+      "category": "시설과 설비",
+      "front": "durable",
+      "back": "내구성이 있는",
+      "sourceRank": 442
+    },
+    {
+      "position": 140,
+      "category": "출장과 이동",
+      "front": "reservation",
+      "back": "예약",
+      "sourceRank": 7
+    },
+    {
+      "position": 141,
+      "category": "출장과 이동",
+      "front": "itinerary",
+      "back": "여행 일정",
+      "sourceRank": 146
+    },
+    {
+      "position": 142,
+      "category": "출장과 이동",
+      "front": "destination",
+      "back": "목적지",
+      "sourceRank": 63
+    },
+    {
+      "position": 143,
+      "category": "출장과 이동",
+      "front": "departure",
+      "back": "출발",
+      "sourceRank": 113
+    },
+    {
+      "position": 144,
+      "category": "출장과 이동",
+      "front": "depart",
+      "back": "출발하다",
+      "sourceRank": 76
+    },
+    {
+      "position": 145,
+      "category": "출장과 이동",
+      "front": "airport",
+      "back": "공항",
+      "sourceRank": 5
+    },
+    {
+      "position": 146,
+      "category": "출장과 이동",
+      "front": "airfare",
+      "back": "항공 요금",
+      "sourceRank": 493
+    },
+    {
+      "position": 147,
+      "category": "출장과 이동",
+      "front": "fare",
+      "back": "운임",
+      "sourceRank": 32
+    },
+    {
+      "position": 148,
+      "category": "출장과 이동",
+      "front": "passport",
+      "back": "여권",
+      "sourceRank": 84
+    },
+    {
+      "position": 149,
+      "category": "출장과 이동",
+      "front": "visa",
+      "back": "비자",
+      "sourceRank": 559
+    },
+    {
+      "position": 150,
+      "category": "출장과 이동",
+      "front": "luggage",
+      "back": "수하물",
+      "sourceRank": 37
+    },
+    {
+      "position": 151,
+      "category": "출장과 이동",
+      "front": "baggage",
+      "back": "수하물",
+      "sourceRank": 152
+    },
+    {
+      "position": 152,
+      "category": "출장과 이동",
+      "front": "suitcase",
+      "back": "여행 가방",
+      "sourceRank": 62
+    },
+    {
+      "position": 153,
+      "category": "출장과 이동",
+      "front": "terminal",
+      "back": "터미널",
+      "sourceRank": 193
+    },
+    {
+      "position": 154,
+      "category": "출장과 이동",
+      "front": "shuttle",
+      "back": "셔틀버스",
+      "sourceRank": 204
+    },
+    {
+      "position": 155,
+      "category": "출장과 이동",
+      "front": "commuter",
+      "back": "통근자",
+      "sourceRank": 176
+    },
+    {
+      "position": 156,
+      "category": "출장과 이동",
+      "front": "commute",
+      "back": "통근하다",
+      "sourceRank": 220
+    },
+    {
+      "position": 157,
+      "category": "출장과 이동",
+      "front": "transit",
+      "back": "운송, 통과",
+      "sourceRank": 327
+    },
+    {
+      "position": 158,
+      "category": "출장과 이동",
+      "front": "overnight",
+      "back": "하룻밤 동안",
+      "sourceRank": 174
+    },
+    {
+      "position": 159,
+      "category": "출장과 이동",
+      "front": "aboard",
+      "back": "탑승하여",
+      "sourceRank": 655
+    },
+    {
+      "position": 160,
+      "category": "숙박과 식사",
+      "front": "lobby",
+      "back": "로비",
+      "sourceRank": 24
+    },
+    {
+      "position": 161,
+      "category": "숙박과 식사",
+      "front": "receptionist",
+      "back": "접수 담당자",
+      "sourceRank": 72
+    },
+    {
+      "position": 162,
+      "category": "숙박과 식사",
+      "front": "reception",
+      "back": "접수처",
+      "sourceRank": 46
+    },
+    {
+      "position": 163,
+      "category": "숙박과 식사",
+      "front": "suite",
+      "back": "여러 방이 딸린 호텔 객실",
+      "sourceRank": 261
+    },
+    {
+      "position": 164,
+      "category": "숙박과 식사",
+      "front": "occupancy",
+      "back": "객실 사용, 점유",
+      "sourceRank": 293
+    },
+    {
+      "position": 165,
+      "category": "숙박과 식사",
+      "front": "vacancy",
+      "back": "빈방",
+      "sourceRank": 339
+    },
+    {
+      "position": 166,
+      "category": "숙박과 식사",
+      "front": "housekeeper",
+      "back": "객실 관리 직원",
+      "sourceRank": 344
+    },
+    {
+      "position": 167,
+      "category": "숙박과 식사",
+      "front": "concierge",
+      "back": "호텔 안내 직원",
+      "sourceRank": 668
+    },
+    {
+      "position": 168,
+      "category": "숙박과 식사",
+      "front": "complimentary",
+      "back": "무료로 제공되는",
+      "sourceRank": 231
+    },
+    {
+      "position": 169,
+      "category": "숙박과 식사",
+      "front": "amenity",
+      "back": "편의시설",
+      "sourceRank": 845
+    },
+    {
+      "position": 170,
+      "category": "숙박과 식사",
+      "front": "cafeteria",
+      "back": "구내식당",
+      "sourceRank": 43
+    },
+    {
+      "position": 171,
+      "category": "숙박과 식사",
+      "front": "beverage",
+      "back": "음료",
+      "sourceRank": 134
+    },
+    {
+      "position": 172,
+      "category": "숙박과 식사",
+      "front": "refreshment",
+      "back": "간단한 음식과 음료",
+      "sourceRank": 211
+    },
+    {
+      "position": 173,
+      "category": "숙박과 식사",
+      "front": "ingredient",
+      "back": "재료",
+      "sourceRank": 144
+    },
+    {
+      "position": 174,
+      "category": "숙박과 식사",
+      "front": "recipe",
+      "back": "조리법",
+      "sourceRank": 210
+    },
+    {
+      "position": 175,
+      "category": "숙박과 식사",
+      "front": "chef",
+      "back": "요리사",
+      "sourceRank": 44
+    },
+    {
+      "position": 176,
+      "category": "숙박과 식사",
+      "front": "waiter",
+      "back": "웨이터",
+      "sourceRank": 40
+    },
+    {
+      "position": 177,
+      "category": "숙박과 식사",
+      "front": "waitress",
+      "back": "웨이트리스",
+      "sourceRank": 200
+    },
+    {
+      "position": 178,
+      "category": "숙박과 식사",
+      "front": "appetizer",
+      "back": "전채 요리",
+      "sourceRank": 1100
+    },
+    {
+      "position": 179,
+      "category": "숙박과 식사",
+      "front": "dessert",
+      "back": "후식",
+      "sourceRank": 170
+    },
+    {
+      "position": 180,
+      "category": "업무와 고객 응대",
+      "front": "deadline",
+      "back": "마감 기한",
+      "sourceRank": 18
+    },
+    {
+      "position": 181,
+      "category": "업무와 고객 응대",
+      "front": "inquire",
+      "back": "문의하다",
+      "sourceRank": 173
+    },
+    {
+      "position": 182,
+      "category": "업무와 고객 응대",
+      "front": "inconvenience",
+      "back": "불편",
+      "sourceRank": 116
+    },
+    {
+      "position": 183,
+      "category": "업무와 고객 응대",
+      "front": "apology",
+      "back": "사과",
+      "sourceRank": 434
+    },
+    {
+      "position": 184,
+      "category": "업무와 고객 응대",
+      "front": "availability",
+      "back": "이용 가능 여부",
+      "sourceRank": 229
+    },
+    {
+      "position": 185,
+      "category": "업무와 고객 응대",
+      "front": "subscription",
+      "back": "구독",
+      "sourceRank": 53
+    },
+    {
+      "position": 186,
+      "category": "업무와 고객 응대",
+      "front": "subscribe",
+      "back": "구독하다",
+      "sourceRank": 206
+    },
+    {
+      "position": 187,
+      "category": "업무와 고객 응대",
+      "front": "subscriber",
+      "back": "구독자",
+      "sourceRank": 350
+    },
+    {
+      "position": 188,
+      "category": "업무와 고객 응대",
+      "front": "cancellation",
+      "back": "취소",
+      "sourceRank": 380
+    },
+    {
+      "position": 189,
+      "category": "업무와 고객 응대",
+      "front": "verify",
+      "back": "확인하다, 검증하다",
+      "sourceRank": 240
+    },
+    {
+      "position": 190,
+      "category": "업무와 고객 응대",
+      "front": "accurately",
+      "back": "정확하게",
+      "sourceRank": 303
+    },
+    {
+      "position": 191,
+      "category": "업무와 고객 응대",
+      "front": "promptly",
+      "back": "신속히, 즉시",
+      "sourceRank": 337
+    },
+    {
+      "position": 192,
+      "category": "업무와 고객 응대",
+      "front": "affordable",
+      "back": "가격이 부담되지 않는",
+      "sourceRank": 218
+    },
+    {
+      "position": 193,
+      "category": "업무와 고객 응대",
+      "front": "convenient",
+      "back": "편리한",
+      "sourceRank": 54
+    },
+    {
+      "position": 194,
+      "category": "업무와 고객 응대",
+      "front": "accommodate",
+      "back": "요구를 들어주다, 수용하다",
+      "sourceRank": 217
+    },
+    {
+      "position": 195,
+      "category": "업무와 고객 응대",
+      "front": "coordinate",
+      "back": "조율하다",
+      "sourceRank": 221
+    },
+    {
+      "position": 196,
+      "category": "업무와 고객 응대",
+      "front": "productivity",
+      "back": "생산성",
+      "sourceRank": 234
+    },
+    {
+      "position": 197,
+      "category": "업무와 고객 응대",
+      "front": "efficiently",
+      "back": "효율적으로",
+      "sourceRank": 366
+    },
+    {
+      "position": 198,
+      "category": "업무와 고객 응대",
+      "front": "streamline",
+      "back": "간소화하다",
+      "sourceRank": 793
+    },
+    {
+      "position": 199,
+      "category": "업무와 고객 응대",
+      "front": "prospective",
+      "back": "장래의, 잠재적인",
+      "sourceRank": 449
+    }
+  ]
+}

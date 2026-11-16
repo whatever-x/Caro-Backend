@@ -11,7 +11,7 @@ data class DeleteCardsRequest(
     @Schema(description = "카드 ID 들 (최소 1개 - 최대 1000개)", required = true)
     val cardIds: Set<Long>,
 ) {
-    @get:AssertTrue(message = "cardIds는 모두 양수여야 합니다")
+    @get:AssertTrue(message = "{validation.card.ids.positive}")
     @get:Schema(hidden = true)
     val isAllPositive: Boolean
         get() = cardIds.all { it > 0 }

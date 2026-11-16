@@ -6,8 +6,8 @@ import jakarta.validation.constraints.Size
 
 @Schema(name = "UpdateNicknameRequest", description = "닉네임 변경 요청")
 data class UpdateNicknameRequest(
-    @field:NotBlank(message = "Nickname is required")
-    @field:Size(min = 1, max = 50, message = "Nickname must be 1-50 characters")
+    @field:NotBlank(message = "{validation.nickname.required}")
+    @field:Size(min = 1, max = 50, message = "{validation.nickname.size}")
     @field:Schema(description = "변경할 닉네임", example = "다정한 고슴도치", required = true)
     val nickname: String,
 )

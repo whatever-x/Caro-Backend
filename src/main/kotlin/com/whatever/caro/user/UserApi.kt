@@ -1,5 +1,9 @@
 package com.whatever.caro.user
 
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.ZoneOffset
+
 interface UserApi {
     fun findById(
         userId: Long,
@@ -20,6 +24,8 @@ interface UserApi {
         userId: Long,
         nickname: String,
         isTermsAgreed: Boolean,
+        birthDate: LocalDate? = null,
+        timezone: ZoneId = ZoneOffset.UTC,
     ): UserInfo
 
     fun isNicknameAvailable(

@@ -10,6 +10,7 @@ import com.whatever.caro.card.internal.deck.dto.update.UpdateDeckDto
 import com.whatever.caro.card.internal.deck.event.created.DeckCreatedEvent
 import com.whatever.caro.card.internal.deck.exception.DeckForbiddenException
 import com.whatever.caro.card.internal.deck.exception.DeckNotFoundException
+import com.whatever.caro.card.internal.library.LibraryCopyReceiptRepository
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.DescribeSpec
 import io.kotest.matchers.booleans.shouldBeTrue
@@ -29,7 +30,8 @@ class DeckServiceUnitTest :
         val deckRepository = mockk<DeckRepository>()
         val deckPresetRepository = mockk<DeckPresetRepository>(relaxed = true)
         val eventPublisher = mockk<ApplicationEventPublisher>(relaxed = true)
-        val deckService = DeckService(deckRepository, deckPresetRepository, eventPublisher)
+        val libraryCopyReceiptRepository = mockk<LibraryCopyReceiptRepository>(relaxed = true)
+        val deckService = DeckService(deckRepository, deckPresetRepository, eventPublisher, libraryCopyReceiptRepository)
 
         fun createDeckWithId(
             id: Long,

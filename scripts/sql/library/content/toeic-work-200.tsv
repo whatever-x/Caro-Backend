@@ -1,0 +1,201 @@
+category	front	back
+채용과 인사	applicant	지원자
+채용과 인사	résumé	이력서
+채용과 인사	occupation	직업
+채용과 인사	supervisor	관리자, 상사
+채용과 인사	coworker	직장 동료
+채용과 인사	recruiter	채용 담당자
+채용과 인사	recruitment	채용
+채용과 인사	intern	인턴
+채용과 인사	internship	인턴 근무
+채용과 인사	trainee	훈련생
+채용과 인사	trainer	훈련 담당자
+채용과 인사	workforce	전체 직원, 노동 인력
+채용과 인사	payroll	급여 지급 명부
+채용과 인사	paycheck	급여, 급여 수표
+채용과 인사	bonus	상여금
+채용과 인사	overtime	초과 근무
+채용과 인사	resignation	사직
+채용과 인사	relocate	이전하다
+채용과 인사	layoff	정리 해고
+채용과 인사	expertise	전문 지식
+회의와 행사	workshop	실무 연수, 워크숍
+회의와 행사	seminar	세미나
+회의와 행사	attendee	참석자
+회의와 행사	venue	행사 장소
+회의와 행사	banquet	연회
+회의와 행사	boardroom	이사회 회의실
+회의와 행사	presenter	발표자
+회의와 행사	organizer	주최자
+회의와 행사	coordinator	조정 담당자
+회의와 행사	delegate	대표
+회의와 행사	assignment	업무, 과제
+회의와 행사	submission	제출
+회의와 행사	feedback	의견, 피드백
+회의와 행사	confirmation	확인
+회의와 행사	newsletter	소식지
+회의와 행사	bulletin	공지문
+회의와 행사	upcoming	다가오는
+회의와 행사	postpone	연기하다
+회의와 행사	reschedule	일정을 변경하다
+회의와 행사	finalize	최종 확정하다
+문서와 사무	memo	메모
+문서와 사무	memorandum	업무 연락문
+문서와 사무	paperwork	서류 작업
+문서와 사무	correspondence	업무 서신
+문서와 사무	enclose	동봉하다
+문서와 사무	notify	통지하다
+문서와 사무	signature	서명
+문서와 사무	stationery	문구류
+문서와 사무	folder	서류철
+문서와 사무	cabinet	수납장
+문서와 사무	photocopy	복사본
+문서와 사무	copier	복사기
+문서와 사무	cartridge	프린터용 잉크 또는 토너 용기
+문서와 사무	toner	레이저 프린터용 분말 잉크
+문서와 사무	stapler	스테이플러
+문서와 사무	spreadsheet	전자 계산표
+문서와 사무	confidential	기밀의
+문서와 사무	authorize	권한을 부여하다, 승인하다
+문서와 사무	proofread	교정하다
+문서와 사무	documentation	문서 자료
+결제와 회계	invoice	청구서
+결제와 회계	receipt	영수증
+결제와 회계	refund	환불
+결제와 회계	transaction	거래
+결제와 회계	accountant	회계사
+결제와 회계	audit	회계 감사
+결제와 회계	auditor	감사 담당자
+결제와 회계	deduction	공제
+결제와 회계	deduct	공제하다
+결제와 회계	reimburse	비용을 상환하다
+결제와 회계	reimbursement	비용 상환
+결제와 회계	overdue	지불 기한이 지난
+결제와 회계	outstanding	미지급된(대금)
+결제와 회계	payable	지불해야 하는
+결제와 회계	debit	차변, 계좌 인출액
+결제와 회계	dividend	배당금
+결제와 회계	banker	은행 업무 종사자
+결제와 회계	broker	중개인
+결제와 회계	voucher	상품권, 교환권
+결제와 회계	fiscal	회계의, 재정의
+주문과 유통	client	고객
+주문과 유통	merchandise	상품
+주문과 유통	goods	상품, 물품
+주문과 유통	inventory	재고
+주문과 유통	warehouse	창고
+주문과 유통	shipment	배송 화물
+주문과 유통	freight	화물
+주문과 유통	cargo	화물
+주문과 유통	courier	배송 기사, 택배 업체
+주문과 유통	carrier	운송 업체
+주문과 유통	vendor	판매 업체
+주문과 유통	retailer	소매업자
+주문과 유통	distributor	유통업체
+주문과 유통	provider	서비스 제공업체
+주문과 유통	purchaser	구매자
+주문과 유통	recipient	수령인
+주문과 유통	container	화물 용기, 컨테이너
+주문과 유통	parcel	소포
+주문과 유통	consignment	탁송 화물
+주문과 유통	shortage	부족
+계약과 규정	lease	임대차 계약
+계약과 규정	tenant	임차인
+계약과 규정	landlord	임대인
+계약과 규정	warranty	보증
+계약과 규정	renew	갱신하다
+계약과 규정	renewal	갱신
+계약과 규정	expire	만료되다
+계약과 규정	expiration	만료
+계약과 규정	valid	유효한
+계약과 규정	eligible	자격이 있는
+계약과 규정	mandatory	의무적인
+계약과 규정	optional	선택 가능한
+계약과 규정	comply	준수하다
+계약과 규정	compliance	준수
+계약과 규정	prohibit	금지하다
+계약과 규정	violation	위반
+계약과 규정	terminate	종료하다
+계약과 규정	termination	종료
+계약과 규정	authorization	승인
+계약과 규정	consent	동의
+시설과 설비	renovation	보수 공사, 새 단장
+시설과 설비	renovate	보수하다
+시설과 설비	installation	설치
+시설과 설비	machinery	기계류
+시설과 설비	appliance	가전제품
+시설과 설비	mechanic	정비사
+시설과 설비	technician	기술자
+시설과 설비	malfunction	오작동
+시설과 설비	defect	결함
+시설과 설비	defective	결함이 있는
+시설과 설비	replacement	교체품
+시설과 설비	inspection	검사
+시설과 설비	inspect	검사하다
+시설과 설비	contractor	도급업체
+시설과 설비	architect	건축가
+시설과 설비	electrician	전기 기사
+시설과 설비	plumber	배관공
+시설과 설비	outage	전기 등의 공급 중단
+시설과 설비	generator	발전기
+시설과 설비	durable	내구성이 있는
+출장과 이동	reservation	예약
+출장과 이동	itinerary	여행 일정
+출장과 이동	destination	목적지
+출장과 이동	departure	출발
+출장과 이동	depart	출발하다
+출장과 이동	airport	공항
+출장과 이동	airfare	항공 요금
+출장과 이동	fare	운임
+출장과 이동	passport	여권
+출장과 이동	visa	비자
+출장과 이동	luggage	수하물
+출장과 이동	baggage	수하물
+출장과 이동	suitcase	여행 가방
+출장과 이동	terminal	터미널
+출장과 이동	shuttle	셔틀버스
+출장과 이동	commuter	통근자
+출장과 이동	commute	통근하다
+출장과 이동	transit	운송, 통과
+출장과 이동	overnight	하룻밤 동안
+출장과 이동	aboard	탑승하여
+숙박과 식사	lobby	로비
+숙박과 식사	receptionist	접수 담당자
+숙박과 식사	reception	접수처
+숙박과 식사	suite	여러 방이 딸린 호텔 객실
+숙박과 식사	occupancy	객실 사용, 점유
+숙박과 식사	vacancy	빈방
+숙박과 식사	housekeeper	객실 관리 직원
+숙박과 식사	concierge	호텔 안내 직원
+숙박과 식사	complimentary	무료로 제공되는
+숙박과 식사	amenity	편의시설
+숙박과 식사	cafeteria	구내식당
+숙박과 식사	beverage	음료
+숙박과 식사	refreshment	간단한 음식과 음료
+숙박과 식사	ingredient	재료
+숙박과 식사	recipe	조리법
+숙박과 식사	chef	요리사
+숙박과 식사	waiter	웨이터
+숙박과 식사	waitress	웨이트리스
+숙박과 식사	appetizer	전채 요리
+숙박과 식사	dessert	후식
+업무와 고객 응대	deadline	마감 기한
+업무와 고객 응대	inquire	문의하다
+업무와 고객 응대	inconvenience	불편
+업무와 고객 응대	apology	사과
+업무와 고객 응대	availability	이용 가능 여부
+업무와 고객 응대	subscription	구독
+업무와 고객 응대	subscribe	구독하다
+업무와 고객 응대	subscriber	구독자
+업무와 고객 응대	cancellation	취소
+업무와 고객 응대	verify	확인하다, 검증하다
+업무와 고객 응대	accurately	정확하게
+업무와 고객 응대	promptly	신속히, 즉시
+업무와 고객 응대	affordable	가격이 부담되지 않는
+업무와 고객 응대	convenient	편리한
+업무와 고객 응대	accommodate	요구를 들어주다, 수용하다
+업무와 고객 응대	coordinate	조율하다
+업무와 고객 응대	productivity	생산성
+업무와 고객 응대	efficiently	효율적으로
+업무와 고객 응대	streamline	간소화하다
+업무와 고객 응대	prospective	장래의, 잠재적인

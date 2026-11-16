@@ -1,0 +1,730 @@
+{
+  "contentKey": "english-basic-100",
+  "name": "영어 기초 어휘 100",
+  "description": "학습과 일상에 쓰는 영어 기초 어휘 100장. NGSL 1.2에서 선정하고 한국어 뜻을 작성했습니다. Charles Browne, Brent Culligan, Joseph Phillips. 출처: https://www.newgeneralservicelist.com/new-general-service-list | CC BY-SA 4.0: https://creativecommons.org/licenses/by-sa/4.0/",
+  "contentVersion": "2026-10-14",
+  "noteType": "BASIC",
+  "published": true,
+  "intendedUse": "free_content",
+  "reviewStatus": "editorial_review_pending",
+  "source": {
+    "name": "New General Service List",
+    "version": "1.2",
+    "authors": [
+      "Charles Browne",
+      "Brent Culligan",
+      "Joseph Phillips"
+    ],
+    "url": "https://www.newgeneralservicelist.com/new-general-service-list",
+    "downloadUrl": "https://www.newgeneralservicelist.com/s/NGSL_12_stats.csv",
+    "retrievedOn": "2026-10-14",
+    "sha256": "2098bab8955a120a9766c6282a51d7d578c6cb0a7d946600d2ffb73ba25a0b44",
+    "license": "CC BY-SA 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
+  },
+  "changes": "원본에서 일부 단어 선정, 주제별 재배열, 한국어 뜻 직접 작성",
+  "license": "CC BY-SA 4.0",
+  "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+  "cards": [
+    {
+      "position": 0,
+      "category": "학습과 생각",
+      "front": "study",
+      "back": "공부하다",
+      "sourceRank": 187
+    },
+    {
+      "position": 1,
+      "category": "학습과 생각",
+      "front": "learn",
+      "back": "배우다",
+      "sourceRank": 261
+    },
+    {
+      "position": 2,
+      "category": "학습과 생각",
+      "front": "read",
+      "back": "읽다",
+      "sourceRank": 207
+    },
+    {
+      "position": 3,
+      "category": "학습과 생각",
+      "front": "write",
+      "back": "쓰다",
+      "sourceRank": 121
+    },
+    {
+      "position": 4,
+      "category": "학습과 생각",
+      "front": "speak",
+      "back": "말하다",
+      "sourceRank": 284
+    },
+    {
+      "position": 5,
+      "category": "학습과 생각",
+      "front": "listen",
+      "back": "귀 기울여 듣다",
+      "sourceRank": 573
+    },
+    {
+      "position": 6,
+      "category": "학습과 생각",
+      "front": "understand",
+      "back": "이해하다",
+      "sourceRank": 243
+    },
+    {
+      "position": 7,
+      "category": "학습과 생각",
+      "front": "remember",
+      "back": "기억하다",
+      "sourceRank": 351
+    },
+    {
+      "position": 8,
+      "category": "학습과 생각",
+      "front": "forget",
+      "back": "잊다",
+      "sourceRank": 651
+    },
+    {
+      "position": 9,
+      "category": "학습과 생각",
+      "front": "think",
+      "back": "생각하다",
+      "sourceRank": 47
+    },
+    {
+      "position": 10,
+      "category": "학습과 생각",
+      "front": "know",
+      "back": "알다",
+      "sourceRank": 41
+    },
+    {
+      "position": 11,
+      "category": "학습과 생각",
+      "front": "ask",
+      "back": "묻다",
+      "sourceRank": 134
+    },
+    {
+      "position": 12,
+      "category": "학습과 생각",
+      "front": "answer",
+      "back": "대답하다",
+      "sourceRank": 355
+    },
+    {
+      "position": 13,
+      "category": "학습과 생각",
+      "front": "explain",
+      "back": "설명하다",
+      "sourceRank": 489
+    },
+    {
+      "position": 14,
+      "category": "학습과 생각",
+      "front": "teach",
+      "back": "가르치다",
+      "sourceRank": 539
+    },
+    {
+      "position": 15,
+      "category": "학습과 생각",
+      "front": "practice",
+      "back": "연습하다",
+      "sourceRank": 484
+    },
+    {
+      "position": 16,
+      "category": "학습과 생각",
+      "front": "improve",
+      "back": "개선하다, 향상시키다",
+      "sourceRank": 508
+    },
+    {
+      "position": 17,
+      "category": "학습과 생각",
+      "front": "decide",
+      "back": "결정하다",
+      "sourceRank": 359
+    },
+    {
+      "position": 18,
+      "category": "학습과 생각",
+      "front": "choose",
+      "back": "선택하다",
+      "sourceRank": 447
+    },
+    {
+      "position": 19,
+      "category": "학습과 생각",
+      "front": "try",
+      "back": "시도하다",
+      "sourceRank": 125
+    },
+    {
+      "position": 20,
+      "category": "일상 행동",
+      "front": "start",
+      "back": "시작하다",
+      "sourceRank": 136
+    },
+    {
+      "position": 21,
+      "category": "일상 행동",
+      "front": "finish",
+      "back": "끝내다",
+      "sourceRank": 609
+    },
+    {
+      "position": 22,
+      "category": "일상 행동",
+      "front": "open",
+      "back": "열다",
+      "sourceRank": 214
+    },
+    {
+      "position": 23,
+      "category": "일상 행동",
+      "front": "close",
+      "back": "닫다",
+      "sourceRank": 239
+    },
+    {
+      "position": 24,
+      "category": "일상 행동",
+      "front": "make",
+      "back": "만들다",
+      "sourceRank": 48
+    },
+    {
+      "position": 25,
+      "category": "일상 행동",
+      "front": "use",
+      "back": "사용하다",
+      "sourceRank": 68
+    },
+    {
+      "position": 26,
+      "category": "일상 행동",
+      "front": "need",
+      "back": "필요로 하다",
+      "sourceRank": 90
+    },
+    {
+      "position": 27,
+      "category": "일상 행동",
+      "front": "want",
+      "back": "원하다",
+      "sourceRank": 76
+    },
+    {
+      "position": 28,
+      "category": "일상 행동",
+      "front": "find",
+      "back": "찾다",
+      "sourceRank": 81
+    },
+    {
+      "position": 29,
+      "category": "일상 행동",
+      "front": "look",
+      "back": "보다",
+      "sourceRank": 75
+    },
+    {
+      "position": 30,
+      "category": "일상 행동",
+      "front": "watch",
+      "back": "지켜보다",
+      "sourceRank": 326
+    },
+    {
+      "position": 31,
+      "category": "일상 행동",
+      "front": "see",
+      "back": "눈으로 보다",
+      "sourceRank": 50
+    },
+    {
+      "position": 32,
+      "category": "일상 행동",
+      "front": "hear",
+      "back": "소리를 듣다",
+      "sourceRank": 178
+    },
+    {
+      "position": 33,
+      "category": "일상 행동",
+      "front": "give",
+      "back": "주다",
+      "sourceRank": 77
+    },
+    {
+      "position": 34,
+      "category": "일상 행동",
+      "front": "take",
+      "back": "가져가다",
+      "sourceRank": 59
+    },
+    {
+      "position": 35,
+      "category": "일상 행동",
+      "front": "bring",
+      "back": "가져오다",
+      "sourceRank": 196
+    },
+    {
+      "position": 36,
+      "category": "일상 행동",
+      "front": "buy",
+      "back": "사다",
+      "sourceRank": 242
+    },
+    {
+      "position": 37,
+      "category": "일상 행동",
+      "front": "pay",
+      "back": "지불하다",
+      "sourceRank": 220
+    },
+    {
+      "position": 38,
+      "category": "일상 행동",
+      "front": "help",
+      "back": "돕다",
+      "sourceRank": 133
+    },
+    {
+      "position": 39,
+      "category": "일상 행동",
+      "front": "wait",
+      "back": "기다리다",
+      "sourceRank": 403
+    },
+    {
+      "position": 40,
+      "category": "사람과 장소",
+      "front": "person",
+      "back": "사람",
+      "sourceRank": 263
+    },
+    {
+      "position": 41,
+      "category": "사람과 장소",
+      "front": "friend",
+      "back": "친구",
+      "sourceRank": 208
+    },
+    {
+      "position": 42,
+      "category": "사람과 장소",
+      "front": "family",
+      "back": "가족",
+      "sourceRank": 172
+    },
+    {
+      "position": 43,
+      "category": "사람과 장소",
+      "front": "child",
+      "back": "아이",
+      "sourceRank": 102
+    },
+    {
+      "position": 44,
+      "category": "사람과 장소",
+      "front": "parent",
+      "back": "부모",
+      "sourceRank": 297
+    },
+    {
+      "position": 45,
+      "category": "사람과 장소",
+      "front": "teacher",
+      "back": "교사",
+      "sourceRank": 496
+    },
+    {
+      "position": 46,
+      "category": "사람과 장소",
+      "front": "student",
+      "back": "학생",
+      "sourceRank": 248
+    },
+    {
+      "position": 47,
+      "category": "사람과 장소",
+      "front": "neighbor",
+      "back": "이웃",
+      "sourceRank": 1222
+    },
+    {
+      "position": 48,
+      "category": "사람과 장소",
+      "front": "home",
+      "back": "집",
+      "sourceRank": 161
+    },
+    {
+      "position": 49,
+      "category": "사람과 장소",
+      "front": "school",
+      "back": "학교",
+      "sourceRank": 146
+    },
+    {
+      "position": 50,
+      "category": "사람과 장소",
+      "front": "office",
+      "back": "사무실",
+      "sourceRank": 343
+    },
+    {
+      "position": 51,
+      "category": "사람과 장소",
+      "front": "store",
+      "back": "상점",
+      "sourceRank": 617
+    },
+    {
+      "position": 52,
+      "category": "사람과 장소",
+      "front": "street",
+      "back": "거리",
+      "sourceRank": 598
+    },
+    {
+      "position": 53,
+      "category": "사람과 장소",
+      "front": "road",
+      "back": "도로",
+      "sourceRank": 521
+    },
+    {
+      "position": 54,
+      "category": "사람과 장소",
+      "front": "city",
+      "back": "도시",
+      "sourceRank": 269
+    },
+    {
+      "position": 55,
+      "category": "사람과 장소",
+      "front": "country",
+      "back": "나라",
+      "sourceRank": 143
+    },
+    {
+      "position": 56,
+      "category": "사람과 장소",
+      "front": "room",
+      "back": "방",
+      "sourceRank": 254
+    },
+    {
+      "position": 57,
+      "category": "사람과 장소",
+      "front": "door",
+      "back": "문",
+      "sourceRank": 490
+    },
+    {
+      "position": 58,
+      "category": "사람과 장소",
+      "front": "window",
+      "back": "창문",
+      "sourceRank": 734
+    },
+    {
+      "position": 59,
+      "category": "사람과 장소",
+      "front": "table",
+      "back": "탁자",
+      "sourceRank": 450
+    },
+    {
+      "position": 60,
+      "category": "시간과 생활",
+      "front": "day",
+      "back": "하루",
+      "sourceRank": 85
+    },
+    {
+      "position": 61,
+      "category": "시간과 생활",
+      "front": "week",
+      "back": "주",
+      "sourceRank": 157
+    },
+    {
+      "position": 62,
+      "category": "시간과 생활",
+      "front": "month",
+      "back": "달, 월",
+      "sourceRank": 209
+    },
+    {
+      "position": 63,
+      "category": "시간과 생활",
+      "front": "year",
+      "back": "해, 년",
+      "sourceRank": 58
+    },
+    {
+      "position": 64,
+      "category": "시간과 생활",
+      "front": "morning",
+      "back": "아침",
+      "sourceRank": 434
+    },
+    {
+      "position": 65,
+      "category": "시간과 생활",
+      "front": "afternoon",
+      "back": "오후",
+      "sourceRank": 948
+    },
+    {
+      "position": 66,
+      "category": "시간과 생활",
+      "front": "evening",
+      "back": "저녁",
+      "sourceRank": 679
+    },
+    {
+      "position": 67,
+      "category": "시간과 생활",
+      "front": "night",
+      "back": "밤",
+      "sourceRank": 270
+    },
+    {
+      "position": 68,
+      "category": "시간과 생활",
+      "front": "today",
+      "back": "오늘",
+      "sourceRank": 246
+    },
+    {
+      "position": 69,
+      "category": "시간과 생활",
+      "front": "tomorrow",
+      "back": "내일",
+      "sourceRank": 726
+    },
+    {
+      "position": 70,
+      "category": "시간과 생활",
+      "front": "yesterday",
+      "back": "어제",
+      "sourceRank": 703
+    },
+    {
+      "position": 71,
+      "category": "시간과 생활",
+      "front": "time",
+      "back": "시간",
+      "sourceRank": 49
+    },
+    {
+      "position": 72,
+      "category": "시간과 생활",
+      "front": "minute",
+      "back": "분",
+      "sourceRank": 366
+    },
+    {
+      "position": 73,
+      "category": "시간과 생활",
+      "front": "hour",
+      "back": "한 시간",
+      "sourceRank": 247
+    },
+    {
+      "position": 74,
+      "category": "시간과 생활",
+      "front": "food",
+      "back": "음식",
+      "sourceRank": 367
+    },
+    {
+      "position": 75,
+      "category": "시간과 생활",
+      "front": "water",
+      "back": "물",
+      "sourceRank": 322
+    },
+    {
+      "position": 76,
+      "category": "시간과 생활",
+      "front": "money",
+      "back": "돈",
+      "sourceRank": 201
+    },
+    {
+      "position": 77,
+      "category": "시간과 생활",
+      "front": "work",
+      "back": "일",
+      "sourceRank": 67
+    },
+    {
+      "position": 78,
+      "category": "시간과 생활",
+      "front": "health",
+      "back": "건강",
+      "sourceRank": 475
+    },
+    {
+      "position": 79,
+      "category": "시간과 생활",
+      "front": "travel",
+      "back": "여행",
+      "sourceRank": 503
+    },
+    {
+      "position": 80,
+      "category": "상태와 성질",
+      "front": "good",
+      "back": "좋은",
+      "sourceRank": 56
+    },
+    {
+      "position": 81,
+      "category": "상태와 성질",
+      "front": "bad",
+      "back": "나쁜",
+      "sourceRank": 268
+    },
+    {
+      "position": 82,
+      "category": "상태와 성질",
+      "front": "easy",
+      "back": "쉬운",
+      "sourceRank": 408
+    },
+    {
+      "position": 83,
+      "category": "상태와 성질",
+      "front": "difficult",
+      "back": "어려운",
+      "sourceRank": 470
+    },
+    {
+      "position": 84,
+      "category": "상태와 성질",
+      "front": "important",
+      "back": "중요한",
+      "sourceRank": 190
+    },
+    {
+      "position": 85,
+      "category": "상태와 성질",
+      "front": "necessary",
+      "back": "필요한",
+      "sourceRank": 676
+    },
+    {
+      "position": 86,
+      "category": "상태와 성질",
+      "front": "possible",
+      "back": "가능한",
+      "sourceRank": 290
+    },
+    {
+      "position": 87,
+      "category": "상태와 성질",
+      "front": "different",
+      "back": "다른",
+      "sourceRank": 149
+    },
+    {
+      "position": 88,
+      "category": "상태와 성질",
+      "front": "same",
+      "back": "같은",
+      "sourceRank": 122
+    },
+    {
+      "position": 89,
+      "category": "상태와 성질",
+      "front": "new",
+      "back": "새로운",
+      "sourceRank": 79
+    },
+    {
+      "position": 90,
+      "category": "상태와 성질",
+      "front": "old",
+      "back": "오래된",
+      "sourceRank": 144
+    },
+    {
+      "position": 91,
+      "category": "상태와 성질",
+      "front": "young",
+      "back": "어린",
+      "sourceRank": 238
+    },
+    {
+      "position": 92,
+      "category": "상태와 성질",
+      "front": "early",
+      "back": "이른",
+      "sourceRank": 197
+    },
+    {
+      "position": 93,
+      "category": "상태와 성질",
+      "front": "late",
+      "back": "늦은",
+      "sourceRank": 147
+    },
+    {
+      "position": 94,
+      "category": "상태와 성질",
+      "front": "ready",
+      "back": "준비된",
+      "sourceRank": 774
+    },
+    {
+      "position": 95,
+      "category": "상태와 성질",
+      "front": "busy",
+      "back": "바쁜",
+      "sourceRank": 1233
+    },
+    {
+      "position": 96,
+      "category": "상태와 성질",
+      "front": "happy",
+      "back": "행복한",
+      "sourceRank": 513
+    },
+    {
+      "position": 97,
+      "category": "상태와 성질",
+      "front": "careful",
+      "back": "주의 깊은",
+      "sourceRank": 1637
+    },
+    {
+      "position": 98,
+      "category": "상태와 성질",
+      "front": "small",
+      "back": "작은",
+      "sourceRank": 186
+    },
+    {
+      "position": 99,
+      "category": "상태와 성질",
+      "front": "large",
+      "back": "큰",
+      "sourceRank": 210
+    }
+  ]
+}

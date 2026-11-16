@@ -6,4 +6,5 @@ data class MyInfo(
     val nickname: String,
     val email: String?,
     val socialProvider: SocialProvider,
+    val isAdult: Boolean? = null,
 )

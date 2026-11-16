@@ -7,8 +7,10 @@ import com.whatever.caro.common.response.ApiResponse
 import com.whatever.caro.common.response.ErrorCodeSpec
 import com.whatever.caro.common.web.filter.RequestResponseCachingFilter
 import jakarta.servlet.Filter
+import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import org.springframework.boot.web.servlet.FilterRegistrationBean
+import org.springframework.context.MessageSource
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.http.MediaType
@@ -21,6 +23,7 @@ import org.springframework.security.web.AuthenticationEntryPoint
 import org.springframework.security.web.SecurityFilterChain
 import org.springframework.security.web.access.AccessDeniedHandler
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter
+import org.springframework.web.servlet.LocaleResolver
 import tools.jackson.databind.json.JsonMapper
 
 @Configuration
@@ -31,6 +34,8 @@ class SecurityConfig(
     private val jwtAuthenticationFilter: JwtAuthenticationFilter,
     private val jwtExceptionFilter: JwtExceptionFilter,
     private val jsonMapper: JsonMapper,
+    private val messageSource: MessageSource,
+    private val localeResolver: LocaleResolver,
 ) {
     @Bean
     fun securityFilterChain(
@@ -70,23 +75,30 @@ class SecurityConfig(
     }
 
     private fun customAuthenticationEntryPoint() =
-        AuthenticationEntryPoint { _, response, _ ->
-            writeErrorResponse(response, AuthErrorCode.UNAUTHORIZED)
+        AuthenticationEntryPoint { request, response, _ ->
+            writeErrorResponse(request, response, AuthErrorCode.UNAUTHORIZED)
         }
 
     private fun customAccessDeniedHandler() =
-        AccessDeniedHandler { _, response, _ ->
-            writeErrorResponse(response, AuthErrorCode.ACCESS_DENIED)
+        AccessDeniedHandler { request, response, _ ->
+            writeErrorResponse(request, response, AuthErrorCode.ACCESS_DENIED)
         }
 
     private fun writeErrorResponse(
+        request: HttpServletRequest,
         response: HttpServletResponse,
         errorCode: ErrorCodeSpec,
     ) {
         response.status = errorCode.status.value()
         response.contentType = MediaType.APPLICATION_JSON_VALUE
         response.characterEncoding = "UTF-8"
-        jsonMapper.writeValue(response.writer, ApiResponse.fail(errorCode))
+        val message = messageSource.getMessage(
+            errorCode.messageKey,
+            null,
+            errorCode.message,
+            localeResolver.resolveLocale(request),
+        )
+        jsonMapper.writeValue(response.writer, ApiResponse.fail(errorCode, message))
     }
 }
 

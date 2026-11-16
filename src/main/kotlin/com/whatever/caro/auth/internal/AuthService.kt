@@ -18,6 +18,9 @@ import com.whatever.caro.user.UserApi
 import com.whatever.caro.user.UserStatus
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Service
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.ZoneOffset
 
 private val logger = KotlinLogging.logger {}
 
@@ -81,11 +84,15 @@ class AuthService(
         authUser: AuthUser,
         request: CompleteRegistrationRequest,
         deviceId: String,
+        birthDate: LocalDate? = null,
+        timezone: ZoneId = ZoneOffset.UTC,
     ): TokenResponse {
         val userInfo = userApi.completeRegistration(
             userId = authUser.userId,
             nickname = request.nickname,
             isTermsAgreed = request.isTermsAgreed,
+            birthDate = birthDate,
+            timezone = timezone,
         )
 
         tokenBlacklistRepository.add(
